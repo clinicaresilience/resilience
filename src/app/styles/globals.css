@@ -10,6 +10,16 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /*cores customizadas*/
+  --color-azul-vivido: #01c2e3;
+  --color-azul-medio: #029fdf;
+  --color-azul-escuro: #456dc6;
+  --color-roxo: #7762b6;
+  --color-azul-ciano: #02b1aa;
+  --color-laranja: #f5b26b;
+  --color-azul-ciano-claro: #edfffe;
+  --color-azul-escuro-secundario: #232c55;
 }
 
 @media (prefers-color-scheme: dark) {
