@@ -6,7 +6,7 @@ import Image from "next/image";
 
 export default function Inicio() {
   const estiloBotao =
-    "w-20 h-8 flex items-center justify-center rounded-3xl cursor-pointer transition-colors duration-500 ease-in-out hover:bg-gradient-to-r hover:from-azul-vivido hover:to-roxo hover:text-white";
+    "w-24 h-9 flex items-center justify-center rounded-3xl cursor-pointer transition-colors duration-500 ease-in-out hover:bg-gradient-to-r hover:from-azul-vivido hover:to-roxo hover:text-white";
 
   const botoesNavegacao = [
     { rotulo: "Home", link: "#", ativo: true },
@@ -17,16 +17,16 @@ export default function Inicio() {
   return (
     <div className="w-full h-screen">
       <Cabecalho className="w-full py-4 px-20 absolute drop-shadow-2xl	shadow">
-        <nav className="flex items-center justify-between">
+        <nav className="flex items-center justify-around">
           {/* Logo e Título */}
           <div className="flex items-center gap-8">
             <Image
               src={IconeLogo}
               alt="Logo Clínica Resilience"
-              width={80}
-              height={80}
+              width={90}
+              height={90}
             />
-            <h1 className="text-2xl font-bold text-azul-escuro">
+            <h1 className="text-3xl font-bold text-azul-escuro">
               Clínica Resilience
             </h1>
           </div>
@@ -50,11 +50,7 @@ export default function Inicio() {
           {/* Ações (Login/Cadastro) */}
           <ul className="flex items-center gap-3">
             <li className={`${estiloBotao} bg-azul-escuro text-white `}>
-              Login
-            </li>
-            <span className="h-7 w-px bg-azul-escuro-secundario" />
-            <li className={`${estiloBotao} bg-white text-gray-500`}>
-              Cadastro
+              <a href="./auth/login">Login</a>
             </li>
           </ul>
         </nav>
