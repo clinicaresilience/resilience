@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/client";
@@ -54,20 +54,27 @@ export function LoginForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
+    <div className={cn("flex flex-col gap-6 ", className)} {...props}>
+      <Card className="bg-white w-[350px] h-[400px] border-[1px] relative border-gray-500 flex flex-col justify-evenly text-azul-escuro-secundario shadow-gray-200 drop-shadow-sm  ">
         <CardHeader>
+          <span
+            onClick={() => router.back()}
+            className="cursor-pointer text-gray-400 font-medium text-md under "
+          >
+            Voltar
+          </span>
           <CardTitle className="text-2xl">Entrar</CardTitle>
           <CardDescription>
-            Digite seu e-mail abaixo para acessar sua conta
+            Digite seu e-mail e senha para acessar sua conta
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col justify-center">
           <form onSubmit={handleLogin}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="email">E-mail</Label>
                 <Input
+                  className="focus:ring-1"
                   id="email"
                   type="email"
                   placeholder="m@exemplo.com"
@@ -80,6 +87,7 @@ export function LoginForm({
               <div className="grid gap-2">
                 <Label htmlFor="password">Senha</Label>
                 <Input
+                  className="focus:ring-1"
                   id="password"
                   type="password"
                   required
@@ -97,11 +105,17 @@ export function LoginForm({
               )}
 
               <Button
-                type="submit"
-                className="w-full"
-                disabled={carregando || sucesso}
+                className="
+  w-full cursor-pointer text-white rounded px-4 py-2
+  bg-[length:200%_100%]
+  bg-[position:0%_0%]
+  bg-gradient-to-r from-azul-vivido via-roxo to-laranja 
+  transition-[background-position] duration-500 ease-in-out
+  
+  hover:bg-[position:100%_0%]
+"
               >
-                {carregando ? "Entrando..." : "Entrar"}
+                Entrar
               </Button>
             </div>
           </form>
