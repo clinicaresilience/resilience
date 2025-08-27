@@ -47,12 +47,11 @@ export default function Inicio() {
             ))}
           </ul>
 
-          {/* Ações (Login/Cadastro) */}
-          <ul className="flex items-center gap-3">
-            <li className={`${estiloBotao} bg-azul-escuro text-white `}>
-              <a href="./auth/login">Login</a>
-            </li>
-          </ul>
+          {/* Ações (Login) */}
+
+          <button className={`${estiloBotao} bg-azul-escuro text-white `}>
+            <a href="./auth/login">Login</a>
+          </button>
         </nav>
       </Cabecalho>
 

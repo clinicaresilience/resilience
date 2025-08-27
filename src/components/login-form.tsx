@@ -1,7 +1,8 @@
-"use client";
-
-import { cn } from "@/lib/utils";
+'use client'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/client";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,8 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 export function LoginForm({
   className,
@@ -23,6 +22,7 @@ export function LoginForm({
   const [senha, setSenha] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
+  const [sucesso, setSucesso] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -37,10 +37,17 @@ export function LoginForm({
         password: senha,
       });
       if (error) throw error;
-      // Atualize esta rota para redirecionar para uma rota autenticada. O usuário já possui uma sessão ativa.
-      router.push("/protected");
+
+      // Login ok, mostra mensagem
+      setSucesso(true);
+
+      // Opcional: espera 2 segundos e redireciona
+      setTimeout(() => {
+        router.push("/protected");
+      }, 2000);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "Ocorreu um erro");
+      setSucesso(false);
     } finally {
       setCarregando(false);
     }
@@ -67,22 +74,33 @@ export function LoginForm({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={carregando || sucesso}
                 />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Senha</Label>
-                </div>
+                <Label htmlFor="password">Senha</Label>
                 <Input
                   id="password"
                   type="password"
                   required
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
+                  disabled={carregando || sucesso}
                 />
               </div>
+
               {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={carregando}>
+              {sucesso && (
+                <p className="text-sm text-green-600">
+                  Login realizado com sucesso! Redirecionando...
+                </p>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={carregando || sucesso}
+              >
                 {carregando ? "Entrando..." : "Entrar"}
               </Button>
             </div>
