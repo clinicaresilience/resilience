@@ -15,9 +15,25 @@ import {
 
 export default function PortalPublico() {
   const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [tipoProfissional, setTipoProfissional] = useState("");
   const [profissional, setProfissional] = useState("");
   const [data, setData] = useState("");
   const [hora, setHora] = useState("");
+
+  // Mock: profissionais por tipo
+  const profissionaisPorTipo: Record<string, { id: string; nome: string }[]> = {
+    psicologo: [
+      { id: "ana", nome: "Dra. Ana (Psicóloga)" },
+      { id: "marcos", nome: "Dr. Marcos (Psicólogo)" },
+    ],
+    cardiologista: [
+      { id: "carlos", nome: "Dr. Carlos (Cardiologista)" },
+      { id: "helena", nome: "Dra. Helena (Cardiologista)" },
+    ],
+    dermatologista: [{ id: "maria", nome: "Dra. Maria (Dermatologista)" }],
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-white p-6">
@@ -26,6 +42,9 @@ export default function PortalPublico() {
           <CardTitle className="text-xl font-semibold text-[var(--color-azul-escuro-secundario)]">
             Agendamento
           </CardTitle>
+          <p className="text-sm text-gray-500 mt-1">
+            Preencha os dados abaixo para realizar seu agendamento
+          </p>
         </CardHeader>
 
         <CardContent className="text-black">
@@ -33,7 +52,7 @@ export default function PortalPublico() {
             {/* Nome */}
             <div className="grid gap-1.5">
               <Label htmlFor="nome" className="text-sm text-gray-700">
-                Informe seu nome
+                Nome completo
               </Label>
               <Input
                 id="nome"
@@ -45,25 +64,73 @@ export default function PortalPublico() {
               />
             </div>
 
-            {/* Profissional */}
-            <div className="grid gap-1.5 ">
-              <Label htmlFor="profissional" className="text-sm text-gray-700">
-                Selecione um profissional
+            {/* Email */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="email" className="text-sm text-gray-700">
+                E-mail
               </Label>
-              <Select onValueChange={setProfissional}>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seuemail@exemplo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="border-gray-300 focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]"
+              />
+            </div>
+
+            {/* Telefone */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="telefone" className="text-sm text-gray-700">
+                Telefone
+              </Label>
+              <Input
+                id="telefone"
+                type="tel"
+                placeholder="(00) 00000-0000"
+                value={telefone}
+                onChange={(e) => setTelefone(e.target.value)}
+                className="border-gray-300 focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]"
+              />
+            </div>
+
+            {/* Tipo de profissional */}
+            <div className="grid gap-1.5">
+              <Label className="text-sm text-gray-700">Área de atuação</Label>
+              <Select
+                onValueChange={(value) => {
+                  setTipoProfissional(value);
+                  setProfissional("");
+                }}
+              >
+                <SelectTrigger className="border-gray-300 bg-white focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]">
+                  <SelectValue placeholder="Selecione o tipo de profissional" />
+                </SelectTrigger>
+                <SelectContent className="bg-white text-black border-gray-300">
+                  <SelectItem value="psicologo">Psicólogo</SelectItem>
+                  <SelectItem value="cardiologista">Cardiologista</SelectItem>
+                  <SelectItem value="dermatologista">Dermatologista</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Profissional */}
+
+            <div className="grid gap-1.5">
+              <Label className="text-sm text-gray-700">Profissional</Label>
+              <Select
+                disabled={!tipoProfissional}
+                onValueChange={setProfissional}
+              >
                 <SelectTrigger className="border-gray-300 bg-white focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]">
                   <SelectValue placeholder="Selecione um profissional" />
                 </SelectTrigger>
                 <SelectContent className="bg-white text-black border-gray-300">
-                  <SelectItem value="dr-joao">
-                    Dr. João (Clínico Geral)
-                  </SelectItem>
-                  <SelectItem value="dra-maria">
-                    Dra. Maria (Dermatologista)
-                  </SelectItem>
-                  <SelectItem value="dr-carlos">
-                    Dr. Carlos (Cardiologista)
-                  </SelectItem>
+                  {profissionaisPorTipo[tipoProfissional]?.map((prof) => (
+                    <SelectItem key={prof.id} value={prof.id}>
+                      {prof.nome}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -71,7 +138,7 @@ export default function PortalPublico() {
             {/* Data */}
             <div className="grid gap-1.5">
               <Label htmlFor="data" className="text-sm text-gray-700">
-                Data
+                Data do agendamento
               </Label>
               <Input
                 id="data"
