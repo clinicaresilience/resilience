@@ -1,20 +1,26 @@
 import { redirect } from "next/navigation";
-
-import { LogoutButton } from "@/components/logout-button";
 import { createClient } from "@/lib/server";
+import { LogoutButton } from "@/components/logout-button";
 
 export default async function ProtectedPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const { data, error } = await supabase.auth.getClaims();
-  if (error || !data?.claims) {
-    redirect("/auth/login");
+  if (!user) redirect("/auth/login");
+
+  const role = user.app_metadata?.role || "user";
+  console.log("role ", role);
+
+  if (role !== "administrador") {
+    redirect("/portal-publico");
   }
 
   return (
     <div className="flex h-svh w-full items-center justify-center gap-2">
       <p>
-        Bem vindo <span>{data.claims.email}</span>
+        Bem vindo <span>{user.email}</span> (Administrador)
       </p>
       <LogoutButton />
     </div>
