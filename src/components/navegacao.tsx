@@ -92,7 +92,7 @@ export default function Navegacao() {
             <Button
               className={`${estiloBotao} !w-fit text-azul-escuro-secundario border-azul-escuro-secundario border`}
             >
-              <Link href="/portal-publico" className="w-full text-center">
+              <Link href="/portal-publico/profissionais" className="w-full text-center">
                 Agendamento
               </Link>
             </Button>
@@ -136,7 +136,7 @@ export default function Navegacao() {
                 Login
               </Link>
               <Link
-                href="/portal-publico"
+                href="/portal-publico/profissionais"
                 onClick={() => setMenuAberto(false)}
                 className="px-4 py-2 text-gray-700 hover:text-azul-escuro transition-colors"
               >

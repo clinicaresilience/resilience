@@ -15,6 +15,7 @@ import {
 import Image, { StaticImageData } from "next/image";
 import IconeProfissional from "@/app/assets/icones/logo.png";
 import { X, CheckCircle2 } from "lucide-react";
+import { createClient } from "@/lib/client";
 
 type AgendaDia = {
   disponiveis: string[];
@@ -219,11 +220,39 @@ export default function PerfilProfissional() {
           {/* Botão confirmar */}
           <DialogFooter className="mt-8">
             <Button
-              onClick={() => {
-                if (horaSelecionada) {
-                  setAbrirModal(false);
-                  setAgendamentoConfirmado(true);
+              onClick={async () => {
+                if (!horaSelecionada || !diaSelecionado) return;
+
+                // 🔹 Exemplo: recupera usuário logado
+                const {
+                  data: { user },
+                } = await createClient().auth.getUser();
+                if (!user) {
+                  alert("É necessário estar logado para agendar.");
+                  return;
                 }
+
+                // 🔹 Insere agendamento no banco
+                const { error } = await createClient()
+                  .from("agendamentos")
+                  .insert([
+                    {
+                      paciente_id: user.id,
+                      profissional_id: profissional.id,
+                      data: diaSelecionado,
+                      hora: horaSelecionada,
+                    },
+                  ]);
+
+                if (error) {
+                  console.error("Erro ao salvar agendamento:", error);
+                  alert("Erro ao confirmar agendamento.");
+                  return;
+                }
+
+                // Se deu certo, fecha modal e abre sucesso
+                setAbrirModal(false);
+                setAgendamentoConfirmado(true);
               }}
               disabled={!horaSelecionada}
               className="w-full rounded-lg bg-azul-escuro text-white hover:bg-azul-medio disabled:opacity-50 disabled:cursor-not-allowed"
