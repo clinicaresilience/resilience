@@ -55,6 +55,7 @@ export default function PortalPublico() {
                 Nome completo
               </Label>
               <Input
+                required
                 id="nome"
                 type="text"
                 placeholder="Digite seu nome"
@@ -70,6 +71,7 @@ export default function PortalPublico() {
                 E-mail
               </Label>
               <Input
+                required
                 id="email"
                 type="email"
                 placeholder="seuemail@exemplo.com"
@@ -85,6 +87,7 @@ export default function PortalPublico() {
                 Telefone
               </Label>
               <Input
+                required
                 id="telefone"
                 type="tel"
                 placeholder="(00) 00000-0000"
@@ -112,10 +115,11 @@ export default function PortalPublico() {
                   <SelectItem value="dermatologista">Dermatologista</SelectItem>
                 </SelectContent>
               </Select>
+              {/* Campo hidden para validar required */}
+              <input type="hidden" value={tipoProfissional} required />
             </div>
 
             {/* Profissional */}
-
             <div className="grid gap-1.5">
               <Label className="text-sm text-gray-700">Profissional</Label>
               <Select
@@ -133,6 +137,8 @@ export default function PortalPublico() {
                   ))}
                 </SelectContent>
               </Select>
+              {/* Campo hidden para validar required */}
+              <input type="hidden" value={profissional} required />
             </div>
 
             {/* Data */}
@@ -141,6 +147,7 @@ export default function PortalPublico() {
                 Data do agendamento
               </Label>
               <Input
+                required
                 id="data"
                 type="date"
                 value={data}
@@ -155,6 +162,7 @@ export default function PortalPublico() {
                 Horário
               </Label>
               <Input
+                required
                 id="hora"
                 type="time"
                 value={hora}
