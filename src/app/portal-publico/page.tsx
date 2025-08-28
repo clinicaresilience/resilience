@@ -1,58 +1,108 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/server";
-import { LogoutButton } from "@/components/logout-button";
+"use client";
 
-export default async function PortalPublico() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-  if (!user) redirect("/auth/login");
-
-  // buscar dados do usuário
-  const { data: usuario, error } = await supabase
-    .from("usuarios")
-    .select("tipo_usuario, nome")
-    .eq("id", user.id)
-    .single();
-
-  if (error || !usuario) {
-    redirect("/auth/login");
-  }
-
-  // 🔑 se for admin, encaminha pro painel administrativo
-  if (usuario.tipo_usuario === "administrador") {
-    redirect("/painel-administrativo");
-  }
+export default function PortalPublico() {
+  const [nome, setNome] = useState("");
+  const [profissional, setProfissional] = useState("");
+  const [data, setData] = useState("");
+  const [hora, setHora] = useState("");
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6">
-      <h1 className="text-3xl font-bold text-azul-escuro-secundario">
-        Portal Público
-      </h1>
-      <p className="mt-4 text-lg">
-        Bem-vindo, <span className="font-semibold">{usuario.nome}</span>!
-      </p>
+    <div className="flex items-center justify-center min-h-screen bg-white p-6">
+      <Card className="w-full max-w-lg border border-gray-200 shadow-sm rounded-xl">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-[var(--color-azul-escuro-secundario)]">
+            Agendamento
+          </CardTitle>
+        </CardHeader>
 
-      <div className="mt-6 p-4 bg-gray-100 rounded-lg shadow w-full max-w-md">
-        <h2 className="text-xl font-semibold">Suas informações</h2>
-        <ul className="mt-2 text-gray-700 space-y-1">
-          <li>
-            <b>ID:</b> {user.id}
-          </li>
-          <li>
-            <b>Email:</b> {user.email}
-          </li>
-          <li>
-            <b>Tipo de usuário:</b> {usuario.tipo_usuario}
-          </li>
-        </ul>
-      </div>
+        <CardContent className="text-black">
+          <form className="flex flex-col gap-4">
+            {/* Nome */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="nome" className="text-sm text-gray-700">
+                Informe seu nome
+              </Label>
+              <Input
+                id="nome"
+                type="text"
+                placeholder="Digite seu nome"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                className="border-gray-300 focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]"
+              />
+            </div>
 
-      <div className="mt-6">
-        <LogoutButton />
-      </div>
+            {/* Profissional */}
+            <div className="grid gap-1.5 ">
+              <Label htmlFor="profissional" className="text-sm text-gray-700">
+                Selecione um profissional
+              </Label>
+              <Select onValueChange={setProfissional}>
+                <SelectTrigger className="border-gray-300 bg-white focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]">
+                  <SelectValue placeholder="Selecione um profissional" />
+                </SelectTrigger>
+                <SelectContent className="bg-white text-black border-gray-300">
+                  <SelectItem value="dr-joao">
+                    Dr. João (Clínico Geral)
+                  </SelectItem>
+                  <SelectItem value="dra-maria">
+                    Dra. Maria (Dermatologista)
+                  </SelectItem>
+                  <SelectItem value="dr-carlos">
+                    Dr. Carlos (Cardiologista)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Data */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="data" className="text-sm text-gray-700">
+                Data
+              </Label>
+              <Input
+                id="data"
+                type="date"
+                value={data}
+                onChange={(e) => setData(e.target.value)}
+                className="border-gray-300 focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]"
+              />
+            </div>
+
+            {/* Hora */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="hora" className="text-sm text-gray-700">
+                Horário
+              </Label>
+              <Input
+                id="hora"
+                type="time"
+                value={hora}
+                onChange={(e) => setHora(e.target.value)}
+                className="border-gray-300 focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]"
+              />
+            </div>
+
+            {/* Botão */}
+            <Button className="mt-4 w-full bg-[var(--color-azul-escuro)] hover:bg-[var(--color-azul-medio)] text-white font-medium rounded-lg">
+              Agendar
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

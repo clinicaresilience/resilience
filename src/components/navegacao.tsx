@@ -5,6 +5,7 @@ import Image from "next/image";
 import Cabecalho from "./ui/cabecalho";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Button } from "./ui/button";
 
 export default function Navegacao() {
   const pathname = usePathname();
@@ -58,16 +59,23 @@ export default function Navegacao() {
         </ul>
 
         {/* Ações (Login) */}
-
-        <button
-          className={`${estiloBotao} ${
-            isLoginPage ? "invisible" : "visible"
-          } bg-azul-escuro text-white flex`}
-        >
-          <Link href="/auth/login" className="w-full text-center">
-            Login
-          </Link>
-        </button>
+        <div className=" items-center flex gap-3">
+          <Button
+            className={`${estiloBotao} ${
+              isLoginPage ? "invisible" : "visible"
+            } bg-azul-escuro text-white flex`}
+          >
+            <Link href="/auth/login" className="w-full text-center">
+              Login
+            </Link>
+          </Button>
+          <span className="w-px h-7 bg-azul-escuro-secundario"></span>
+          <Button className={`${estiloBotao} w-fit text-azul-escuro-secundario border-azul-escuro-secundario border`}>
+            <Link href="/portal-publico" className="w-full text-center">
+              Agendamento
+            </Link>
+          </Button>
+        </div>
       </nav>
     </Cabecalho>
   );
