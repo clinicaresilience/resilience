@@ -60,7 +60,7 @@ export function LoginForm({
         router.push(
           usuario.tipo_usuario === "administrador"
             ? "/painel-administrativo"
-            : "/portal-publico"
+            : "/tela-usuario"
         );
       }, 1200);
     } catch (err) {

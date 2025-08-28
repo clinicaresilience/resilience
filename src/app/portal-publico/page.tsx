@@ -1,183 +1,99 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import Image, { StaticImageData } from "next/image";
+import IconeProfissional from "../assets/icones/logo.png";
+import { useRouter } from "next/navigation";
+
+type Profissional = {
+  id: string;
+  nome: string;
+  especialidade: string;
+  crp: string;
+  descricao: string;
+  foto: StaticImageData;
+};
 
 export default function PortalPublico() {
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [tipoProfissional, setTipoProfissional] = useState("");
-  const [profissional, setProfissional] = useState("");
-  const [data, setData] = useState("");
-  const [hora, setHora] = useState("");
+  const router = useRouter();
 
-  // Mock: profissionais por tipo
-  const profissionaisPorTipo: Record<string, { id: string; nome: string }[]> = {
-    psicologo: [
-      { id: "ana", nome: "Dra. Ana (Psicóloga)" },
-      { id: "marcos", nome: "Dr. Marcos (Psicólogo)" },
-    ],
-    cardiologista: [
-      { id: "carlos", nome: "Dr. Carlos (Cardiologista)" },
-      { id: "helena", nome: "Dra. Helena (Cardiologista)" },
-    ],
-    dermatologista: [{ id: "maria", nome: "Dra. Maria (Dermatologista)" }],
-  };
+  const profissionais: Profissional[] = [
+    {
+      id: "ana",
+      nome: "Dra. Ana Souza",
+      especialidade: "Psicóloga Clínica",
+      crp: "CRP 12/34567",
+      descricao:
+        "Atendimento individual e em grupo, com foco em terapia cognitivo-comportamental.",
+      foto: IconeProfissional,
+    },
+    {
+      id: "marcos",
+      nome: "Dr. Marcos Lima",
+      especialidade: "Psicólogo Infantil",
+      crp: "CRP 98/76543",
+      descricao:
+        "Especialista em psicologia infantil, lida com dificuldades de aprendizado e comportamento.",
+      foto: IconeProfissional,
+    },
+    {
+      id: "joana",
+      nome: "Dra. Joana Pereira",
+      especialidade: "Psicóloga Organizacional",
+      crp: "CRP 45/11223",
+      descricao:
+        "Atuação voltada para saúde mental no trabalho e desenvolvimento de equipes.",
+      foto: IconeProfissional,
+    },
+  ];
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-white p-6">
-      <Card className="w-full max-w-lg border border-gray-200 shadow-sm rounded-xl">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-[var(--color-azul-escuro-secundario)]">
-            Agendamento
-          </CardTitle>
-          <p className="text-sm text-gray-500 mt-1">
-            Preencha os dados abaixo para realizar seu agendamento
-          </p>
-        </CardHeader>
+    <div className="flex flex-col items-center min-h-screen bg-gray-50 p-6">
+      <h1 className="text-3xl font-bold text-azul-escuro mb-10">
+        Nossos Psicólogos
+      </h1>
 
-        <CardContent className="text-black">
-          <form className="flex flex-col gap-4">
-            {/* Nome */}
-            <div className="grid gap-1.5">
-              <Label htmlFor="nome" className="text-sm text-gray-700">
-                Nome completo
-              </Label>
-              <Input
-                required
-                id="nome"
-                type="text"
-                placeholder="Digite seu nome"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                className="border-gray-300 focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]"
+      {/* Grid de profissionais */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 w-full max-w-6xl">
+        {profissionais.map((prof) => (
+          <Card
+            key={prof.id}
+            className="border border-gray-200 shadow-md hover:shadow-lg transition-shadow bg-white rounded-2xl flex flex-col items-center text-center p-6"
+          >
+            {/* Foto do profissional */}
+            <div className="w-40 h-40 -mt-14 mb-4 rounded-full overflow-hidden border-4 border-azul-escuro shadow-sm bg-gray-100">
+              <Image
+                src={prof.foto}
+                alt={`Foto de ${prof.nome}`}
+                width={160}
+                height={160}
+                className="object-cover w-full h-full"
               />
             </div>
 
-            {/* Email */}
-            <div className="grid gap-1.5">
-              <Label htmlFor="email" className="text-sm text-gray-700">
-                E-mail
-              </Label>
-              <Input
-                required
-                id="email"
-                type="email"
-                placeholder="seuemail@exemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="border-gray-300 focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]"
-              />
-            </div>
+            <CardHeader className="p-0 w-full">
+              <CardTitle className="text-xl font-semibold text-gray-800">
+                {prof.nome}
+              </CardTitle>
+              <p className="text-sm text-azul-escuro">{prof.especialidade}</p>
+              <p className="text-xs text-gray-500">{prof.crp}</p>
+            </CardHeader>
 
-            {/* Telefone */}
-            <div className="grid gap-1.5">
-              <Label htmlFor="telefone" className="text-sm text-gray-700">
-                Telefone
-              </Label>
-              <Input
-                required
-                id="telefone"
-                type="tel"
-                placeholder="(00) 00000-0000"
-                value={telefone}
-                onChange={(e) => setTelefone(e.target.value)}
-                className="border-gray-300 focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]"
-              />
-            </div>
-
-            {/* Tipo de profissional */}
-            <div className="grid gap-1.5">
-              <Label className="text-sm text-gray-700">Área de atuação</Label>
-              <Select
-                onValueChange={(value) => {
-                  setTipoProfissional(value);
-                  setProfissional("");
-                }}
+            <CardContent className="p-0 mt-4">
+              <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+                {prof.descricao}
+              </p>
+              <Button
+                className="w-full bg-azul-escuro text-white font-medium rounded-lg hover:bg-azul-medio transition-colors"
+                onClick={() => router.push(`/portal-publico/${prof.id}`)}
               >
-                <SelectTrigger className="border-gray-300 bg-white focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]">
-                  <SelectValue placeholder="Selecione o tipo de profissional" />
-                </SelectTrigger>
-                <SelectContent className="bg-white text-black border-gray-300">
-                  <SelectItem value="psicologo">Psicólogo</SelectItem>
-                  <SelectItem value="cardiologista">Cardiologista</SelectItem>
-                  <SelectItem value="dermatologista">Dermatologista</SelectItem>
-                </SelectContent>
-              </Select>
-              {/* Campo hidden para validar required */}
-              <input type="hidden" value={tipoProfissional} required />
-            </div>
-
-            {/* Profissional */}
-            <div className="grid gap-1.5">
-              <Label className="text-sm text-gray-700">Profissional</Label>
-              <Select
-                disabled={!tipoProfissional}
-                onValueChange={setProfissional}
-              >
-                <SelectTrigger className="border-gray-300 bg-white focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]">
-                  <SelectValue placeholder="Selecione um profissional" />
-                </SelectTrigger>
-                <SelectContent className="bg-white text-black border-gray-300">
-                  {profissionaisPorTipo[tipoProfissional]?.map((prof) => (
-                    <SelectItem key={prof.id} value={prof.id}>
-                      {prof.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {/* Campo hidden para validar required */}
-              <input type="hidden" value={profissional} required />
-            </div>
-
-            {/* Data */}
-            <div className="grid gap-1.5">
-              <Label htmlFor="data" className="text-sm text-gray-700">
-                Data do agendamento
-              </Label>
-              <Input
-                required
-                id="data"
-                type="date"
-                value={data}
-                onChange={(e) => setData(e.target.value)}
-                className="border-gray-300 focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]"
-              />
-            </div>
-
-            {/* Hora */}
-            <div className="grid gap-1.5">
-              <Label htmlFor="hora" className="text-sm text-gray-700">
-                Horário
-              </Label>
-              <Input
-                required
-                id="hora"
-                type="time"
-                value={hora}
-                onChange={(e) => setHora(e.target.value)}
-                className="border-gray-300 focus:border-[var(--color-azul-medio)] focus:ring-[var(--color-azul-medio)]"
-              />
-            </div>
-
-            {/* Botão */}
-            <Button className="mt-4 w-full bg-[var(--color-azul-escuro)] hover:bg-[var(--color-azul-medio)] text-white font-medium rounded-lg">
-              Agendar
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+                Ver Agenda
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

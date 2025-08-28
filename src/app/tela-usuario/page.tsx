@@ -29,7 +29,7 @@ export default async function PortalPublico() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6">
       <h1 className="text-3xl font-bold text-azul-escuro-secundario">
-        Portal Público
+        Area do usuario
       </h1>
       <p className="mt-4 text-lg">
         Bem-vindo, <span className="font-semibold">{usuario.nome}</span>!
