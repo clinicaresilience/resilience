@@ -4,6 +4,9 @@ import { LogoutButton } from "@/components/logout-button";
 import { CadastrarProfissionalDialog } from "@/components/admin/cadastrar-profissional-dialog";
 import { ProfissionaisList } from "@/components/admin/profissionais-list";
 import { AdminDashboard } from "@/components/admin/dashboard";
+import { MedicalRecordsSection } from "@/components/admin/medical-records-section";
+import { SchedulesSection } from "@/components/admin/schedules-section";
+import { ProfessionalAnalytics } from "@/components/admin/professional-analytics";
 
 export default async function PainelAdministrativo() {
   const supabase = await createClient();
@@ -42,6 +45,21 @@ export default async function PainelAdministrativo() {
         {/* Dashboard - estatísticas por profissional (mock) */}
         <div className="mt-8">
           <AdminDashboard />
+        </div>
+
+        {/* Seção de Prontuários Médicos */}
+        <div className="mt-8">
+          <MedicalRecordsSection />
+        </div>
+
+        {/* Seção de Agendas e Horários */}
+        <div className="mt-8">
+          <SchedulesSection />
+        </div>
+
+        {/* Análises Detalhadas por Profissional */}
+        <div className="mt-8">
+          <ProfessionalAnalytics />
         </div>
 
         {/* Lista de profissionais cadastrados (mock/localStorage) */}
