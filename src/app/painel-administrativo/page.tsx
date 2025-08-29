@@ -23,36 +23,22 @@ export default async function PainelAdministrativo() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6">
-      <h1 className="text-3xl font-bold text-azul-escuro-secundario">
-        Painel Administrativo
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-fundo-escuro text-white">
+      <h1 className="text-3xl font-bold text-azul-escuro">
+        Painel Administrativo {user.email}
       </h1>
-      <p className="mt-4 text-lg">
-        Bem-vindo, <span className="font-semibold">{usuario.nome}</span>!
+      <p className="mt-4 text-lg text-black">
+        Bem-vindo,{" "}
+        <span className="font-semibold text-azul-claro">{usuario.nome}</span>!
       </p>
 
-      <div className="mt-6 p-4 bg-gray-100 rounded-lg shadow w-full max-w-md">
-        <h2 className="text-xl font-semibold">Suas informações</h2>
-        <ul className="mt-2 text-gray-700 space-y-1">
-          <li>
-            <b>ID:</b> {user.id}
-          </li>
-          <li>
-            <b>Email:</b> {user.email}
-          </li>
-          <li>
-            <b>Tipo de usuário:</b> {usuario.tipo_usuario}
-          </li>
-        </ul>
-      </div>
-      
-      {/* Lista de profissionais cadastrados (mock/localStorage) */}
       <div className="mt-8 w-full max-w-2xl">
         <ProfissionaisList />
       </div>
- 
+
       <div className="mt-6 flex gap-3">
         <CadastrarProfissionalDialog />
+
         <LogoutButton />
       </div>
     </div>
