@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "./styles/globals.css";
-import Navegacao from "@/components/navegacao";
+import ConditionalNavigation from "@/components/conditional-navigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,10 +36,8 @@ export default function RootLayout({
       <body
         className={`!bg-azul-ciano-claro min-h-screen flex flex-col ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* Navegação fixa no topo em telas grandes, colapsável no mobile */}
-        <header className="w-full shadow-sm">
-          <Navegacao />
-        </header>
+        {/* Navegação condicional - mostra cabeçalho apropriado baseado na rota */}
+        <ConditionalNavigation />
 
         {/* Conteúdo centralizado, com padding para mobile */}
         <main className="flex-1 pt-24 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
