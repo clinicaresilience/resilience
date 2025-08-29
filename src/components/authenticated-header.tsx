@@ -126,6 +126,17 @@ export default function AuthenticatedHeader() {
                 <Users className="w-4 h-4" />
                 <span>Pacientes</span>
               </Link>
+              <Link 
+                href="/tela-profissional/prontuarios"
+                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname.startsWith("/tela-profissional/prontuarios") 
+                    ? "bg-azul-escuro text-white" 
+                    : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>Prontuários</span>
+              </Link>
             </nav>
           )}
 
@@ -252,6 +263,17 @@ export default function AuthenticatedHeader() {
               >
                 <Users className="w-4 h-4" />
                 <span>Pacientes</span>
+              </Link>
+              <Link 
+                href="/tela-profissional/prontuarios"
+                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
+                  pathname.startsWith("/tela-profissional/prontuarios") 
+                    ? "bg-azul-escuro text-white" 
+                    : "text-gray-600"
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>Prontuários</span>
               </Link>
             </div>
           )}

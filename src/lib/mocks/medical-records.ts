@@ -56,13 +56,48 @@ export function generateMockProntuarios(): ProntuarioMedico[] {
       profissionalId: "prof_001",
       profissionalNome: "Dra. Ana Paula",
       dataConsulta: dataPassadaAleatoria(30),
-      tipoConsulta: "Consulta Inicial",
+      tipoConsulta: "Consulta Inicial - Avaliação Psicológica",
       diagnostico: "Transtorno de Ansiedade Generalizada (F41.1)",
-      observacoes: "Paciente relata sintomas de ansiedade há 6 meses. Iniciou após mudança de emprego. Apresenta preocupações excessivas, tensão muscular e dificuldade para dormir.",
+      observacoes: `ANAMNESE:
+Paciente do sexo feminino, 38 anos, casada, administradora, procurou atendimento devido a sintomas de ansiedade que se intensificaram nos últimos 6 meses.
+
+QUEIXA PRINCIPAL:
+"Estou muito ansiosa, não consigo parar de me preocupar com tudo"
+
+HISTÓRIA DA DOENÇA ATUAL:
+Relata que os sintomas iniciaram após mudança de emprego em janeiro/2024. Apresenta:
+- Preocupações excessivas com trabalho e família
+- Tensão muscular (principalmente pescoço e ombros)
+- Dificuldade para adormecer (demora 1-2h)
+- Irritabilidade
+- Fadiga
+- Dificuldade de concentração
+
+HISTÓRIA PESSOAL:
+- Sem histórico psiquiátrico anterior
+- Nega uso de substâncias
+- Pratica exercícios 2x/semana (caminhada)
+- Alimentação regular
+
+HISTÓRIA FAMILIAR:
+- Mãe com histórico de depressão
+- Pai hipertenso
+
+EXAME MENTAL:
+- Apresentação: adequada, bem cuidada
+- Humor: ansioso
+- Afeto: congruente
+- Pensamento: curso acelerado, conteúdo com preocupações
+- Sensopercepção: sem alterações
+- Cognição: preservada
+- Crítica: presente`,
       prescricoes: [
-        "Técnicas de respiração diafragmática",
-        "Exercícios de relaxamento muscular progressivo",
-        "Diário de pensamentos automáticos"
+        "Técnicas de respiração diafragmática - praticar 3x ao dia, 10 minutos cada",
+        "Exercícios de relaxamento muscular progressivo - antes de dormir",
+        "Diário de pensamentos automáticos - registrar situações que geram ansiedade",
+        "Higiene do sono - deitar sempre no mesmo horário (22h)",
+        "Reduzir cafeína após 16h",
+        "Atividade física regular - manter caminhadas e incluir yoga/pilates"
       ],
       proximaConsulta: dataFuturaAleatoria(14),
       status: "ativo",
@@ -76,12 +111,37 @@ export function generateMockProntuarios(): ProntuarioMedico[] {
       profissionalId: "prof_001", 
       profissionalNome: "Dra. Ana Paula",
       dataConsulta: dataPassadaAleatoria(14),
-      tipoConsulta: "Consulta de Retorno",
-      observacoes: "Paciente demonstra melhora significativa nos sintomas de ansiedade. Relatou maior facilidade para dormir e redução das preocupações excessivas. Continuidade do tratamento recomendada.",
+      tipoConsulta: "Consulta de Retorno - 2ª Sessão",
+      observacoes: `EVOLUÇÃO:
+Paciente retorna após 2 semanas demonstrando melhora significativa nos sintomas de ansiedade.
+
+RELATO DA PACIENTE:
+- "Estou conseguindo dormir melhor"
+- "As técnicas de respiração estão ajudando muito"
+- "Ainda me preocupo, mas não é mais desesperador"
+
+OBSERVAÇÕES CLÍNICAS:
+- Maior facilidade para adormecer (redução para 30min)
+- Diminuição da tensão muscular
+- Humor mais estável
+- Aderência excelente às técnicas prescritas
+- Mantém diário de pensamentos automáticos
+
+AVALIAÇÃO:
+- Redução de 40% na intensidade dos sintomas ansiosos
+- Melhora na qualidade do sono
+- Maior consciência dos gatilhos de ansiedade
+
+PLANO:
+- Continuidade do tratamento
+- Introdução de técnicas de mindfulness
+- Manutenção das estratégias que estão funcionando`,
       prescricoes: [
-        "Manter técnicas de respiração",
-        "Introduzir técnicas de mindfulness",
-        "Atividade física regular - caminhada 30min/dia"
+        "Manter técnicas de respiração diafragmática",
+        "Introduzir técnicas de mindfulness - app Headspace ou Calm",
+        "Atividade física regular - caminhada 30min/dia, 5x/semana",
+        "Continuar diário de pensamentos - focar em reestruturação cognitiva",
+        "Técnica do 5-4-3-2-1 para momentos de ansiedade aguda"
       ],
       proximaConsulta: dataFuturaAleatoria(21),
       status: "ativo",
@@ -95,15 +155,56 @@ export function generateMockProntuarios(): ProntuarioMedico[] {
       profissionalId: "prof_002",
       profissionalNome: "Dr. Bruno Lima",
       dataConsulta: dataPassadaAleatoria(45),
-      tipoConsulta: "Avaliação Psiquiátrica",
+      tipoConsulta: "Avaliação Psiquiátrica Inicial",
       diagnostico: "Episódio Depressivo Moderado (F32.1)",
-      observacoes: "Paciente apresenta humor deprimido, perda de interesse em atividades prazerosas, fadiga e sentimentos de inutilidade há 3 meses. Histórico familiar de depressão.",
+      observacoes: `IDENTIFICAÇÃO:
+João Carlos Oliveira, 45 anos, engenheiro civil, divorciado, 2 filhos
+
+QUEIXA PRINCIPAL:
+"Não tenho mais vontade de fazer nada, me sinto um fracasso"
+
+HISTÓRIA DA DOENÇA ATUAL:
+Quadro iniciado há aproximadamente 3 meses, coincidindo com processo de divórcio. Apresenta:
+- Humor deprimido na maior parte do dia
+- Anedonia (perda de prazer em atividades antes prazerosas)
+- Fadiga e perda de energia
+- Sentimentos de inutilidade e culpa excessiva
+- Dificuldade de concentração no trabalho
+- Alterações do sono (despertar precoce às 4h)
+- Diminuição do apetite (perda de 5kg em 2 meses)
+- Ideação suicida passiva (sem planos específicos)
+
+ANTECEDENTES:
+- Episódio depressivo aos 25 anos (tratado com fluoxetina por 1 ano)
+- Nega uso de álcool ou drogas
+- Hipertensão arterial controlada
+
+HISTÓRIA FAMILIAR:
+- Pai com depressão (suicídio aos 60 anos)
+- Mãe com transtorno bipolar
+
+EXAME MENTAL:
+- Apresentação: descuidada, emagrecido
+- Humor: deprimido
+- Afeto: embotado
+- Psicomotricidade: lentificada
+- Pensamento: bradipsiquismo, conteúdo pessimista
+- Crítica: preservada
+
+ESCALAS:
+- PHQ-9: 18 pontos (depressão moderada-grave)
+- HAM-D: 22 pontos`,
       prescricoes: [
-        "Sertralina 50mg - 1x ao dia pela manhã",
-        "Acompanhamento psicológico semanal",
-        "Atividades de rotina estruturada"
+        "Sertralina 50mg - 1 comprimido pela manhã, em jejum",
+        "Reavaliação em 15 dias para ajuste de dose",
+        "Acompanhamento psicológico semanal (TCC)",
+        "Atividades de rotina estruturada - cronograma diário",
+        "Exercícios físicos leves - caminhada 20min/dia",
+        "Evitar álcool completamente",
+        "Suporte familiar - orientar filhos sobre o quadro",
+        "Retorno de urgência se piora da ideação suicida"
       ],
-      proximaConsulta: dataFuturaAleatoria(30),
+      proximaConsulta: dataFuturaAleatoria(15),
       status: "ativo",
       criadoEm: dataPassadaAleatoria(45),
       atualizadoEm: dataPassadaAleatoria(10)
