@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import { LogoutButton } from "@/components/logout-button";
+import { CadastrarProfissionalDialog } from "@/components/admin/cadastrar-profissional-dialog";
 
 export default async function PainelAdministrativo() {
   const supabase = await createClient();
@@ -44,7 +45,8 @@ export default async function PainelAdministrativo() {
         </ul>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex gap-3">
+        <CadastrarProfissionalDialog />
         <LogoutButton />
       </div>
     </div>
