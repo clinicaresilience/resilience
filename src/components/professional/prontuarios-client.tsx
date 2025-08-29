@@ -345,7 +345,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
       {/* Lista de Prontuários */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {prontuariosProfissional.map((prontuario) => (
-          <Card key={prontuario.id} className="hover:shadow-md transition-shadow">
+          <Card key={prontuario.id} className="hover:shadow-md transition-shadow flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">{prontuario.pacienteNome}</CardTitle>
@@ -353,8 +353,8 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
               </div>
               <CardDescription>{prontuario.tipoConsulta}</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="flex-1 flex flex-col">
+              <div className="space-y-3 flex-1">
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <Calendar className="h-4 w-4" />
                   <span>{formatarData(prontuario.dataConsulta)}</span>
@@ -363,14 +363,17 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                 {prontuario.diagnostico && (
                   <div className="p-2 bg-blue-50 rounded text-sm">
                     <p className="font-medium text-blue-800">Diagnóstico:</p>
-                    <p className="text-blue-700">{prontuario.diagnostico}</p>
+                    <p className="text-blue-700 line-clamp-2">{prontuario.diagnostico}</p>
                   </div>
                 )}
 
-                <div className="text-sm text-gray-600">
-                  <p className="line-clamp-3">{prontuario.observacoes}</p>
+                <div className="text-sm text-gray-600 flex-1">
+                  <p className="line-clamp-3">{prontuario.observacoes.substring(0, 150)}...</p>
                 </div>
+              </div>
 
+              {/* Botão sempre no footer */}
+              <div className="mt-4 pt-3 border-t">
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button 
