@@ -46,6 +46,27 @@ export function CadastrarProfissionalDialog() {
     // Simula operação de cadastro (mock)
     await new Promise((res) => setTimeout(res, 700))
 
+    // Persistir no localStorage (mock)
+    try {
+      const novo = {
+        id: `prof-${Date.now()}`,
+        nome,
+        email,
+        especialidade,
+        createdAt: new Date().toISOString(),
+      }
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem("mock_profissionais") : null
+      const lista = raw ? JSON.parse(raw) as any[] : []
+      lista.push(novo)
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("mock_profissionais", JSON.stringify(lista))
+        // Notifica outros componentes para recarregar
+        window.dispatchEvent(new CustomEvent("profissionais-updated"))
+      }
+    } catch {
+      // Em caso de erro de armazenamento, mantém fluxo de mock
+    }
+
     setSuccess("Profissional cadastrado com sucesso! (mock)")
     setLoading(false)
 

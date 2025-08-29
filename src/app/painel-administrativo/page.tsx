@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import { LogoutButton } from "@/components/logout-button";
 import { CadastrarProfissionalDialog } from "@/components/admin/cadastrar-profissional-dialog";
+import { ProfissionaisList } from "@/components/admin/profissionais-list";
 
 export default async function PainelAdministrativo() {
   const supabase = await createClient();
@@ -44,7 +45,12 @@ export default async function PainelAdministrativo() {
           </li>
         </ul>
       </div>
-
+      
+      {/* Lista de profissionais cadastrados (mock/localStorage) */}
+      <div className="mt-8 w-full max-w-2xl">
+        <ProfissionaisList />
+      </div>
+ 
       <div className="mt-6 flex gap-3">
         <CadastrarProfissionalDialog />
         <LogoutButton />
