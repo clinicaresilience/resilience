@@ -60,8 +60,10 @@ export function LoginForm({
         router.push(
           usuario.tipo_usuario === "administrador"
             ? "/painel-administrativo"
+            : usuario.tipo_usuario === "profissional"
+            ? "/tela-profissional"
             : "/tela-usuario"
-        );
+        )
       }, 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro inesperado");
