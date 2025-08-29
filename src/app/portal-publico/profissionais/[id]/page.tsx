@@ -1,21 +1,22 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { createClient } from "@/lib/client";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 import Image, { StaticImageData } from "next/image";
 import IconeProfissional from "@/app/assets/icones/logo.png";
-import { X, CheckCircle2 } from "lucide-react";
-import { createClient } from "@/lib/client";
+import { CheckCircle2 } from "lucide-react";
 
 type AgendaDia = {
   disponiveis: string[];
@@ -78,6 +79,36 @@ export default function PerfilProfissional() {
   const [abrirModal, setAbrirModal] = useState(false);
   const [agendamentoConfirmado, setAgendamentoConfirmado] = useState(false);
 
+  // Estado do usuário logado
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Modal de cadastro e payload pendente de agendamento
+  const [showCadastro, setShowCadastro] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<{ profissional_id: string; data: string; hora: string } | null>(null);
+
+  // Campos do cadastro
+  const [nome, setNome] = useState('');
+  const [dataNascimento, setDataNascimento] = useState('');
+  const [emailCad, setEmailCad] = useState('');
+  const [passwordCad, setPasswordCad] = useState('');
+  const [repeatPasswordCad, setRepeatPasswordCad] = useState('');
+
+  const [cadastroError, setCadastroError] = useState<string | null>(null);
+  const [cadastroLoading, setCadastroLoading] = useState(false);
+  const [signupCooldownUntil, setSignupCooldownUntil] = useState<number | null>(null);
+
+  // Buscar sessão atual no client para exibir "Agendando como"
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) {
+        setUserEmail(data.user.email ?? null);
+        setEmailCad(data.user.email ?? '');
+      }
+    });
+  }, []);
+
+
   //  Gera estrutura de calendário do mês atual
   const diasCalendario = useMemo(() => {
     const primeiroDiaMes = new Date(anoAtual, mesAtual, 1);
@@ -138,6 +169,11 @@ export default function PerfilProfissional() {
           Agenda de {hoje.toLocaleString("pt-BR", { month: "long" })} /{" "}
           {anoAtual}
         </h2>
+        {userEmail && (
+          <p className="text-sm text-gray-600 mb-2">
+            Agendando como: {userEmail}
+          </p>
+        )}
 
         {/* Cabeçalho dos dias da semana */}
         <div className="grid grid-cols-7 text-center mb-2 font-medium text-gray-600">
@@ -223,29 +259,34 @@ export default function PerfilProfissional() {
               onClick={async () => {
                 if (!horaSelecionada || !diaSelecionado) return;
 
-                // 🔹 Exemplo: recupera usuário logado
-                const {
-                  data: { user },
-                } = await createClient().auth.getUser();
-                if (!user) {
-                  alert("É necessário estar logado para agendar.");
-                  return;
-                }
+                const payload = {
+                  profissional_id: profissional.id,
+                  data: diaSelecionado,
+                  hora: horaSelecionada,
+                };
 
-                // 🔹 Insere agendamento no banco
-                const { error } = await createClient()
-                  .from("agendamentos")
-                  .insert([
-                    {
-                      paciente_id: user.id,
-                      profissional_id: profissional.id,
-                      data: diaSelecionado,
-                      hora: horaSelecionada,
-                    },
-                  ]);
+                try {
+                  const res = await fetch("/api/agendamentos", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                  });
 
-                if (error) {
-                  console.error("Erro ao salvar agendamento:", error);
+                  if (res.status === 401) {
+                    // Usuário não logado: abrir modal de cadastro e preservar payload
+                    setPendingPayload(payload);
+                    setShowCadastro(true);
+                    return;
+                  }
+
+                  if (!res.ok) {
+                    const msg = await res.text().catch(() => "");
+                    console.error("Erro ao salvar agendamento:", msg);
+                    alert("Erro ao confirmar agendamento.");
+                    return;
+                  }
+                } catch (e) {
+                  console.error("Erro de rede ao salvar agendamento:", e);
                   alert("Erro ao confirmar agendamento.");
                   return;
                 }
@@ -260,6 +301,176 @@ export default function PerfilProfissional() {
               Confirmar Agendamento
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de cadastro para agendar */}
+      <Dialog open={showCadastro} onOpenChange={setShowCadastro}>
+        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 sm:max-w-lg w-full rounded-2xl shadow-xl p-6 bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-azul-escuro">
+              Cadastre-se para confirmar o agendamento
+            </DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!pendingPayload) {
+                setCadastroError("Nenhum agendamento pendente.");
+                return;
+              }
+              if (passwordCad !== repeatPasswordCad) {
+                setCadastroError("As senhas não conferem.");
+                return;
+              }
+              // Cooldown para evitar 429 do Supabase
+              if (signupCooldownUntil && Date.now() < signupCooldownUntil) {
+                const secs = Math.ceil((signupCooldownUntil - Date.now()) / 1000);
+                setCadastroError(`Muitas tentativas. Aguarde ${secs}s e tente novamente.`);
+                return;
+              }
+              setCadastroLoading(true);
+              setCadastroError(null);
+              try {
+                const supabase = createClient();
+                // Tentar cadastrar
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                  email: emailCad,
+                  password: passwordCad,
+                });
+                if (signUpError) {
+                  // Rate limit
+                  const status = (signUpError as any)?.status;
+                  if (status === 429) {
+                    setCadastroError("Muitas tentativas. Aguarde alguns instantes e tente novamente.");
+                    setSignupCooldownUntil(Date.now() + 30_000);
+                    return;
+                  }
+                  // Se já existir ou outra falha, tentar login direto
+                  const { error: signInError } = await supabase.auth.signInWithPassword({
+                    email: emailCad,
+                    password: passwordCad,
+                  });
+                  if (signInError) {
+                    throw signUpError;
+                  }
+                } else {
+                  // Se o projeto exigir confirmação de email, a sessão pode ser nula
+                  if (!signUpData?.session) {
+                    // Tentar obter sessão com signIn (só funciona se o email não precisar de confirmação)
+                    await supabase.auth
+                      .signInWithPassword({
+                        email: emailCad,
+                        password: passwordCad,
+                      })
+                      .catch(() => {});
+                  }
+                }
+
+                // Garantir sessão
+                const { data: userData } = await supabase.auth.getUser();
+                const user = userData?.user;
+                if (!user) {
+                  throw new Error(
+                    "Não foi possível autenticar após cadastro. Caso seu projeto exija confirmação de email, confirme o link enviado e tente novamente."
+                  );
+                }
+
+                // Registrar/atualizar perfil na tabela 'usuarios'
+                try {
+                  const upsertPayload: Record<string, any> = {
+                    id: user.id,
+                    nome,
+                    email: emailCad,
+                    tipo_usuario: "paciente",
+                  };
+                  if (dataNascimento) {
+                    upsertPayload.data_nascimento = dataNascimento;
+                  }
+                  await supabase.from("usuarios").upsert([upsertPayload], { onConflict: "id" });
+                } catch (e) {
+                  console.warn("Falha ao registrar perfil em 'usuarios'", e);
+                }
+
+                // Reenviar o agendamento
+                const res = await fetch("/api/agendamentos", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(pendingPayload),
+                });
+
+                if (!res.ok) {
+                  const msg = await res.text().catch(() => "");
+                  throw new Error(msg || "Erro ao confirmar agendamento após cadastro.");
+                }
+
+                setShowCadastro(false);
+                setAbrirModal(false);
+                setAgendamentoConfirmado(true);
+              } catch (err: any) {
+                const msg = err?.message || "Erro ao realizar cadastro.";
+                setCadastroError(msg);
+              } finally {
+                setCadastroLoading(false);
+              }
+            }}
+          >
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="nome">Nome completo</Label>
+                <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="dataNascimento">Data de nascimento</Label>
+                <Input
+                  id="dataNascimento"
+                  type="date"
+                  value={dataNascimento}
+                  onChange={(e) => setDataNascimento(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="emailCad">Email</Label>
+                <Input
+                  id="emailCad"
+                  type="email"
+                  value={emailCad}
+                  onChange={(e) => setEmailCad(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="passwordCad">Senha</Label>
+                <Input
+                  id="passwordCad"
+                  type="password"
+                  value={passwordCad}
+                  onChange={(e) => setPasswordCad(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="repeatPasswordCad">Repetir senha</Label>
+                <Input
+                  id="repeatPasswordCad"
+                  type="password"
+                  value={repeatPasswordCad}
+                  onChange={(e) => setRepeatPasswordCad(e.target.value)}
+                  required
+                />
+              </div>
+              {cadastroError && <p className="text-sm text-red-500">{cadastroError}</p>}
+            </div>
+            <DialogFooter className="mt-6">
+              <Button
+                type="submit"
+                className="w-full bg-azul-escuro text-white hover:bg-azul-medio"
+                disabled={cadastroLoading}
+              >
+                {cadastroLoading ? "Cadastrando..." : "Cadastrar e confirmar agendamento"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -281,7 +492,7 @@ export default function PerfilProfissional() {
           <DialogFooter className="mt-6 w-full">
             <Button
               className="w-full bg-azul-escuro text-white hover:bg-azul-medio"
-              onClick={() => (window.location.href = "/tela-usuario")}
+              onClick={() => (window.location.href = "/tela-usuario/agendamentos")}
             >
               Ir para meus agendamentos
             </Button>

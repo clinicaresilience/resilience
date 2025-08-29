@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import { LogoutButton } from "@/components/logout-button";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default async function PortalPublico() {
   const supabase = await createClient();
@@ -50,7 +52,10 @@ export default async function PortalPublico() {
         </ul>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex gap-3">
+        <Button asChild>
+          <Link href="/tela-usuario/agendamentos">Ver meus agendamentos</Link>
+        </Button>
         <LogoutButton />
       </div>
     </div>
