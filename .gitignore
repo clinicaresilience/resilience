@@ -35,6 +35,10 @@ yarn-error.log*
 .env*
 .env*.local
 
+TODO.md
+/TODO.md
+./TODO.md
+
 # vercel
 .vercel
 
