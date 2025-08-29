@@ -3,6 +3,7 @@ import { createClient } from "@/lib/server";
 import { LogoutButton } from "@/components/logout-button";
 import { CadastrarProfissionalDialog } from "@/components/admin/cadastrar-profissional-dialog";
 import { ProfissionaisList } from "@/components/admin/profissionais-list";
+import { AdminDashboard } from "@/components/admin/dashboard";
 
 export default async function PainelAdministrativo() {
   const supabase = await createClient();
@@ -23,23 +24,30 @@ export default async function PainelAdministrativo() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-fundo-escuro text-white">
-      <h1 className="text-3xl font-bold text-azul-escuro">
-        Painel Administrativo {user.email}
-      </h1>
-      <p className="mt-4 text-lg text-black">
-        Bem-vindo,{" "}
-        <span className="font-semibold text-azul-claro">{usuario.nome}</span>!
-      </p>
+    <div className="min-h-screen w-full bg-gray-50">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-azul-escuro">Painel Administrativo</h1>
+            <p className="mt-1 text-gray-600">
+              Bem-vindo, <span className="font-semibold">{usuario.nome}</span> ({user.email})
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <CadastrarProfissionalDialog />
+            <LogoutButton />
+          </div>
+        </div>
 
-      <div className="mt-8 w-full max-w-2xl">
-        <ProfissionaisList />
-      </div>
+        {/* Dashboard - estatísticas por profissional (mock) */}
+        <div className="mt-8">
+          <AdminDashboard />
+        </div>
 
-      <div className="mt-6 flex gap-3">
-        <CadastrarProfissionalDialog />
-
-        <LogoutButton />
+        {/* Lista de profissionais cadastrados (mock/localStorage) */}
+        <div className="mt-8">
+          <ProfissionaisList />
+        </div>
       </div>
     </div>
   );
