@@ -42,23 +42,23 @@ export default async function AgendamentosPage() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50 pt-16">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
-        <div className="mb-6">
+      <div className="w-full px-4 sm:px-6 lg:px-12 xl:px-16 py-8">
+        <div className="mb-4">
           <BackButton href="/tela-usuario" texto="Voltar para Área do Paciente" />
         </div>
         
-        <div className="flex flex-col items-center">
-          <h1 className="text-3xl font-bold text-azul-escuro-secundario">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-azul-escuro-secundario text-center">
             Meus agendamentos
           </h1>
-          <p className="mt-4 text-lg">
+          <p className="mt-2 text-lg text-center">
             Bem-vindo, <span className="font-semibold">{usuario.nome}</span>! Aqui
             você pode acompanhar seus agendamentos.
           </p>
+        </div>
 
-          <div className="mt-6 w-full">
-            <AgendamentosList userId={user.id} initialAgendamentos={initialAgendamentos} />
-          </div>
+        <div className="w-full">
+          <AgendamentosList userId={user.id} initialAgendamentos={initialAgendamentos} />
         </div>
       </div>
     </div>
