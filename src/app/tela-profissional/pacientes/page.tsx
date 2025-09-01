@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
+import { BackButton } from "@/components/ui/back-button";
 import { ProfessionalPacientesClient } from "@/components/professional/pacientes-client";
 
 export default async function PacientesProfissionalPage() {
@@ -33,6 +34,10 @@ export default async function PacientesProfissionalPage() {
   return (
     <div className="min-h-screen w-full bg-gray-50 pt-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
+        <div className="mb-6">
+          <BackButton href="/tela-profissional" texto="Voltar para Área do Profissional" />
+        </div>
+        
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-azul-escuro">
             Meus Pacientes

@@ -5,7 +5,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { createClient } from "@/lib/client"
 import { LogoutButton } from "@/components/logout-button"
-import { User, Settings, Home, Users, Calendar, FileText, BarChart3, Clock, Stethoscope } from "lucide-react"
+import { BackButton } from "@/components/ui/back-button"
+import { User, Settings, Home, Users, Calendar, FileText, BarChart3, Clock, Stethoscope, ArrowLeft } from "lucide-react"
 
 type Usuario = {
   nome: string

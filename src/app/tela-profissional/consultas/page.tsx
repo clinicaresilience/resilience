@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import { ProfessionalConsultasClient } from "@/components/professional/consultas-client";
+import { BackButton } from "@/components/ui/back-button";
 
 export default async function ConsultasProfissionalPage() {
   const supabase = await createClient();
@@ -33,6 +34,10 @@ export default async function ConsultasProfissionalPage() {
   return (
     <div className="min-h-screen w-full bg-gray-50 pt-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
+        <div className="mb-6">
+          <BackButton href="/tela-profissional" texto="Voltar para Área do Profissional" />
+        </div>
+        
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-azul-escuro">
             Minhas Consultas
