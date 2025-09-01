@@ -79,15 +79,13 @@ export default function PerfilProfissional() {
   const [horaSelecionada, setHoraSelecionada] = useState<string | null>(null);
   const [abrirModal, setAbrirModal] = useState(false);
   const [agendamentoConfirmado, setAgendamentoConfirmado] = useState(false);
-  const [companyCode, setCompanyCode] = useState<string>("");
-
   // Estado do usuário logado
   const { user } = useAuth();
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   // Modal de cadastro e payload pendente de agendamento
   const [showCadastro, setShowCadastro] = useState(false);
-  const [pendingPayload, setPendingPayload] = useState<{ profissional_id: string; data: string; hora: string; companyCode?: string } | null>(null);
+  const [pendingPayload, setPendingPayload] = useState<{ profissional_id: string; data: string; hora: string } | null>(null);
 
   // Campos do cadastro
   const [nome, setNome] = useState('');
@@ -219,7 +217,7 @@ export default function PerfilProfissional() {
 
       {/* Modal de horários */}
       <Dialog open={abrirModal} onOpenChange={setAbrirModal}>
-        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 sm:max-w-lg w-full rounded-2xl shadow-xl p-6 bg-white">
+        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] sm:max-w-lg max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl p-6 bg-white">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold text-azul-escuro">
               Horários em {diaSelecionado?.split("-").reverse().join("/")}
@@ -255,20 +253,6 @@ export default function PerfilProfissional() {
             </div>
           )}
 
-          {/* Código da empresa parceira (obrigatório para agendar) */}
-          <div className="mt-6 grid gap-2">
-            <Label htmlFor="companyCode">Código da empresa</Label>
-            <Input
-              id="companyCode"
-              placeholder="Ex.: ACME123"
-              value={companyCode}
-              onChange={(e) => setCompanyCode(e.target.value)}
-            />
-            <p className="text-xs text-gray-500">
-              Informe o código da sua empresa parceira para validar o agendamento.
-            </p>
-          </div>
-
           {/* Botão confirmar */}
           <DialogFooter className="mt-8">
             <Button
@@ -279,7 +263,6 @@ export default function PerfilProfissional() {
                   profissional_id: profissional.id,
                   data: diaSelecionado,
                   hora: horaSelecionada,
-                  companyCode: companyCode?.trim(),
                 };
 
                 try {
@@ -312,7 +295,7 @@ export default function PerfilProfissional() {
                 setAbrirModal(false);
                 setAgendamentoConfirmado(true);
               }}
-              disabled={!horaSelecionada || !companyCode.trim()}
+              disabled={!horaSelecionada}
               className="w-full rounded-lg bg-azul-escuro text-white hover:bg-azul-medio disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Confirmar Agendamento
@@ -323,7 +306,7 @@ export default function PerfilProfissional() {
 
       {/* Modal de cadastro para agendar */}
       <Dialog open={showCadastro} onOpenChange={setShowCadastro}>
-        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 sm:max-w-lg w-full rounded-2xl shadow-xl p-6 bg-white">
+        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] sm:max-w-lg max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl p-6 bg-white">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold text-azul-escuro">
               Cadastre-se para confirmar o agendamento
@@ -414,10 +397,7 @@ export default function PerfilProfissional() {
                 const res = await fetch("/api/agendamentos", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    ...pendingPayload,
-                    companyCode: pendingPayload?.companyCode ?? companyCode?.trim(),
-                  }),
+                  body: JSON.stringify(pendingPayload),
                 });
 
                 if (!res.ok) {
@@ -436,59 +416,103 @@ export default function PerfilProfissional() {
               }
             }}
           >
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="nome">Nome completo</Label>
-                <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
+            {/* Modal refeito — super minimalista e distribuído */}
+            <div className="space-y-4">
+              {/* Contexto extremamente discreto no topo */}
+              <div className="text-[11px] text-gray-500 text-center">
+                {profissional.nome} • {diaSelecionado ? diaSelecionado.split("-").reverse().join("/") : "-"} • {horaSelecionada || "-"}
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="dataNascimento">Data de nascimento</Label>
-                <Input
-                  id="dataNascimento"
-                  type="date"
-                  value={dataNascimento}
-                  onChange={(e) => setDataNascimento(e.target.value)}
-                />
+
+              {/* Form em uma coluna: apenas o essencial */}
+              <div className="space-y-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="emailCad" className="text-sm text-gray-700">Email</Label>
+                  <Input
+                    id="emailCad"
+                    type="email"
+                    value={emailCad}
+                    onChange={(e) => setEmailCad(e.target.value)}
+                    placeholder="seuemail@exemplo.com"
+                    className="h-10"
+                    required
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="passwordCad" className="text-sm text-gray-700">Senha</Label>
+                    <Input
+                      id="passwordCad"
+                      type="password"
+                      value={passwordCad}
+                      onChange={(e) => setPasswordCad(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="h-10"
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="repeatPasswordCad" className="text-sm text-gray-700">Repetir senha</Label>
+                    <Input
+                      id="repeatPasswordCad"
+                      type="password"
+                      value={repeatPasswordCad}
+                      onChange={(e) => setRepeatPasswordCad(e.target.value)}
+                      placeholder="Repita a senha"
+                      className="h-10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {cadastroError && (
+                  <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
+                    {cadastroError}
+                  </p>
+                )}
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="emailCad">Email</Label>
-                <Input
-                  id="emailCad"
-                  type="email"
-                  value={emailCad}
-                  onChange={(e) => setEmailCad(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="passwordCad">Senha</Label>
-                <Input
-                  id="passwordCad"
-                  type="password"
-                  value={passwordCad}
-                  onChange={(e) => setPasswordCad(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="repeatPasswordCad">Repetir senha</Label>
-                <Input
-                  id="repeatPasswordCad"
-                  type="password"
-                  value={repeatPasswordCad}
-                  onChange={(e) => setRepeatPasswordCad(e.target.value)}
-                  required
-                />
-              </div>
-              {cadastroError && <p className="text-sm text-red-500">{cadastroError}</p>}
             </div>
-            <DialogFooter className="mt-6">
+
+            {/* Ações: dois botões grandes, distribuídos lado a lado em telas médias */}
+            <DialogFooter className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 sm:flex-1"
+                onClick={() => {
+                  try {
+                    const storagePayload = pendingPayload ?? (
+                      diaSelecionado && horaSelecionada
+                        ? { profissional_id: profissional.id, data: diaSelecionado, hora: horaSelecionada }
+                        : null
+                    )
+                    if (storagePayload) {
+                      const dataStr = diaSelecionado ?? storagePayload.data
+                      const horaStr = horaSelecionada ?? storagePayload.hora
+                      window.localStorage.setItem(
+                        "resilience_pending_appointment",
+                        JSON.stringify({
+                          ...storagePayload,
+                          profissional_nome: profissional.nome,
+                          data: dataStr,
+                          hora: horaStr,
+                        })
+                      )
+                    }
+                  } catch {}
+                  setShowCadastro(false);
+                  window.location.href = "/auth/login";
+                }}
+              >
+                Já tenho cadastro
+              </Button>
+
               <Button
                 type="submit"
-                className="w-full bg-azul-escuro text-white hover:bg-azul-medio"
+                className="h-10 sm:flex-1 bg-gray-800 text-white hover:bg-gray-900"
                 disabled={cadastroLoading}
               >
-                {cadastroLoading ? "Cadastrando..." : "Cadastrar e confirmar agendamento"}
+                {cadastroLoading ? "Cadastrando..." : "Criar conta e continuar"}
               </Button>
             </DialogFooter>
           </form>

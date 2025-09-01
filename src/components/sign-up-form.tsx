@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Eye, EyeOff, Mail, Lock, UserPlus } from 'lucide-react'
+import Link from 'next/link'
 
 export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const [email, setEmail] = useState('')
@@ -185,6 +186,19 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
               )}
             </Button>
           </form>
+          
+          {/* Link para login */}
+          <div className="text-center mt-6 pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-600">
+              Já possui cadastro?{" "}
+              <Link 
+                href="/auth/login" 
+                className="text-green-600 hover:text-green-800 font-medium underline transition-colors"
+              >
+                Faça login para realizar agendamento
+              </Link>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 type Props = {
   userId?: string
@@ -79,6 +80,12 @@ export default function AgendamentosList({ userId, initialAgendamentos }: Props)
   const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(seed)
   const [busca, setBusca] = useState("")
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>("todos")
+  const [cancelamentoModal, setCancelamentoModal] = useState<{ isOpen: boolean; agendamentoId: string | null }>({
+    isOpen: false,
+    agendamentoId: null
+  })
+  const [justificativaCancelamento, setJustificativaCancelamento] = useState("")
+  const [loadingCancelamento, setLoadingCancelamento] = useState(false)
 
   const agora = Date.now()
 
@@ -106,32 +113,57 @@ export default function AgendamentosList({ userId, initialAgendamentos }: Props)
     return a.status !== "cancelado" && a.status !== "concluido" && !ehPassado
   }
 
-  async function onCancelar(id: string) {
-    // Tenta cancelar via API quando a lista veio do backend
-    if (initialAgendamentos && initialAgendamentos.length) {
-      try {
-        const res = await fetch(`/api/agendamentos/${id}`, { method: "PATCH" })
+  function abrirModalCancelamento(id: string) {
+    setCancelamentoModal({ isOpen: true, agendamentoId: id })
+    setJustificativaCancelamento("")
+  }
+
+  function fecharModalCancelamento() {
+    setCancelamentoModal({ isOpen: false, agendamentoId: null })
+    setJustificativaCancelamento("")
+    setLoadingCancelamento(false)
+  }
+
+  async function confirmarCancelamento() {
+    if (!cancelamentoModal.agendamentoId || !justificativaCancelamento.trim()) {
+      return
+    }
+
+    setLoadingCancelamento(true)
+
+    try {
+      // Tenta cancelar via API quando a lista veio do backend
+      if (initialAgendamentos && initialAgendamentos.length) {
+        const res = await fetch(`/api/agendamentos/${cancelamentoModal.agendamentoId}`, { 
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ justificativa: justificativaCancelamento })
+        })
         if (!res.ok) {
           console.error("Falha ao cancelar (API):", await res.text().catch(() => ""))
         }
-      } catch (e) {
-        console.error("Erro de rede ao cancelar (API):", e)
       }
-    }
-    // Atualização otimista/local
-    setAgendamentos((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              status: "cancelado",
-              notas: a.notas
-                ? `${a.notas} | Cancelado pelo paciente.`
-                : "Cancelado pelo paciente.",
-            }
-          : a
+
+      // Atualização otimista/local
+      setAgendamentos((prev) =>
+        prev.map((a) =>
+          a.id === cancelamentoModal.agendamentoId
+            ? {
+                ...a,
+                status: "cancelado",
+                notas: a.notas
+                  ? `${a.notas} | Cancelado pelo paciente. Motivo: ${justificativaCancelamento}`
+                  : `Cancelado pelo paciente. Motivo: ${justificativaCancelamento}`,
+              }
+            : a
+        )
       )
-    )
+
+      fecharModalCancelamento()
+    } catch (e) {
+      console.error("Erro de rede ao cancelar (API):", e)
+      setLoadingCancelamento(false)
+    }
   }
 
   return (
@@ -288,12 +320,12 @@ export default function AgendamentosList({ userId, initialAgendamentos }: Props)
                       </Button>
                       <Button
                         variant="destructive"
-                        onClick={() => onCancelar(a.id)}
+                        onClick={() => abrirModalCancelamento(a.id)}
                         disabled={!podeCancelar(a)}
                         title={
                           !podeCancelar(a)
                             ? "Não é possível cancelar (expirado, concluído ou já cancelado)"
-                            : "Cancelar este agendamento (mock)"
+                            : "Cancelar este agendamento"
                         }
                       >
                         Cancelar
@@ -307,12 +339,12 @@ export default function AgendamentosList({ userId, initialAgendamentos }: Props)
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => onCancelar(a.id)}
+                  onClick={() => abrirModalCancelamento(a.id)}
                   disabled={!podeCancelar(a)}
                   title={
                     !podeCancelar(a)
                       ? "Não é possível cancelar (expirado, concluído ou já cancelado)"
-                      : "Cancelar este agendamento (mock)"
+                      : "Cancelar este agendamento"
                   }
                 >
                   Cancelar
@@ -322,6 +354,61 @@ export default function AgendamentosList({ userId, initialAgendamentos }: Props)
           )
         })}
       </div>
+
+      {/* Modal de Justificativa de Cancelamento */}
+      <Dialog open={cancelamentoModal.isOpen} onOpenChange={fecharModalCancelamento}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancelar Agendamento</DialogTitle>
+            <DialogDescription>
+              Para cancelar este agendamento, é necessário informar o motivo do cancelamento.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="justificativa">Motivo do cancelamento *</Label>
+              <Textarea
+                id="justificativa"
+                placeholder="Ex: Conflito de horário, problema de saúde, etc."
+                value={justificativaCancelamento}
+                onChange={(e) => setJustificativaCancelamento(e.target.value)}
+                className="min-h-[100px] mt-2"
+                disabled={loadingCancelamento}
+              />
+              {justificativaCancelamento.trim().length === 0 && (
+                <p className="text-sm text-red-600 mt-1">
+                  A justificativa é obrigatória para cancelar o agendamento.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooterUI className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={fecharModalCancelamento}
+              disabled={loadingCancelamento}
+            >
+              Voltar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmarCancelamento}
+              disabled={!justificativaCancelamento.trim() || loadingCancelamento}
+            >
+              {loadingCancelamento ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Cancelando...
+                </div>
+              ) : (
+                "Confirmar Cancelamento"
+              )}
+            </Button>
+          </DialogFooterUI>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

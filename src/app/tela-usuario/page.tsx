@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, User, Clock, FileText, Heart, Phone } from "lucide-react";
+import PendingAppointmentResumer from "@/components/user/pending-appointment-resumer";
 
 export default async function TelaUsuario() {
   const supabase = await createClient();
@@ -31,6 +32,7 @@ export default async function TelaUsuario() {
 
   return (
     <>
+      <PendingAppointmentResumer />
       {/* Cabeçalho da Página */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-azul-escuro-secundario">

@@ -149,6 +149,16 @@ export function LoginForm({
                 "Entrar"
               )}
             </Button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => router.push(ROUTES.auth.forgot)}
+                className="text-sm text-azul-vivido hover:text-roxo transition-colors duration-200 font-medium"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
           </form>
         </CardContent>
       </Card>

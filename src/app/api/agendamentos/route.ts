@@ -57,19 +57,11 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}))
-    const { profissional_id, data, hora, notas, companyCode } = body || {}
+    const { profissional_id, data, hora, notas } = body || {}
 
     if (!profissional_id || !data || !hora) {
       return NextResponse.json(
         { error: "Campos obrigatórios ausentes", required: ["profissional_id", "data", "hora"] },
-        { status: 400 }
-      )
-    }
-
-    // Validação de empresa parceira (código obrigatório)
-    if (!companyCode || !isValidCompanyCodeServer(companyCode)) {
-      return NextResponse.json(
-        { error: "Código de empresa inválido ou ausente" },
         { status: 400 }
       )
     }
