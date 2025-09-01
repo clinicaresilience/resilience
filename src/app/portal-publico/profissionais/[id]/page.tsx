@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import Image, { StaticImageData } from "next/image";
 import IconeProfissional from "@/app/assets/icones/logo.png";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, UserPlus, Mail, Lock, Eye, EyeOff, Calendar, Clock } from "lucide-react";
 
 type AgendaDia = {
   disponiveis: string[];
@@ -97,6 +97,9 @@ export default function PerfilProfissional() {
   const [cadastroError, setCadastroError] = useState<string | null>(null);
   const [cadastroLoading, setCadastroLoading] = useState(false);
   const [signupCooldownUntil, setSignupCooldownUntil] = useState<number | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRepeatPassword, setShowRepeatPassword] = useState(false);
+  const [cadastroSuccess, setCadastroSuccess] = useState(false);
 
   // Atualiza e-mail do usuário logado via AuthContext
   useEffect(() => {
@@ -304,218 +307,331 @@ export default function PerfilProfissional() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de cadastro para agendar */}
+      {/* Modal de cadastro para agendar - REDESENHADO */}
       <Dialog open={showCadastro} onOpenChange={setShowCadastro}>
-        <DialogContent className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] sm:max-w-lg max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl p-6 bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-azul-escuro">
-              Cadastre-se para confirmar o agendamento
-            </DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (!pendingPayload) {
-                setCadastroError("Nenhum agendamento pendente.");
-                return;
-              }
-              if (passwordCad !== repeatPasswordCad) {
-                setCadastroError("As senhas não conferem.");
-                return;
-              }
-              // Cooldown para evitar 429 do Supabase
-              if (signupCooldownUntil && Date.now() < signupCooldownUntil) {
-                const secs = Math.ceil((signupCooldownUntil - Date.now()) / 1000);
-                setCadastroError(`Muitas tentativas. Aguarde ${secs}s e tente novamente.`);
-                return;
-              }
-              setCadastroLoading(true);
-              setCadastroError(null);
-              try {
-                const supabase = createClient();
-                // Tentar cadastrar
-                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                  email: emailCad,
-                  password: passwordCad,
-                });
-                if (signUpError) {
-                  // Rate limit
-                  const status = (signUpError as any)?.status;
-                  if (status === 429) {
-                    setCadastroError("Muitas tentativas. Aguarde alguns instantes e tente novamente.");
-                    setSignupCooldownUntil(Date.now() + 30_000);
-                    return;
-                  }
-                  // Se já existir ou outra falha, tentar login direto
-                  const { error: signInError } = await supabase.auth.signInWithPassword({
+        <DialogContent className="w-[90vw] sm:max-w-lg max-w-lg max-h-[90vh] overflow-hidden rounded-2xl shadow-xl p-0 bg-white border-0">
+          {/* Header com gradiente - mais minimalista */}
+          <div className="bg-gradient-to-r from-azul-escuro to-azul-medio text-white p-5 text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <UserPlus className="w-5 h-5" />
+              <DialogTitle className="text-lg font-semibold text-white">
+                Finalizar Agendamento
+              </DialogTitle>
+            </div>
+            
+            {/* Contexto do agendamento - mais compacto */}
+            <div className="mt-3 bg-white/10 rounded-md p-2 backdrop-blur-sm">
+              <div className="flex items-center justify-center gap-3 text-xs">
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  <span>{diaSelecionado ? diaSelecionado.split("-").reverse().join("/") : "-"}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  <span>{horaSelecionada || "-"}</span>
+                </div>
+              </div>
+              <p className="text-xs mt-1 opacity-75">{profissional.nome}</p>
+            </div>
+          </div>
+
+          {/* Formulário */}
+          <div className="p-5">
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!pendingPayload) {
+                  setCadastroError("Nenhum agendamento pendente.");
+                  return;
+                }
+                if (passwordCad !== repeatPasswordCad) {
+                  setCadastroError("As senhas não conferem.");
+                  return;
+                }
+                if (passwordCad.length < 6) {
+                  setCadastroError("A senha deve ter pelo menos 6 caracteres.");
+                  return;
+                }
+                // Cooldown para evitar 429 do Supabase
+                if (signupCooldownUntil && Date.now() < signupCooldownUntil) {
+                  const secs = Math.ceil((signupCooldownUntil - Date.now()) / 1000);
+                  setCadastroError(`Muitas tentativas. Aguarde ${secs}s e tente novamente.`);
+                  return;
+                }
+                setCadastroLoading(true);
+                setCadastroError(null);
+                setCadastroSuccess(false);
+                
+                try {
+                  const supabase = createClient();
+                  // Tentar cadastrar
+                  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                     email: emailCad,
                     password: passwordCad,
                   });
-                  if (signInError) {
-                    throw signUpError;
+                  if (signUpError) {
+                    // Rate limit
+                    const status = (signUpError as any)?.status;
+                    if (status === 429) {
+                      setCadastroError("Muitas tentativas. Aguarde alguns instantes e tente novamente.");
+                      setSignupCooldownUntil(Date.now() + 30_000);
+                      return;
+                    }
+                    // Se já existir ou outra falha, tentar login direto
+                    const { error: signInError } = await supabase.auth.signInWithPassword({
+                      email: emailCad,
+                      password: passwordCad,
+                    });
+                    if (signInError) {
+                      throw signUpError;
+                    }
+                  } else {
+                    // Se o projeto exigir confirmação de email, a sessão pode ser nula
+                    if (!signUpData?.session) {
+                      // Tentar obter sessão com signIn (só funciona se o email não precisar de confirmação)
+                      await supabase.auth
+                        .signInWithPassword({
+                          email: emailCad,
+                          password: passwordCad,
+                        })
+                        .catch(() => {});
+                    }
                   }
-                } else {
-                  // Se o projeto exigir confirmação de email, a sessão pode ser nula
-                  if (!signUpData?.session) {
-                    // Tentar obter sessão com signIn (só funciona se o email não precisar de confirmação)
-                    await supabase.auth
-                      .signInWithPassword({
-                        email: emailCad,
-                        password: passwordCad,
-                      })
-                      .catch(() => {});
+
+                  // Garantir sessão
+                  const { data: userData } = await supabase.auth.getUser();
+                  const user = userData?.user;
+                  if (!user) {
+                    throw new Error(
+                      "Não foi possível autenticar após cadastro. Caso seu projeto exija confirmação de email, confirme o link enviado e tente novamente."
+                    );
+                  }
+
+                  // Registrar/atualizar perfil na tabela 'usuarios'
+                  try {
+                    const upsertPayload: Record<string, any> = {
+                      id: user.id,
+                      nome,
+                      email: emailCad,
+                      tipo_usuario: "paciente",
+                    };
+                    if (dataNascimento) {
+                      upsertPayload.data_nascimento = dataNascimento;
+                    }
+                    // Persistência omitida no mock:
+                    // (supabase as any).from("usuarios").upsert?.([upsertPayload], { onConflict: "id" });
+                  } catch (e) {
+                    console.warn("Falha ao registrar perfil em 'usuarios'", e);
+                  }
+
+                  setCadastroSuccess(true);
+                  
+                  // Aguardar um pouco para mostrar o sucesso
+                  setTimeout(async () => {
+                    try {
+                      // Reenviar o agendamento
+                      const res = await fetch("/api/agendamentos", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(pendingPayload),
+                      });
+
+                      if (!res.ok) {
+                        const msg = await res.text().catch(() => "");
+                        throw new Error(msg || "Erro ao confirmar agendamento após cadastro.");
+                      }
+
+                      setShowCadastro(false);
+                      setAbrirModal(false);
+                      setAgendamentoConfirmado(true);
+                    } catch (err: any) {
+                      setCadastroSuccess(false);
+                      const msg = err?.message || "Erro ao confirmar agendamento.";
+                      setCadastroError(msg);
+                    }
+                  }, 1500);
+                  
+                } catch (err: any) {
+                  const msg = err?.message || "Erro ao realizar cadastro.";
+                  setCadastroError(msg);
+                } finally {
+                  if (!cadastroSuccess) {
+                    setCadastroLoading(false);
                   }
                 }
-
-                // Garantir sessão
-                const { data: userData } = await supabase.auth.getUser();
-                const user = userData?.user;
-                if (!user) {
-                  throw new Error(
-                    "Não foi possível autenticar após cadastro. Caso seu projeto exija confirmação de email, confirme o link enviado e tente novamente."
-                  );
-                }
-
-                // Registrar/atualizar perfil na tabela 'usuarios'
-                try {
-                  const upsertPayload: Record<string, any> = {
-                    id: user.id,
-                    nome,
-                    email: emailCad,
-                    tipo_usuario: "paciente",
-                  };
-                  if (dataNascimento) {
-                    upsertPayload.data_nascimento = dataNascimento;
-                  }
-                  // Persistência omitida no mock:
-                  // (supabase as any).from("usuarios").upsert?.([upsertPayload], { onConflict: "id" });
-                } catch (e) {
-                  console.warn("Falha ao registrar perfil em 'usuarios'", e);
-                }
-
-                // Reenviar o agendamento
-                const res = await fetch("/api/agendamentos", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(pendingPayload),
-                });
-
-                if (!res.ok) {
-                  const msg = await res.text().catch(() => "");
-                  throw new Error(msg || "Erro ao confirmar agendamento após cadastro.");
-                }
-
-                setShowCadastro(false);
-                setAbrirModal(false);
-                setAgendamentoConfirmado(true);
-              } catch (err: any) {
-                const msg = err?.message || "Erro ao realizar cadastro.";
-                setCadastroError(msg);
-              } finally {
-                setCadastroLoading(false);
-              }
-            }}
-          >
-            {/* Modal refeito — super minimalista e distribuído */}
-            <div className="space-y-4">
-              {/* Contexto extremamente discreto no topo */}
-              <div className="text-[11px] text-gray-500 text-center">
-                {profissional.nome} • {diaSelecionado ? diaSelecionado.split("-").reverse().join("/") : "-"} • {horaSelecionada || "-"}
+              }}
+              className="space-y-6"
+            >
+              {/* Campo Nome */}
+              <div className="space-y-2">
+                <Label htmlFor="nome" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <UserPlus className="w-4 h-4" />
+                  Nome Completo
+                </Label>
+                <Input
+                  id="nome"
+                  type="text"
+                  placeholder="Seu nome completo"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  disabled={cadastroLoading || cadastroSuccess}
+                  className="h-12 border-2 border-gray-200 rounded-lg focus:border-azul-escuro focus:ring-2 focus:ring-azul-escuro/20 transition-all duration-200"
+                  required
+                />
               </div>
 
-              {/* Form em uma coluna: apenas o essencial */}
-              <div className="space-y-3">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="emailCad" className="text-sm text-gray-700">Email</Label>
-                  <Input
-                    id="emailCad"
-                    type="email"
-                    value={emailCad}
-                    onChange={(e) => setEmailCad(e.target.value)}
-                    placeholder="seuemail@exemplo.com"
-                    className="h-10"
-                    required
-                  />
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="passwordCad" className="text-sm text-gray-700">Senha</Label>
+              {/* Campo Email */}
+              <div className="space-y-2">
+                <Label htmlFor="emailCad" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  E-mail
+                </Label>
+                <Input
+                  id="emailCad"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={emailCad}
+                  onChange={(e) => setEmailCad(e.target.value)}
+                  disabled={cadastroLoading || cadastroSuccess}
+                  className="h-12 border-2 border-gray-200 rounded-lg focus:border-azul-escuro focus:ring-2 focus:ring-azul-escuro/20 transition-all duration-200"
+                  required
+                />
+              </div>
+              
+              {/* Campos de Senha */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="passwordCad" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Lock className="w-4 h-4" />
+                    Senha
+                  </Label>
+                  <div className="relative">
                     <Input
                       id="passwordCad"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Mínimo 6 caracteres"
                       value={passwordCad}
                       onChange={(e) => setPasswordCad(e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
-                      className="h-10"
+                      disabled={cadastroLoading || cadastroSuccess}
+                      className="h-12 border-2 border-gray-200 rounded-lg focus:border-azul-escuro focus:ring-2 focus:ring-azul-escuro/20 transition-all duration-200 pr-12"
                       required
                     />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="repeatPasswordCad" className="text-sm text-gray-700">Repetir senha</Label>
-                    <Input
-                      id="repeatPasswordCad"
-                      type="password"
-                      value={repeatPasswordCad}
-                      onChange={(e) => setRepeatPasswordCad(e.target.value)}
-                      placeholder="Repita a senha"
-                      className="h-10"
-                      required
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      disabled={cadastroLoading || cadastroSuccess}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                   </div>
                 </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="repeatPasswordCad" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Lock className="w-4 h-4" />
+                    Confirmar Senha
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="repeatPasswordCad"
+                      type={showRepeatPassword ? "text" : "password"}
+                      placeholder="Digite a senha novamente"
+                      value={repeatPasswordCad}
+                      onChange={(e) => setRepeatPasswordCad(e.target.value)}
+                      disabled={cadastroLoading || cadastroSuccess}
+                      className="h-12 border-2 border-gray-200 rounded-lg focus:border-azul-escuro focus:ring-2 focus:ring-azul-escuro/20 transition-all duration-200 pr-12"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRepeatPassword(!showRepeatPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      disabled={cadastroLoading || cadastroSuccess}
+                    >
+                      {showRepeatPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-                {cadastroError && (
-                  <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
+              {/* Feedback de erro */}
+              {cadastroError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                     {cadastroError}
                   </p>
-                )}
-              </div>
-            </div>
+                </div>
+              )}
+              
+              {/* Feedback de sucesso */}
+              {cadastroSuccess && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-600 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Conta criada com sucesso! Confirmando agendamento...
+                  </p>
+                </div>
+              )}
 
-            {/* Ações: dois botões grandes, distribuídos lado a lado em telas médias */}
-            <DialogFooter className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 sm:flex-1"
-                onClick={() => {
-                  try {
-                    const storagePayload = pendingPayload ?? (
-                      diaSelecionado && horaSelecionada
-                        ? { profissional_id: profissional.id, data: diaSelecionado, hora: horaSelecionada }
-                        : null
-                    )
-                    if (storagePayload) {
-                      const dataStr = diaSelecionado ?? storagePayload.data
-                      const horaStr = horaSelecionada ?? storagePayload.hora
-                      window.localStorage.setItem(
-                        "resilience_pending_appointment",
-                        JSON.stringify({
-                          ...storagePayload,
-                          profissional_nome: profissional.nome,
-                          data: dataStr,
-                          hora: horaStr,
-                        })
+              {/* Botões */}
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 sm:flex-1 border-2 border-azul-escuro text-azul-escuro hover:bg-azul-escuro hover:text-white transition-all duration-200"
+                  disabled={cadastroLoading || cadastroSuccess}
+                  onClick={() => {
+                    try {
+                      const storagePayload = pendingPayload ?? (
+                        diaSelecionado && horaSelecionada
+                          ? { profissional_id: profissional.id, data: diaSelecionado, hora: horaSelecionada }
+                          : null
                       )
-                    }
-                  } catch {}
-                  setShowCadastro(false);
-                  window.location.href = "/auth/login";
-                }}
-              >
-                Já tenho cadastro
-              </Button>
+                      if (storagePayload) {
+                        const dataStr = diaSelecionado ?? storagePayload.data
+                        const horaStr = horaSelecionada ?? storagePayload.hora
+                        window.localStorage.setItem(
+                          "resilience_pending_appointment",
+                          JSON.stringify({
+                            ...storagePayload,
+                            profissional_nome: profissional.nome,
+                            data: dataStr,
+                            hora: horaStr,
+                          })
+                        )
+                      }
+                    } catch {}
+                    setShowCadastro(false);
+                    window.location.href = "/auth/login";
+                  }}
+                >
+                  Já tenho cadastro
+                </Button>
 
-              <Button
-                type="submit"
-                className="h-10 sm:flex-1 bg-gray-800 text-white hover:bg-gray-900"
-                disabled={cadastroLoading}
-              >
-                {cadastroLoading ? "Cadastrando..." : "Criar conta e continuar"}
-              </Button>
-            </DialogFooter>
-          </form>
+                <Button
+                  type="submit"
+                  disabled={cadastroLoading || cadastroSuccess}
+                  className="h-12 sm:flex-1 text-white font-semibold rounded-lg bg-gradient-to-r from-azul-escuro to-azul-medio hover:from-azul-medio hover:to-azul-vivido hover:shadow-lg transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none transition-all duration-200"
+                >
+                  {cadastroLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Criando conta...
+                    </div>
+                  ) : cadastroSuccess ? (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Conta criada!
+                    </div>
+                  ) : (
+                    "Criar conta e agendar"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
 
