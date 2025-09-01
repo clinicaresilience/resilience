@@ -83,6 +83,25 @@ export function createMockClient() {
         return { data: { user }, error: null }
       },
 
+      signUp: async ({
+        email,
+        password,
+        options,
+      }: {
+        email: string
+        password: string
+        options?: any
+      }): Promise<{ data?: any; error?: any }> => {
+        // Simula criação de conta - em um sistema real, salvaria no banco
+        // Por enquanto, apenas simula sucesso
+        console.log("Mock signUp:", { email, password, options })
+        
+        // Simula um pequeno delay
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        return { data: { user: null }, error: null }
+      },
+
       getUser: async (): Promise<AuthResult> => {
         const user = readCookie()
         if (!user) return { data: { user: null }, error: null }

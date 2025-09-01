@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { LogoutButton } from "@/components/logout-button"
 import { CadastrarProfissionalDialog } from "@/components/admin/cadastrar-profissional-dialog"
 import { ProfissionaisList } from "@/components/admin/profissionais-list"
 import { AdminDashboard } from "@/components/admin/dashboard"
@@ -92,7 +91,6 @@ export function PainelAdministrativoClient({ usuario, userEmail }: PainelAdminis
           </div>
           <div className="flex gap-2">
             <CadastrarProfissionalDialog />
-            <LogoutButton />
           </div>
         </div>
 
