@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server"
 import { createClient as createSupabaseServerClient } from "@/lib/server"
 import { mapDbToUi, composeISODateTime } from "@/types/agendamento"
+import { isValidCompanyCodeServer } from "@/lib/mocks/companies"
 
 // GET /api/agendamentos
 // Retorna os agendamentos do usuário logado
@@ -16,7 +17,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("agendamentos")
       .select("*")
       .eq("paciente_id", user.id)
@@ -30,7 +31,7 @@ export async function GET() {
 
     const ui = (data ?? []).map(mapDbToUi)
     // ordenar por data/hora (próximos primeiro)
-    ui.sort((a, b) => +new Date(a.dataISO) - +new Date(b.dataISO))
+    ui.sort((a: any, b: any) => +new Date(a.dataISO) - +new Date(b.dataISO))
 
     return NextResponse.json({ data: ui }, { status: 200 })
   } catch (e: any) {
@@ -56,11 +57,19 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}))
-    const { profissional_id, data, hora, notas } = body || {}
+    const { profissional_id, data, hora, notas, companyCode } = body || {}
 
     if (!profissional_id || !data || !hora) {
       return NextResponse.json(
         { error: "Campos obrigatórios ausentes", required: ["profissional_id", "data", "hora"] },
+        { status: 400 }
+      )
+    }
+
+    // Validação de empresa parceira (código obrigatório)
+    if (!companyCode || !isValidCompanyCodeServer(companyCode)) {
+      return NextResponse.json(
+        { error: "Código de empresa inválido ou ausente" },
         { status: 400 }
       )
     }
@@ -75,7 +84,7 @@ export async function POST(req: NextRequest) {
       insertPayload.notas = notas
     }
 
-    const { data: inserted, error } = await supabase
+    const { data: inserted, error } = await (supabase as any)
       .from("agendamentos")
       .insert([insertPayload])
       .select("*")

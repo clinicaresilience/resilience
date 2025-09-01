@@ -5,6 +5,8 @@ export type AuthUser = {
   email: string;
   nome: string;
   tipo_usuario: Role;
+  mustChangePassword?: boolean;
+  active?: boolean;
 };
 
 export type Usuario = AuthUser;

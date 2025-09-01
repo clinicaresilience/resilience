@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/client'
+import { ROUTES } from '@/config/routes'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -30,8 +31,18 @@ export function UpdatePasswordForm({ className, ...props }: React.ComponentProps
     try {
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push('/protected')
+
+      // Após atualizar a senha, redireciona conforme o tipo de usuário
+      const { data: { user } } = await supabase.auth.getUser()
+      const role = user?.user_metadata?.tipo_usuario ?? user?.app_metadata?.role ?? 'usuario'
+      const dest =
+        role === 'administrador'
+          ? ROUTES.admin.root
+          : role === 'profissional'
+          ? ROUTES.professional.root
+          : ROUTES.user.root
+
+      router.push(dest)
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {

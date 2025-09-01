@@ -79,6 +79,7 @@ export default function PerfilProfissional() {
   const [horaSelecionada, setHoraSelecionada] = useState<string | null>(null);
   const [abrirModal, setAbrirModal] = useState(false);
   const [agendamentoConfirmado, setAgendamentoConfirmado] = useState(false);
+  const [companyCode, setCompanyCode] = useState<string>("");
 
   // Estado do usuário logado
   const { user } = useAuth();
@@ -86,7 +87,7 @@ export default function PerfilProfissional() {
 
   // Modal de cadastro e payload pendente de agendamento
   const [showCadastro, setShowCadastro] = useState(false);
-  const [pendingPayload, setPendingPayload] = useState<{ profissional_id: string; data: string; hora: string } | null>(null);
+  const [pendingPayload, setPendingPayload] = useState<{ profissional_id: string; data: string; hora: string; companyCode?: string } | null>(null);
 
   // Campos do cadastro
   const [nome, setNome] = useState('');
@@ -254,6 +255,20 @@ export default function PerfilProfissional() {
             </div>
           )}
 
+          {/* Código da empresa parceira (obrigatório para agendar) */}
+          <div className="mt-6 grid gap-2">
+            <Label htmlFor="companyCode">Código da empresa</Label>
+            <Input
+              id="companyCode"
+              placeholder="Ex.: ACME123"
+              value={companyCode}
+              onChange={(e) => setCompanyCode(e.target.value)}
+            />
+            <p className="text-xs text-gray-500">
+              Informe o código da sua empresa parceira para validar o agendamento.
+            </p>
+          </div>
+
           {/* Botão confirmar */}
           <DialogFooter className="mt-8">
             <Button
@@ -264,6 +279,7 @@ export default function PerfilProfissional() {
                   profissional_id: profissional.id,
                   data: diaSelecionado,
                   hora: horaSelecionada,
+                  companyCode: companyCode?.trim(),
                 };
 
                 try {
@@ -296,7 +312,7 @@ export default function PerfilProfissional() {
                 setAbrirModal(false);
                 setAgendamentoConfirmado(true);
               }}
-              disabled={!horaSelecionada}
+              disabled={!horaSelecionada || !companyCode.trim()}
               className="w-full rounded-lg bg-azul-escuro text-white hover:bg-azul-medio disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Confirmar Agendamento
@@ -398,7 +414,10 @@ export default function PerfilProfissional() {
                 const res = await fetch("/api/agendamentos", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(pendingPayload),
+                  body: JSON.stringify({
+                    ...pendingPayload,
+                    companyCode: pendingPayload?.companyCode ?? companyCode?.trim(),
+                  }),
                 });
 
                 if (!res.ok) {

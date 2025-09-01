@@ -1,4 +1,5 @@
 import { cookies } from "next/headers"
+import type { DbAgendamento } from "@/types/agendamento"
 
 type SupabaseLikeUser = {
   id: string
@@ -9,6 +10,8 @@ type SupabaseLikeUser = {
   user_metadata?: {
     nome?: string
     tipo_usuario?: string
+    mustChangePassword?: boolean
+    active?: boolean
   }
 }
 
@@ -17,6 +20,14 @@ type AuthResult =
   | { data: { user: null }, error: { message: string } }
 
 const COOKIE_NAME = "mock_session"
+
+const MEM = {
+  agendamentos: [] as DbAgendamento[],
+}
+
+function uid(prefix = "ag"): string {
+  return `${prefix}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-4)}`
+}
 
 async function readCookie(): Promise<SupabaseLikeUser | null> {
   // Server-side read from cookie store
@@ -42,21 +53,68 @@ export function createMockServerClient() {
     },
 
     from: (table: string) => ({
-      select: (_cols?: string) => ({
-        eq: (col: string, value: string) => ({
+      // Minimal emulation to satisfy typed calls in routes
+      select: (_cols?: string) => {
+        // usuarios: only supports eq(...).single()
+        if (table === "usuarios") {
+          return {
+            eq: (col: string, value: string) => ({
+              single: async (): Promise<{ data: any; error: any }> => {
+                if (col !== "id") {
+                  return { data: null, error: { message: "Filtro não suportado" } }
+                }
+                const user = await readCookie()
+                if (!user || user.id !== value) {
+                  return { data: null, error: { message: "Not found" } }
+                }
+                return {
+                  data: {
+                    tipo_usuario: user.user_metadata?.tipo_usuario ?? user.app_metadata?.role ?? "usuario",
+                    nome: user.user_metadata?.nome ?? "Usuário",
+                  },
+                  error: null,
+                }
+              },
+            }),
+          } as any
+        }
+
+        // agendamentos: supports eq(...): Promise<{ data, error }>
+        if (table === "agendamentos") {
+          return {
+            eq: async (col: string, value: string) => {
+              if (col === "paciente_id") {
+                const data = MEM.agendamentos.filter(a => a.paciente_id === value)
+                return { data, error: null }
+              }
+              return { data: [] as DbAgendamento[], error: null }
+            },
+          } as any
+        }
+
+        // default unsupported
+        return {
+          eq: async () => ({ data: null, error: { message: "Tabela não suportada no mock" } }),
+        } as any
+      },
+
+      // insert([row]).select("*").single()
+      insert: (rows: any[]) => ({
+        select: (_cols?: string) => ({
           single: async (): Promise<{ data: any; error: any }> => {
-            if (table === "usuarios" && col === "id") {
-              const user = await readCookie()
-              if (!user || user.id !== value) {
-                return { data: null, error: { message: "Not found" } }
+            if (table === "agendamentos") {
+              const row = rows?.[0] ?? {}
+              const inserted: DbAgendamento = {
+                id: uid(),
+                paciente_id: row.paciente_id,
+                profissional_id: row.profissional_id,
+                data: row.data,
+                hora: row.hora,
+                status: row.status ?? null,
+                notas: row.notas ?? null,
               }
-              return {
-                data: {
-                  tipo_usuario: user.user_metadata?.tipo_usuario ?? user.app_metadata?.role ?? "usuario",
-                  nome: user.user_metadata?.nome ?? "Usuário",
-                },
-                error: null,
-              }
+              MEM.agendamentos.push(inserted)
+              return { data: inserted, error: null }
             }
             return { data: null, error: { message: "Tabela não suportada no mock" } }
           },

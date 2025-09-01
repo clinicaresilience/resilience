@@ -38,6 +38,13 @@ export function LoginForm({
       const res = await signIn(email, senha);
       if (res.error) throw new Error(res.error);
       setSuccess(true);
+
+      // Se o admin criou a conta e marcou para trocar senha no primeiro acesso
+      if (res.user?.mustChangePassword) {
+        router.push(ROUTES.auth.updatePassword);
+        return;
+      }
+
       const role = res.user?.tipo_usuario;
       setTimeout(() => {
         const dest =

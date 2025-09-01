@@ -7,16 +7,19 @@ import { AdminDashboard } from "@/components/admin/dashboard"
 import { MedicalRecordsSection } from "@/components/admin/medical-records-section"
 import { SchedulesSection } from "@/components/admin/schedules-section"
 import { ProfessionalAnalytics } from "@/components/admin/professional-analytics"
+import { UsersManagement } from "@/components/admin/users-management"
+import { CompaniesManagement } from "@/components/admin/companies-management"
 import { 
   BarChart3, 
   FileText, 
   Calendar, 
   TrendingUp, 
   Users,
-  Home
+  Home,
+  Building2
 } from "lucide-react"
 
-type TabType = "dashboard" | "prontuarios" | "agendas" | "analytics" | "profissionais"
+type TabType = "dashboard" | "prontuarios" | "agendas" | "analytics" | "profissionais" | "usuarios" | "empresas"
 
 interface PainelAdministrativoClientProps {
   usuario: {
@@ -58,6 +61,18 @@ export function PainelAdministrativoClient({ usuario, userEmail }: PainelAdminis
       label: "Profissionais",
       icon: Users,
       description: "Gerenciar profissionais cadastrados"
+    },
+    {
+      id: "usuarios" as TabType,
+      label: "Usuários",
+      icon: Users,
+      description: "Gerenciar usuários do sistema"
+    },
+    {
+      id: "empresas" as TabType,
+      label: "Empresas",
+      icon: Building2,
+      description: "Empresas parceiras e códigos"
     }
   ]
 
@@ -73,6 +88,10 @@ export function PainelAdministrativoClient({ usuario, userEmail }: PainelAdminis
         return <ProfessionalAnalytics />
       case "profissionais":
         return <ProfissionaisList />
+      case "usuarios":
+        return <UsersManagement />
+      case "empresas":
+        return <CompaniesManagement />
       default:
         return <AdminDashboard />
     }

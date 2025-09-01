@@ -14,11 +14,19 @@ function mapToAuthUser(user: any): AuthUser | null {
     user?.app_metadata?.role ??
     "usuario";
 
+  const mustChangePassword: boolean =
+    user?.user_metadata?.mustChangePassword ?? false;
+
+  const active: boolean =
+    user?.user_metadata?.active ?? true;
+
   return {
     id: user.id,
     email: user.email ?? "",
     nome,
     tipo_usuario,
+    mustChangePassword,
+    active,
   };
 }
 
