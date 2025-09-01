@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { SignUpForm } from "@/components/sign-up-form";
-import { ArrowLeft } from "lucide-react";
 
 export default function Page() {
   return (
@@ -10,16 +9,12 @@ export default function Page() {
         <div className="mb-8 text-center">
           <Link 
             href="/" 
-            className="inline-flex items-center space-x-2 text-azul-escuro hover:text-azul-vivido transition-colors mb-4"
+            className="text-azul-escuro hover:text-azul-vivido transition-colors mb-4 text-sm font-medium"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium">Voltar ao início</span>
+            ← Voltar ao início
           </Link>
           
-          <div className="flex items-center justify-center space-x-2 mb-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-azul-vivido to-roxo rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">CR</span>
-            </div>
+          <div className="mb-2">
             <h1 className="text-2xl font-bold text-azul-escuro">Clínica Resilience</h1>
           </div>
           <p className="text-gray-600 text-sm">Crie sua conta para agendar consultas</p>

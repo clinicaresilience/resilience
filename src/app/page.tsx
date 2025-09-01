@@ -1,6 +1,6 @@
 export default function Inicio() {
   return (
-    <div className="w-full min-h-screen flex flex-col">
+    <div className="w-full min-h-screen flex flex-col pt-24">
       {/* Conteúdo principal */}
       <main
         className="

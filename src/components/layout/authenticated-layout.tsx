@@ -49,7 +49,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
     return (
       <>
         <ConditionalNavigation />
-        <main className="flex-1 pt-24 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <main className="flex-1  w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {children}
         </main>
       </>

@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Eye, EyeOff, Mail, Lock, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 
 export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
@@ -71,8 +70,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card className="bg-white w-[380px] border-0 shadow-xl rounded-2xl overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center py-8">
-          <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-            <UserPlus className="w-6 h-6" />
+          <CardTitle className="text-2xl font-bold">
             Criar Conta
           </CardTitle>
           <CardDescription className="text-green-100">
@@ -83,8 +81,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
         <CardContent className="p-8">
           <form onSubmit={handleSignUp} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Mail className="w-4 h-4" />
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                 E-mail
               </Label>
               <Input
@@ -100,8 +97,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Lock className="w-4 h-4" />
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                 Senha
               </Label>
               <div className="relative">
@@ -113,21 +109,20 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading || success}
-                  className="h-12 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-200 pr-12"
+                  className="h-12 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-200 pr-16"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors text-xs"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? "Ocultar" : "Mostrar"}
                 </button>
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="repeat-password" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Lock className="w-4 h-4" />
+              <Label htmlFor="repeat-password" className="text-sm font-medium text-gray-700">
                 Confirmar Senha
               </Label>
               <div className="relative">
@@ -139,22 +134,21 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
                   value={repeatPassword}
                   onChange={(e) => setRepeatPassword(e.target.value)}
                   disabled={isLoading || success}
-                  className="h-12 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-200 pr-12"
+                  className="h-12 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-200 pr-16"
                 />
                 <button
                   type="button"
                   onClick={() => setShowRepeatPassword(!showRepeatPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors text-xs"
                 >
-                  {showRepeatPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showRepeatPassword ? "Ocultar" : "Mostrar"}
                 </button>
               </div>
             </div>
 
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                <p className="text-sm text-red-600">
                   {error}
                 </p>
               </div>
@@ -162,8 +156,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
             
             {success && (
               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm text-green-600 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                <p className="text-sm text-green-600">
                   Conta criada com sucesso! Redirecionando...
                 </p>
               </div>
