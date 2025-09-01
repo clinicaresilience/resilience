@@ -3,26 +3,27 @@
 import { usePathname } from "next/navigation"
 import Navegacao from "@/components/navegacao"
 import AuthenticatedHeader from "@/components/authenticated-header"
+import { ROUTES } from "@/config/routes"
 
 export default function ConditionalNavigation() {
   const pathname = usePathname()
   
   // Rotas que devem mostrar o cabeçalho autenticado
   const rotasAutenticadas = [
-    '/painel-administrativo',
-    '/tela-usuario',
-    '/tela-profissional',
-    '/protected'
+    ROUTES.admin.root,
+    ROUTES.user.root,
+    ROUTES.professional.root,
+    "/protected",
   ]
   
   // Rotas que não devem mostrar nenhum cabeçalho (páginas de auth)
   const rotasSemCabecalho = [
-    '/auth/login',
-    '/auth/cadastro',
-    '/auth/forgot-password',
-    '/auth/update-password',
-    '/auth/sign-up-success',
-    '/auth/error'
+    ROUTES.auth.login,
+    ROUTES.auth.cadastro,
+    ROUTES.auth.forgot,
+    ROUTES.auth.updatePassword,
+    ROUTES.auth.signUpSuccess,
+    ROUTES.auth.error,
   ]
   
   // Verifica se a rota atual é uma rota autenticada

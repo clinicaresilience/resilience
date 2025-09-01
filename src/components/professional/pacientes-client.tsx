@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { generateMockAgendamentos } from "@/lib/mocks/agendamentos"
 import { generateMockProntuarios } from "@/lib/mocks/medical-records"
@@ -112,18 +112,6 @@ export function ProfessionalPacientesClient({ profissionalNome, profissionalId }
     return data.toLocaleDateString('pt-BR')
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "ativo":
-        return <Badge className="bg-green-100 text-green-800">Ativo</Badge>
-      case "inativo":
-        return <Badge className="bg-gray-100 text-gray-800">Inativo</Badge>
-      case "alta":
-        return <Badge className="bg-blue-100 text-blue-800">Alta</Badge>
-      default:
-        return <Badge variant="secondary">{status}</Badge>
-    }
-  }
 
   const obterHistoricoPaciente = (pacienteId: string) => {
     const consultasPaciente = agendamentos.filter(ag => 
@@ -233,7 +221,7 @@ export function ProfessionalPacientesClient({ profissionalNome, profissionalId }
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">{paciente.nome}</CardTitle>
-                {getStatusBadge(paciente.statusAtual)}
+                <StatusBadge status={paciente.statusAtual as any} />
               </div>
             </CardHeader>
             <CardContent>
@@ -299,7 +287,7 @@ export function ProfessionalPacientesClient({ profissionalNome, profissionalId }
                           <div>
                             <Label>Status</Label>
                             <div className="mt-1">
-                              {getStatusBadge(pacienteSelecionado.statusAtual)}
+                              <StatusBadge status={pacienteSelecionado.statusAtual as any} />
                             </div>
                           </div>
                         </div>
@@ -317,16 +305,7 @@ export function ProfessionalPacientesClient({ profissionalNome, profissionalId }
                                     <p className="text-sm text-gray-500 mt-1">{consulta.notas}</p>
                                   )}
                                 </div>
-                                <Badge 
-                                  className={
-                                    consulta.status === "concluido" ? "bg-green-100 text-green-800" :
-                                    consulta.status === "confirmado" ? "bg-blue-100 text-blue-800" :
-                                    consulta.status === "pendente" ? "bg-yellow-100 text-yellow-800" :
-                                    "bg-red-100 text-red-800"
-                                  }
-                                >
-                                  {consulta.status}
-                                </Badge>
+                                <StatusBadge status={consulta.status as any} />
                               </div>
                             ))}
                           </div>

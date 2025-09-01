@@ -1,10 +1,8 @@
-"use client";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image, { StaticImageData } from "next/image";
 import IconeProfissional from "../../assets/icones/logo.png";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Profissional = {
   id: string;
@@ -16,7 +14,6 @@ type Profissional = {
 };
 
 export default function PortalPublico() {
-  const router = useRouter();
 
   const profissionais: Profissional[] = [
     {
@@ -86,11 +83,11 @@ export default function PortalPublico() {
               </p>
               <Button
                 className="w-full bg-azul-escuro text-white font-medium rounded-lg hover:bg-azul-medio transition-colors"
-                onClick={() =>
-                  router.push(`/portal-publico/profissionais/${prof.id}`)
-                }
+                asChild
               >
-                Ver Agenda
+                <Link href={`/portal-publico/profissionais/${prof.id}`}>
+                  Ver Agenda
+                </Link>
               </Button>
             </CardContent>
           </Card>

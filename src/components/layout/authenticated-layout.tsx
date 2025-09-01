@@ -1,51 +1,19 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
-import { createClient } from "@/lib/client"
 import { Sidebar } from "@/components/ui/sidebar"
 import ConditionalNavigation from "@/components/conditional-navigation"
+import { useAuth } from "@/features/auth/context/auth-context"
 
 interface AuthenticatedLayoutProps {
   children: React.ReactNode
 }
 
-type Usuario = {
-  nome: string
-  email: string
-  tipo_usuario: "administrador" | "profissional" | "usuario"
-}
 
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user: usuario, loading } = useAuth()
   const pathname = usePathname()
 
-  useEffect(() => {
-    async function carregarUsuario() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (user) {
-        const { data: userData } = await supabase
-          .from("usuarios")
-          .select("nome, tipo_usuario")
-          .eq("id", user.id)
-          .single()
-        
-        if (userData) {
-          setUsuario({
-            nome: userData.nome,
-            email: user.email || "",
-            tipo_usuario: userData.tipo_usuario
-          })
-        }
-      }
-      setLoading(false)
-    }
-    
-    carregarUsuario()
-  }, [])
 
   // Verificar se deve mostrar a sidebar
   const rotasComSidebar = [

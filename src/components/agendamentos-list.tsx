@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react"
 import Link from "next/link"
 import { generateMockAgendamentos } from "@/lib/mocks/agendamentos"
 import { StatusAgendamento, type UiAgendamento } from "@/types/agendamento"
-import { StatusBadge } from "@/components/agendamentos/status-badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import {
   Card,
   CardContent,

@@ -13,6 +13,7 @@ import {
   type HistoricoPaciente 
 } from "@/lib/mocks/medical-records"
 import { Search, FileText, User, Calendar, Filter, Eye } from "lucide-react"
+import { StatusBadge } from "@/components/ui/status-badge"
 
 type ViewMode = "prontuarios" | "historico"
 
@@ -50,27 +51,6 @@ export function MedicalRecordsSection() {
     })
   }
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      ativo: "bg-green-100 text-green-800",
-      em_andamento: "bg-blue-100 text-blue-800", 
-      arquivado: "bg-gray-100 text-gray-800",
-      inativo: "bg-red-100 text-red-800"
-    }
-    
-    const labels = {
-      ativo: "Ativo",
-      em_andamento: "Em Andamento",
-      arquivado: "Arquivado", 
-      inativo: "Inativo"
-    }
-
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status as keyof typeof styles] || styles.ativo}`}>
-        {labels[status as keyof typeof labels] || status}
-      </span>
-    )
-  }
 
   return (
     <div className="w-full">
@@ -186,7 +166,7 @@ export function MedicalRecordsSection() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {getStatusBadge(prontuario.status)}
+                      <StatusBadge status={prontuario.status as any} />
                       <Button
                         variant="outline"
                         size="sm"
@@ -252,7 +232,7 @@ export function MedicalRecordsSection() {
                         )}
                       </div>
                     </div>
-                    {getStatusBadge(historico.statusAtual)}
+                    <StatusBadge status={historico.statusAtual as any} />
                   </div>
                 </CardHeader>
                 <CardContent>

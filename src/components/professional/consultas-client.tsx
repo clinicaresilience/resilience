@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { generateMockAgendamentos, type Agendamento } from "@/lib/mocks/agendamentos"
@@ -63,20 +63,6 @@ export function ProfessionalConsultasClient({ profissionalNome, profissionalId }
     return resultado.sort((a, b) => new Date(a.dataISO).getTime() - new Date(b.dataISO).getTime())
   }, [todasConsultas, filtroStatus, filtroData, busca])
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "confirmado":
-        return <Badge className="bg-green-100 text-green-800">Confirmado</Badge>
-      case "pendente":
-        return <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>
-      case "cancelado":
-        return <Badge className="bg-red-100 text-red-800">Cancelado</Badge>
-      case "concluido":
-        return <Badge className="bg-blue-100 text-blue-800">Concluído</Badge>
-      default:
-        return <Badge variant="secondary">{status}</Badge>
-    }
-  }
 
   const formatarData = (dataISO: string) => {
     const data = new Date(dataISO)
@@ -249,7 +235,7 @@ export function ProfessionalConsultasClient({ profissionalNome, profissionalId }
                         <h3 className="font-semibold text-lg">Paciente: {consulta.usuarioId || "Não informado"}</h3>
                         <p className="text-gray-600">{consulta.especialidade}</p>
                       </div>
-                      {getStatusBadge(consulta.status)}
+                      <StatusBadge status={consulta.status as any} />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
@@ -349,7 +335,7 @@ export function ProfessionalConsultasClient({ profissionalNome, profissionalId }
                               <div>
                                 <Label>Status</Label>
                                 <div className="mt-1">
-                                  {getStatusBadge(consultaSelecionada.status)}
+                                  <StatusBadge status={consultaSelecionada.status as any} />
                                 </div>
                               </div>
                               <div>

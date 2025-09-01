@@ -1,10 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { createClient } from "@/lib/client"
 import { LogoutButton } from "@/components/logout-button"
+import { useAuth } from "@/features/auth/context/auth-context"
 import { BackButton } from "@/components/ui/back-button"
 import { User, Settings, Home, Users, Calendar, FileText, BarChart3, Clock, Stethoscope, ArrowLeft } from "lucide-react"
 
@@ -15,33 +14,8 @@ type Usuario = {
 }
 
 export default function AuthenticatedHeader() {
-  const [usuario, setUsuario] = useState<Usuario | null>(null)
+  const { user: usuario } = useAuth()
   const pathname = usePathname()
-
-  useEffect(() => {
-    async function carregarUsuario() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (user) {
-        const { data: userData } = await supabase
-          .from("usuarios")
-          .select("nome, tipo_usuario")
-          .eq("id", user.id)
-          .single()
-        
-        if (userData) {
-          setUsuario({
-            nome: userData.nome,
-            email: user.email || "",
-            tipo_usuario: userData.tipo_usuario
-          })
-        }
-      }
-    }
-    
-    carregarUsuario()
-  }, [])
 
   const isAdmin = usuario?.tipo_usuario === "administrador"
   const isProfessional = usuario?.tipo_usuario === "profissional"

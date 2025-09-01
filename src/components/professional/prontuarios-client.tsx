@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -65,18 +65,6 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
     return data.toLocaleDateString('pt-BR')
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "ativo":
-        return <Badge className="bg-green-100 text-green-800">Ativo</Badge>
-      case "arquivado":
-        return <Badge className="bg-gray-100 text-gray-800">Arquivado</Badge>
-      case "em_andamento":
-        return <Badge className="bg-blue-100 text-blue-800">Em Andamento</Badge>
-      default:
-        return <Badge variant="secondary">{status}</Badge>
-    }
-  }
 
   const iniciarEdicao = (prontuario: ProntuarioMedico) => {
     setProntuarioSelecionado(prontuario)
@@ -349,7 +337,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">{prontuario.pacienteNome}</CardTitle>
-                {getStatusBadge(prontuario.status)}
+                <StatusBadge status={prontuario.status as any} />
               </div>
               <CardDescription>{prontuario.tipoConsulta}</CardDescription>
             </CardHeader>
@@ -555,7 +543,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                 </Select>
                               ) : (
                                 <div className="p-2">
-                                  {getStatusBadge(prontuarioSelecionado.status)}
+                                  <StatusBadge status={prontuarioSelecionado.status as any} />
                                 </div>
                               )}
                             </div>

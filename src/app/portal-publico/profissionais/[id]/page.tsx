@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/client";
+import { useAuth } from "@/features/auth/context/auth-context";
 import {
   Dialog,
   DialogContent,
@@ -80,6 +81,7 @@ export default function PerfilProfissional() {
   const [agendamentoConfirmado, setAgendamentoConfirmado] = useState(false);
 
   // Estado do usuário logado
+  const { user } = useAuth();
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   // Modal de cadastro e payload pendente de agendamento
@@ -97,16 +99,15 @@ export default function PerfilProfissional() {
   const [cadastroLoading, setCadastroLoading] = useState(false);
   const [signupCooldownUntil, setSignupCooldownUntil] = useState<number | null>(null);
 
-  // Buscar sessão atual no client para exibir "Agendando como"
+  // Atualiza e-mail do usuário logado via AuthContext
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) {
-        setUserEmail(data.user.email ?? null);
-        setEmailCad(data.user.email ?? '');
-      }
-    });
-  }, []);
+    if (user) {
+      setUserEmail(user.email ?? null);
+      setEmailCad(user.email ?? '');
+    } else {
+      setUserEmail(null);
+    }
+  }, [user]);
 
 
   //  Gera estrutura de calendário do mês atual
@@ -387,7 +388,8 @@ export default function PerfilProfissional() {
                   if (dataNascimento) {
                     upsertPayload.data_nascimento = dataNascimento;
                   }
-                  await supabase.from("usuarios").upsert([upsertPayload], { onConflict: "id" });
+                  // Persistência omitida no mock:
+                  // (supabase as any).from("usuarios").upsert?.([upsertPayload], { onConflict: "id" });
                 } catch (e) {
                   console.warn("Falha ao registrar perfil em 'usuarios'", e);
                 }

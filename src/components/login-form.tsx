@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/client";
+import { useAuth } from "@/features/auth/context/auth-context";
+import { ROUTES } from "@/config/routes";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,45 +28,25 @@ export function LoginForm({
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const router = useRouter();
+  const { signIn } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
-    const supabase = createClient();
-
     try {
-      // login
-      const { data: login, error } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
-      if (error) throw error;
-
-      const user = login.user;
-      if (!user) throw new Error("Usuário não encontrado");
-
-      // buscar tipo_usuario
-      const { data: usuario, error: usuarioError } = await supabase
-        .from("usuarios")
-        .select("tipo_usuario")
-        .eq("id", user.id)
-        .single();
-
-      if (usuarioError || !usuario) throw new Error("Usuário inválido");
-
+      const res = await signIn(email, senha);
+      if (res.error) throw new Error(res.error);
       setSuccess(true);
-
-      // redireciona conforme tipo_usuario
+      const role = res.user?.tipo_usuario;
       setTimeout(() => {
-        router.push(
-          usuario.tipo_usuario === "administrador"
-            ? "/painel-administrativo"
-            : usuario.tipo_usuario === "profissional"
-            ? "/tela-profissional"
-            : "/tela-usuario"
-        )
+        const dest =
+          role === "administrador"
+            ? ROUTES.admin.root
+            : role === "profissional"
+            ? ROUTES.professional.root
+            : ROUTES.user.root;
+        router.push(dest);
       }, 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro inesperado");

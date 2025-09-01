@@ -1,8 +1,9 @@
 "use client";
 
-import { createClient } from "@/lib/client";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/features/auth/context/auth-context";
+import { ROUTES } from "@/config/routes";
 
 type Props = {
   className?: string;
@@ -10,11 +11,11 @@ type Props = {
 
 export function LogoutButton({ className }: Props) {
   const router = useRouter();
+  const { signOut } = useAuth();
 
   const logout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/auth/login");
+    await signOut();
+    router.push(ROUTES.auth.login);
   };
 
   return (
