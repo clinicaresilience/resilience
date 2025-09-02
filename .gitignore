@@ -45,3 +45,5 @@ TODO.md
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.claude/
+.serena/

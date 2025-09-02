@@ -1,28 +1,33 @@
 import { createClient } from "@/lib/client";
 import type { AuthUser, Role } from "../types";
 
-function mapToAuthUser(user: any): AuthUser | null {
-  if (!user) return null;
+function mapToAuthUser(user: unknown): AuthUser | null {
+  if (!user || typeof user !== 'object') return null;
+
+  const userObj = user as Record<string, unknown>;
+
+  const userMetadata = userObj.user_metadata as Record<string, unknown> | undefined;
+  const appMetadata = userObj.app_metadata as Record<string, unknown> | undefined;
 
   const nome =
-    user?.user_metadata?.nome ??
-    user?.user_metadata?.name ??
+    (userMetadata?.nome as string) ??
+    (userMetadata?.name as string) ??
     "Usuário";
 
   const tipo_usuario: Role =
-    user?.user_metadata?.tipo_usuario ??
-    user?.app_metadata?.role ??
+    (userMetadata?.tipo_usuario as Role) ??
+    (appMetadata?.role as Role) ??
     "usuario";
 
   const mustChangePassword: boolean =
-    user?.user_metadata?.mustChangePassword ?? false;
+    (userMetadata?.mustChangePassword as boolean) ?? false;
 
   const active: boolean =
-    user?.user_metadata?.active ?? true;
+    (userMetadata?.active as boolean) ?? true;
 
   return {
-    id: user.id,
-    email: user.email ?? "",
+    id: userObj.id as string,
+    email: (userObj.email as string) ?? "",
     nome,
     tipo_usuario,
     mustChangePassword,

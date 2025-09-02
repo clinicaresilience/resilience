@@ -1,5 +1,8 @@
-import { createMockClient } from "./mock-auth"
+import { createBrowserClient } from "@supabase/ssr"
 
 export function createClient() {
-  return createMockClient()
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_PROJECT_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 }

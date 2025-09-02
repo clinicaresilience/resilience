@@ -1,10 +1,30 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from "@supabase/ssr"
+import { NextResponse, type NextRequest } from "next/server"
 
-/**
- * Middleware no-op para ambiente de mock.
- * Não realiza verificações de sessão Supabase; apenas deixa a requisição seguir.
- * Se desejar bloquear por ausência de sessão mock, podemos implementar uma verificação aqui.
- */
 export async function updateSession(request: NextRequest) {
-  return NextResponse.next({ request })
+  let response = NextResponse.next({ request })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_PROJECT_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  // This will refresh session if expired - required for Server Components
+  await supabase.auth.getUser()
+
+  return response
 }
