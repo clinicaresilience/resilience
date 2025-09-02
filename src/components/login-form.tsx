@@ -7,7 +7,8 @@ import { ROUTES } from "@/config/routes";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
+import Link from "next/link";
 
 export function LoginForm({
   className,
@@ -56,40 +57,40 @@ export function LoginForm({
   };
 
   return (
-    <div className={cn("w-full", className)} {...props}>
+    <div
+      className={cn(
+        "w-full max-w-sm border border-roxo shadow-roxo shadow-sm p-8 rounded-2xl bg-white",
+        className
+      )}
+      {...props}
+    >
       <form onSubmit={handleLogin} className="space-y-4">
         {/* Campo Email */}
-        <div>
-          <Label htmlFor="email" className="text-sm text-gray-700 mb-2 block">
-            E-mail
-          </Label>
+
+        <div className="flex flex-col gap-2">
           <Input
             id="email"
             type="email"
-            placeholder="seu@email.com"
+            placeholder="Email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading || success}
-            className="h-10 px-3 border border-gray-300 rounded-md focus:border-azul-escuro focus:ring-1 focus:ring-azul-escuro/30 transition-colors bg-white"
+            className="h-12 shadow-sm px-3 border border-gray-300 rounded-2xl focus:border-azul-escuro focus:ring-1 focus:ring-azul-escuro/30 transition-colors bg-white"
           />
         </div>
-
         {/* Campo Senha */}
         <div>
-          <Label htmlFor="password" className="text-sm text-gray-700 mb-2 block">
-            Senha
-          </Label>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Sua senha"
+              placeholder="Senha"
               required
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
               disabled={loading || success}
-              className="h-10 px-3 pr-14 border border-gray-300 rounded-md focus:border-azul-escuro focus:ring-1 focus:ring-azul-escuro/30 transition-colors bg-white"
+              className="h-12 px-3 shadow-sm pr-14 border border-gray-300 rounded-2xl focus:border-azul-escuro focus:ring-1 focus:ring-azul-escuro/30 transition-colors bg-white"
             />
             <button
               type="button"
@@ -101,32 +102,28 @@ export function LoginForm({
             </button>
           </div>
         </div>
-
         {/* Feedback de erro */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-2xl">
             <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
-        
         {/* Feedback de sucesso */}
         {success && (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+          <div className="p-3 bg-green-50 border border-green-200 rounded-2xl">
             <p className="text-sm text-green-700">Sucesso! Redirecionando...</p>
           </div>
         )}
-
         {/* Botão de Login */}
         <Button
           type="submit"
           disabled={loading || success}
-          className="w-full h-10 text-white font-medium rounded-md bg-azul-escuro hover:bg-azul-medio disabled:opacity-50 transition-colors mt-6"
+          className="w-full h-12 text-lg text-white bg-linear-[135deg]  duration-300 ease-in-out from-[#8a2be2] to-[#00e5ee] font-medium rounded-2xl disabled:opacity-50  mt-6"
         >
           {loading ? "Entrando..." : success ? "Sucesso!" : "Entrar"}
         </Button>
-
         {/* Link "Esqueci minha senha" */}
-        <div className="text-center pt-2">
+        <div className="text-center pt-2 gap-4 flex justify-around">
           <button
             type="button"
             onClick={() => router.push(ROUTES.auth.forgot)}
@@ -135,6 +132,12 @@ export function LoginForm({
           >
             Esqueci minha senha
           </button>
+          <Link
+            href="/auth/cadastro"
+            className="text-azul-escuro hover:text-azul-vivido text-sm transition-colors hover:underline"
+          >
+            Criar conta
+          </Link>
         </div>
       </form>
     </div>
