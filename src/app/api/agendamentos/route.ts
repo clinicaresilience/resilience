@@ -24,9 +24,12 @@ export async function GET() {
       .single()
 
     // Definir filtros baseado no tipo de usuário
-    const filters: any = {}
+    const filters: {
+      usuario_id?: string;
+      profissional_id?: string;
+    } = {}
     
-    if (userData?.tipo_usuario === "usuario") {
+    if (userData?.tipo_usuario === "comum") {
       filters.usuario_id = user.id
     } else if (userData?.tipo_usuario === "profissional") {
       filters.profissional_id = user.id
@@ -36,14 +39,14 @@ export async function GET() {
     const agendamentos = await AgendamentosService.listAgendamentos(filters)
     
     // Mapear para o formato esperado pelo frontend
-    const formattedAgendamentos = agendamentos.map(ag => ({
+    const formattedAgendamentos = agendamentos.map((ag: any) => ({
       id: ag.id,
-      usuarioId: ag.usuario_id,
+      usuarioId: ag.paciente_id,
       profissionalId: ag.profissional_id,
       profissionalNome: ag.profissional?.nome || "Profissional",
       especialidade: ag.profissional?.especialidade || "",
-      dataISO: ag.data_hora,
-      local: ag.local,
+      dataISO: ag.data_consulta,
+      local: "Clínica Resilience",
       status: ag.status,
       notas: ag.notas,
     }))
@@ -52,10 +55,11 @@ export async function GET() {
       success: true,
       data: formattedAgendamentos,
     }, { status: 200 })
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     console.error("Erro ao buscar agendamentos:", error)
     return NextResponse.json(
-      { error: "Erro ao buscar agendamentos", detail: error?.message || String(error) },
+      { error: "Erro ao buscar agendamentos", detail: errorMessage },
       { status: 500 }
     )
   }
@@ -119,7 +123,7 @@ export async function POST(req: NextRequest) {
       profissionalNome: agendamento.profissional?.nome || "Profissional",
       especialidade: agendamento.profissional?.especialidade || "",
       dataISO: agendamento.data_hora,
-      local: agendamento.local,
+      local: local,
       status: agendamento.status,
       notas: agendamento.notas,
     }
@@ -128,10 +132,11 @@ export async function POST(req: NextRequest) {
       success: true,
       data: formattedAgendamento,
     }, { status: 201 })
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     console.error("Erro ao criar agendamento:", error)
     return NextResponse.json(
-      { error: "Erro ao criar agendamento", detail: error?.message || String(error) },
+      { error: "Erro ao criar agendamento", detail: errorMessage },
       { status: 500 }
     )
   }

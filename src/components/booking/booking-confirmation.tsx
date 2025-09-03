@@ -1,0 +1,246 @@
+"use client"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Calendar, Clock, User, MapPin, CheckCircle, AlertCircle } from "lucide-react"
+import moment from 'moment'
+import 'moment/locale/pt-br'
+
+moment.locale('pt-br')
+
+type AgendaSlot = {
+  id: string
+  data: string
+  hora: string
+  disponivel: boolean
+}
+
+type BookingConfirmationProps = {
+  isOpen: boolean
+  onClose: () => void
+  slot: AgendaSlot | null
+  profissionalNome: string
+  profissionalId: string
+  onConfirm?: (agendamento: { id: string; usuarioId: string; profissionalId: string; dataISO: string; status: string }) => void
+}
+
+export function BookingConfirmation({
+  isOpen,
+  onClose,
+  slot,
+  profissionalNome,
+  profissionalId,
+  onConfirm
+}: BookingConfirmationProps) {
+  const [notas, setNotas] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState("")
+
+  // Função para confirmar o agendamento
+  const handleConfirm = async () => {
+    if (!slot) return
+
+    try {
+      setLoading(true)
+      setError("")
+
+      // Combinar data e hora para criar o datetime no formato ISO correto
+      const dataHora = `${slot.data}T${slot.hora}:00.000Z`
+
+      const response = await fetch('/api/agendamentos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          profissional_id: profissionalId,
+          data_hora: dataHora,
+          local: 'Clínica Resilience',
+          notas: notas.trim() || undefined
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSuccess(true)
+        
+        // Chamar callback se fornecido
+        if (onConfirm) {
+          onConfirm(data.data)
+        }
+
+        // Fechar modal após 3 segundos
+        setTimeout(() => {
+          handleClose()
+        }, 3000)
+      } else {
+        const errorData = await response.json()
+        if (response.status === 401) {
+          setError('Você precisa estar logado para fazer um agendamento.')
+        } else {
+          setError(errorData.error || 'Erro ao criar agendamento')
+        }
+      }
+    } catch (err) {
+      setError('Erro de conexão. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Função para fechar o modal
+  const handleClose = () => {
+    setNotas("")
+    setError("")
+    setSuccess(false)
+    onClose()
+  }
+
+  // Função para formatar data e hora
+  const formatDateTime = (data: string, hora: string) => {
+    const dateTime = moment(`${data} ${hora}`, 'YYYY-MM-DD HH:mm')
+    return {
+      date: dateTime.format('dddd, DD [de] MMMM [de] YYYY'),
+      time: dateTime.format('HH:mm')
+    }
+  }
+
+  if (!slot) return null
+
+  const { date, time } = formatDateTime(slot.data, slot.hora)
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {success ? (
+              <>
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                Agendamento Confirmado!
+              </>
+            ) : (
+              <>
+                <Calendar className="h-5 w-5" />
+                Confirmar Agendamento
+              </>
+            )}
+          </DialogTitle>
+          <DialogDescription>
+            {success 
+              ? "Seu agendamento foi criado com sucesso!"
+              : "Revise os detalhes do seu agendamento antes de confirmar"
+            }
+          </DialogDescription>
+        </DialogHeader>
+
+        {success ? (
+          <div className="space-y-4">
+            <div className="text-center py-8">
+              <CheckCircle className="h-16 w-16 mx-auto mb-4 text-green-600" />
+              <h3 className="text-lg font-semibold text-green-800 mb-2">
+                Agendamento Realizado!
+              </h3>
+              <p className="text-sm text-gray-600">
+                Você receberá uma confirmação por email em breve.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Detalhes do Agendamento */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Detalhes do Agendamento</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Profissional */}
+                <div className="flex items-center gap-3">
+                  <User className="h-4 w-4 text-blue-600" />
+                  <div>
+                    <p className="font-medium">{profissionalNome}</p>
+                    <p className="text-sm text-gray-500">Profissional</p>
+                  </div>
+                </div>
+
+                {/* Data e Hora */}
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-4 w-4 text-green-600" />
+                  <div>
+                    <p className="font-medium">{date}</p>
+                    <p className="text-sm text-gray-500">Data</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Clock className="h-4 w-4 text-orange-600" />
+                  <div>
+                    <p className="font-medium">{time}</p>
+                    <p className="text-sm text-gray-500">Horário</p>
+                  </div>
+                </div>
+
+                {/* Local */}
+                <div className="flex items-center gap-3">
+                  <MapPin className="h-4 w-4 text-red-600" />
+                  <div>
+                    <p className="font-medium">Clínica Resilience</p>
+                    <p className="text-sm text-gray-500">Local</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Observações */}
+            <div className="space-y-2">
+              <Label htmlFor="notas">Observações (opcional)</Label>
+              <Textarea
+                id="notas"
+                placeholder="Adicione observações sobre a consulta, sintomas ou informações relevantes..."
+                value={notas}
+                onChange={(e) => setNotas(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+              <p className="text-xs text-gray-500">
+                Máximo 500 caracteres
+              </p>
+            </div>
+
+            {/* Erro */}
+            {error && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+
+            {/* Botões */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                className="flex-1"
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleConfirm}
+                className="flex-1"
+                disabled={loading}
+              >
+                {loading ? "Confirmando..." : "Confirmar Agendamento"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
