@@ -21,7 +21,7 @@ type Agenda = {
 };
 
 async function getProfissional(id: string) {
-  const res = await fetch(`/api/profissionais/${id}`, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/profissionais/${id}`, {
     cache: "no-store", // evita cache no SSR
   });
 
