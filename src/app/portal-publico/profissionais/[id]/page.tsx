@@ -20,8 +20,10 @@ type Agenda = {
   disponivel: boolean;
 };
 
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 async function getProfissional(id: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/profissionais/${id}`, {
+  const res = await fetch(`${baseUrl}/api/profissionais/${id}`, {
     cache: "no-store", // evita cache no SSR
   });
 
@@ -29,8 +31,13 @@ async function getProfissional(id: string) {
   return res.json();
 }
 
-export default async function PerfilProfissional({ params }: { params: { id: string } }) {
-  const data = await getProfissional(params.id);
+export default async function PerfilProfissional({
+  params,
+}: {
+  params: { id: string }; // ✅ não é Promise
+}) {
+  const { id } = params; // ✅ sem await
+  const data = await getProfissional(id);
 
   if (!data) {
     return (
@@ -40,7 +47,18 @@ export default async function PerfilProfissional({ params }: { params: { id: str
     );
   }
 
-  const { profissional, agendas } = data as { profissional: Profissional; agendas: Agenda[] };
+  const { profissional, agendas } = data as {
+    profissional: Profissional;
+    agendas: Agenda[];
+  };
+
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-gray-600">Profissional não encontrado.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-50 p-6 pt-20">
@@ -48,19 +66,23 @@ export default async function PerfilProfissional({ params }: { params: { id: str
         {/* Foto */}
         {profissional.informacoes_adicionais?.foto && (
           <div className="w-40 h-40 -mt-14 mb-4 rounded-full overflow-hidden border-4 border-azul-escuro shadow-sm bg-gray-100">
-            <Image
+            <img
               src={profissional.informacoes_adicionais.foto}
               alt={`Foto de ${profissional.nome}`}
-              width={160}
-              height={160}
               className="object-cover w-full h-full"
             />
           </div>
         )}
 
-        <h1 className="text-2xl font-bold text-gray-800">{profissional.nome}</h1>
-        <p className="text-sm text-azul-escuro">{profissional.informacoes_adicionais?.especialidade}</p>
-        <p className="text-xs text-gray-500">{profissional.informacoes_adicionais?.crp}</p>
+        <h1 className="text-2xl font-bold text-gray-800">
+          {profissional.nome}
+        </h1>
+        <p className="text-sm text-azul-escuro">
+          {profissional.informacoes_adicionais?.especialidade}
+        </p>
+        <p className="text-xs text-gray-500">
+          crp {profissional.informacoes_adicionais?.crp}
+        </p>
 
         <p className="mt-4 text-gray-600 text-sm leading-relaxed">
           {profissional.informacoes_adicionais?.descricao}
@@ -84,6 +106,7 @@ export default async function PerfilProfissional({ params }: { params: { id: str
                   disabled={!slot.disponivel}
                 >
                   {new Date(slot.data).toLocaleDateString("pt-BR", {
+                    weekday: "short", // ← mostra dia da semana (seg, ter, qua…)
                     day: "2-digit",
                     month: "2-digit",
                   })}{" "}

@@ -1,7 +1,6 @@
-// src/app/api/profissionais/route.ts
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/server"; // para GET
-import { createClient as createAdminClient } from "@supabase/supabase-js"; // para POST
+import { createClient } from "@/lib/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 // ====================
 // Criar profissional
