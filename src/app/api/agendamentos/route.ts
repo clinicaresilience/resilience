@@ -49,6 +49,10 @@ export async function GET() {
       local: "Clínica Resilience",
       status: ag.status,
       notas: ag.notas,
+      // Dados do paciente para o profissional
+      pacienteNome: ag.paciente?.nome || "Paciente",
+      pacienteEmail: ag.paciente?.email || "",
+      pacienteTelefone: ag.paciente?.telefone || "",
     }))
     
     return NextResponse.json({

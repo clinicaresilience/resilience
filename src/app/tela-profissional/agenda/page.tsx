@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import { BackButton } from "@/components/ui/back-button";
-import { ModernCalendar } from "@/components/ui/modern-calendar";
+import { AgendaCalendar } from "@/components/professional/agenda-calendar";
 
 export default async function AgendaPage() {
   const supabase = await createClient();
@@ -44,7 +44,7 @@ export default async function AgendaPage() {
         </p>
       </div>
 
-      <ModernCalendar />
+      <AgendaCalendar />
     </>
   );
 }
