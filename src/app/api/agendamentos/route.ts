@@ -1,42 +1,61 @@
 import { NextResponse, NextRequest } from "next/server"
-import { createClient as createSupabaseServerClient } from "@/lib/server"
-import { mapDbToUi, composeISODateTime } from "@/types/agendamento"
-import { isValidCompanyCodeServer } from "@/lib/mocks/companies"
+import { AgendamentosService } from "@/services/database/agendamentos.service"
+import { createClient } from "@/lib/server"
 
 // GET /api/agendamentos
 // Retorna os agendamentos do usuário logado
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient()
+    const supabase = await createClient()
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser()
 
     if (userError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
-    const { data, error } = await (supabase as any)
-      .from("agendamentos")
-      .select("*")
-      .eq("paciente_id", user.id)
+    // Buscar dados do usuário para determinar o tipo
+    const { data: userData } = await supabase
+      .from("usuarios")
+      .select("tipo_usuario")
+      .eq("id", user.id)
+      .single()
 
-    if (error) {
-      return NextResponse.json(
-        { error: "Erro ao buscar agendamentos", detail: error.message },
-        { status: 500 }
-      )
+    // Definir filtros baseado no tipo de usuário
+    const filters: any = {}
+    
+    if (userData?.tipo_usuario === "usuario") {
+      filters.usuario_id = user.id
+    } else if (userData?.tipo_usuario === "profissional") {
+      filters.profissional_id = user.id
     }
+    // Admins podem ver todos, então não adiciona filtros
 
-    const ui = (data ?? []).map(mapDbToUi)
-    // ordenar por data/hora (próximos primeiro)
-    ui.sort((a: any, b: any) => +new Date(a.dataISO) - +new Date(b.dataISO))
-
-    return NextResponse.json({ data: ui }, { status: 200 })
-  } catch (e: any) {
+    const agendamentos = await AgendamentosService.listAgendamentos(filters)
+    
+    // Mapear para o formato esperado pelo frontend
+    const formattedAgendamentos = agendamentos.map(ag => ({
+      id: ag.id,
+      usuarioId: ag.usuario_id,
+      profissionalId: ag.profissional_id,
+      profissionalNome: ag.profissional?.nome || "Profissional",
+      especialidade: ag.profissional?.especialidade || "",
+      dataISO: ag.data_hora,
+      local: ag.local,
+      status: ag.status,
+      notas: ag.notas,
+    }))
+    
+    return NextResponse.json({
+      success: true,
+      data: formattedAgendamentos,
+    }, { status: 200 })
+  } catch (error: any) {
+    console.error("Erro ao buscar agendamentos:", error)
     return NextResponse.json(
-      { error: "Falha inesperada ao obter agendamentos", detail: String(e?.message ?? e) },
+      { error: "Erro ao buscar agendamentos", detail: error?.message || String(error) },
       { status: 500 }
     )
   }
@@ -46,57 +65,73 @@ export async function GET() {
 // Cria um agendamento para o usuário logado
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient()
+    const supabase = await createClient()
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser()
 
     if (userError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
     const body = await req.json().catch(() => ({}))
-    const { profissional_id, data, hora, notas } = body || {}
+    const { profissional_id, data_hora, local, notas } = body || {}
 
-    if (!profissional_id || !data || !hora) {
+    // Validar dados obrigatórios
+    if (!profissional_id || !data_hora || !local) {
       return NextResponse.json(
-        { error: "Campos obrigatórios ausentes", required: ["profissional_id", "data", "hora"] },
+        { 
+          error: "Campos obrigatórios ausentes", 
+          required: ["profissional_id", "data_hora", "local"] 
+        },
         { status: 400 }
       )
     }
 
-    const insertPayload: Record<string, any> = {
-      paciente_id: user.id,
+    // Verificar disponibilidade
+    const isAvailable = await AgendamentosService.checkAvailability(
       profissional_id,
-      data,
-      hora,
-    }
-    if (typeof notas === "string" && notas.length > 0) {
-      insertPayload.notas = notas
-    }
+      data_hora
+    )
 
-    const { data: inserted, error } = await (supabase as any)
-      .from("agendamentos")
-      .insert([insertPayload])
-      .select("*")
-      .single()
-
-    if (error || !inserted) {
+    if (!isAvailable) {
       return NextResponse.json(
-        { error: "Erro ao criar agendamento", detail: error?.message },
-        { status: 500 }
+        { error: "Horário não disponível" },
+        { status: 409 }
       )
     }
 
-    const ui = mapDbToUi(inserted)
-    // Garantir campo ISO coerente
-    ui.dataISO = composeISODateTime(inserted.data, inserted.hora)
+    // Criar agendamento
+    const agendamento = await AgendamentosService.createAgendamento({
+      usuario_id: user.id,
+      profissional_id,
+      data_hora,
+      local,
+      notas,
+    })
 
-    return NextResponse.json({ data: ui }, { status: 201 })
-  } catch (e: any) {
+    // Formatar resposta
+    const formattedAgendamento = {
+      id: agendamento.id,
+      usuarioId: agendamento.usuario_id,
+      profissionalId: agendamento.profissional_id,
+      profissionalNome: agendamento.profissional?.nome || "Profissional",
+      especialidade: agendamento.profissional?.especialidade || "",
+      dataISO: agendamento.data_hora,
+      local: agendamento.local,
+      status: agendamento.status,
+      notas: agendamento.notas,
+    }
+    
+    return NextResponse.json({
+      success: true,
+      data: formattedAgendamento,
+    }, { status: 201 })
+  } catch (error: any) {
+    console.error("Erro ao criar agendamento:", error)
     return NextResponse.json(
-      { error: "Falha inesperada ao criar agendamento", detail: String(e?.message ?? e) },
+      { error: "Erro ao criar agendamento", detail: error?.message || String(error) },
       { status: 500 }
     )
   }

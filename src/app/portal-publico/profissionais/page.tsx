@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image, { StaticImageData } from "next/image";
-import IconeProfissional from "../../assets/icones/logo.png";
+
 import Link from "next/link";
 
 type Profissional = {
@@ -16,33 +16,7 @@ type Profissional = {
 export default function PortalPublico() {
 
   const profissionais: Profissional[] = [
-    {
-      id: "ana",
-      nome: "Dra. Ana Souza",
-      especialidade: "Psicóloga Clínica",
-      crp: "CRP 12/34567",
-      descricao:
-        "Atendimento individual e em grupo, com foco em terapia cognitivo-comportamental.",
-      foto: IconeProfissional,
-    },
-    {
-      id: "marcos",
-      nome: "Dr. Marcos Lima",
-      especialidade: "Psicólogo Infantil",
-      crp: "CRP 98/76543",
-      descricao:
-        "Especialista em psicologia infantil, lida com dificuldades de aprendizado e comportamento.",
-      foto: IconeProfissional,
-    },
-    {
-      id: "joana",
-      nome: "Dra. Joana Pereira",
-      especialidade: "Psicóloga Organizacional",
-      crp: "CRP 45/11223",
-      descricao:
-        "Atuação voltada para saúde mental no trabalho e desenvolvimento de equipes.",
-      foto: IconeProfissional,
-    },
+     
   ];
 
   return (
