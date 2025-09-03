@@ -47,6 +47,22 @@ export class UsersService {
 
     return data as Usuario;
   }
+  static async getAllProfissionais() {
+    const supabase = await createClient();
+  
+    const { data, error } = await supabase
+      .from("usuarios")
+      .select("*")
+      .eq("tipo_usuario", "profissional")
+      .order("nome");
+  
+    if (error) {
+      console.error("Erro ao buscar profissionais:", error);
+      throw error;
+    }
+  
+    return data ;
+  }
 
   /**
    * Buscar usuário por ID
@@ -71,6 +87,24 @@ export class UsersService {
   /**
    * Buscar usuário por email
    */
+  
+  
+  static async getUserByType(tipo_usuario:string){
+    const supabase = await createClient();
+    
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('tipo_usuario', tipo_usuario)
+      .single();
+
+    if (error) {
+      console.error('Erro ao buscar usuário:', error);
+      return null;
+    }
+
+    return data as Usuario;
+  }
   static async getUserByEmail(email: string) {
     const supabase = await createClient();
     
