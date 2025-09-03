@@ -92,7 +92,7 @@ export default function Navegacao() {
             <Button
               className={`${estiloBotao} !w-fit text-azul-escuro-secundario border-azul-escuro-secundario border`}
             >
-              <Link href="/portal-publico/profissionais" className="w-full text-center">
+              <Link href="/portal-publico" className="w-full text-center">
                 Agendamento
               </Link>
             </Button>

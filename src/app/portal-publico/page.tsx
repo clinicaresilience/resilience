@@ -1,21 +1,28 @@
-// src/app/portal-publico/page.tsx (SERVER)
-import { createClient } from "@/lib/server";
-import ProfissionaisPublico from "./profissionais/page";
+// src/app/portal-publico/page.tsx
+import ProfissionaisAgendamentos from "./profissionais/page";
 
-export default async function PortalPublico() {
-  const supabase = await createClient();
+export default async function AgendamentosPublico() {
 
-  const { data: profissionais, error } = await supabase
-    .from("usuarios")
-    .select("id, nome, informacoes_adicionais")
-    .eq("tipo_usuario", "profissional")
-    .order("nome");
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-  console.log("profissionais", profissionais);
+  // Chama sua API interna (sem precisar de SITE_URL)
+  const res = await fetch(`${baseUrl}/api/profissionais`, {
+    cache: "no-store",
+  });
 
-  if (error) {
-    console.error("Erro ao buscar profissionais:", error.message);
+  if (!res.ok) {
+    console.error("Erro ao buscar profissionais:", res.statusText);
+    return (
+      <div className="flex flex-col items-center min-h-screen bg-gray-50 p-6">
+        <h1 className="text-3xl font-bold text-azul-escuro mb-10">
+          Nossos Psicólogos
+        </h1>
+        <p className="text-red-500">Erro ao carregar profissionais.</p>
+      </div>
+    );
   }
+
+  const profissionais = await res.json();
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-50 p-6">
@@ -23,7 +30,7 @@ export default async function PortalPublico() {
         Nossos Psicólogos
       </h1>
 
-      <ProfissionaisPublico data={profissionais ?? []} />
+      <ProfissionaisAgendamentos data={profissionais} />
     </div>
   );
 }

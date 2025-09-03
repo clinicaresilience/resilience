@@ -1,84 +1,82 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 export function CadastrarProfissionalDialog() {
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const [nome, setNome] = useState("")
-  const [email, setEmail] = useState("")
-  const [especialidade, setEspecialidade] = useState("")
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [especialidade, setEspecialidade] = useState("");
+  const [crp, setCrp] = useState("");
+  const [descricao, setDescricao] = useState("");
 
   const resetForm = () => {
-    setNome("")
-    setEmail("")
-    setEspecialidade("")
-    setError(null)
-    setSuccess(null)
-  }
+    setNome("");
+    setEmail("");
+    setEspecialidade("");
+    setCrp("");
+    setDescricao("");
+    setError(null);
+    setSuccess(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    setSuccess(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
 
-    // Validação mínima no client (mock)
-    if (!nome.trim() || !email.trim() || !especialidade.trim()) {
-      setError("Preencha todos os campos.")
-      setLoading(false)
-      return
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      setError("E-mail inválido.")
-      setLoading(false)
-      return
+    if (!nome.trim() || !email.trim() || !especialidade.trim() || !crp.trim()) {
+      setError("Preencha todos os campos obrigatórios.");
+      setLoading(false);
+      return;
     }
 
-    // Simula operação de cadastro (mock)
-    await new Promise((res) => setTimeout(res, 700))
-
-    // Persistir no localStorage (mock)
     try {
-      const novo = {
-        id: `prof-${Date.now()}`,
-        nome,
-        email,
-        especialidade,
-        createdAt: new Date().toISOString(),
+      const res = await fetch("../../app/api/profissionais/router", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, email, especialidade, crp, descricao }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Erro ao cadastrar");
+      } else {
+        setSuccess("Profissional cadastrado com sucesso!");
       }
-      const raw = typeof window !== "undefined" ? window.localStorage.getItem("mock_profissionais") : null
-      const lista = raw ? JSON.parse(raw) as any[] : []
-      lista.push(novo)
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("mock_profissionais", JSON.stringify(lista))
-        // Notifica outros componentes para recarregar
-        window.dispatchEvent(new CustomEvent("profissionais-updated"))
-      }
-    } catch {
-      // Em caso de erro de armazenamento, mantém fluxo de mock
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Erro ao cadastrar profissional.");
+    } finally {
+      setLoading(false);
     }
-
-    setSuccess("Profissional cadastrado com sucesso! (mock)")
-    setLoading(false)
-
-    // Fecha o modal após breve confirmação
-    setTimeout(() => {
-      setOpen(false)
-      resetForm()
-    }, 800)
-  }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm() }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) resetForm();
+      }}
+    >
       <DialogTrigger asChild>
         <Button className="bg-azul-escuro text-white">
           Cadastrar profissional
@@ -88,52 +86,65 @@ export function CadastrarProfissionalDialog() {
         <DialogHeader>
           <DialogTitle>Cadastrar profissional</DialogTitle>
           <DialogDescription>
-            Preencha os dados do profissional. Este cadastro é apenas para demonstração (mock).
+            Preencha os dados do novo profissional.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-2">
+          <div>
             <Label htmlFor="nome">Nome</Label>
             <Input
               id="nome"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              placeholder="Nome completo"
-              disabled={loading}
               required
             />
           </div>
 
-          <div className="grid gap-2">
+          <div>
             <Label htmlFor="email">E-mail</Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="profissional@exemplo.com"
-              disabled={loading}
               required
             />
           </div>
 
-          <div className="grid gap-2">
+          <div>
             <Label htmlFor="especialidade">Especialidade</Label>
             <Input
               id="especialidade"
               value={especialidade}
               onChange={(e) => setEspecialidade(e.target.value)}
-              placeholder="Ex.: Psicologia, Psiquiatria..."
-              disabled={loading}
               required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="crp">CRP</Label>
+            <Input
+              id="crp"
+              value={crp}
+              onChange={(e) => setCrp(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="descricao">Descrição</Label>
+            <Input
+              id="descricao"
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
             />
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
           {success && <p className="text-sm text-green-600">{success}</p>}
 
-          <DialogFooter className="pt-2">
+          <DialogFooter>
             <Button
               type="button"
               variant="ghost"
@@ -144,7 +155,7 @@ export function CadastrarProfissionalDialog() {
             </Button>
             <Button
               type="submit"
-              className="text-white rounded px-4 py-2 bg-gradient-to-r from-azul-vivido via-roxo to-laranja bg-[length:200%_100%] bg-[position:0%_0%] transition-[background-position] duration-500 ease-in-out hover:bg-[position:100%_0%]"
+              className="bg-azul-escuro text-white"
               disabled={loading}
             >
               {loading ? "Salvando..." : "Salvar"}
@@ -153,5 +164,5 @@ export function CadastrarProfissionalDialog() {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

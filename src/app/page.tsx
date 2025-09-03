@@ -12,14 +12,7 @@ export default function Inicio() {
         "
       >
         {/* Exemplo de seção */}
-        <section className="w-full text-center sm:text-left">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800">
-            Bem-vindo à Clínica Resilience
-          </h1>
-          <p className="mt-2 text-gray-600 text-sm sm:text-base lg:text-lg">
-            Aqui você pode gerenciar agendamentos de forma prática e rápida.
-          </p>
-        </section>
+        <section className="w-full text-center sm:text-left"></section>
       </main>
 
       {/* Rodapé */}
