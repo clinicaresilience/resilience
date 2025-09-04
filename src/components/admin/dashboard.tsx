@@ -1,35 +1,256 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { generateMockAgendamentos, type Agendamento } from "@/lib/mocks/agendamentos"
-import { getPacientesAtendidos, getPacientesAtendidosHoje } from "@/lib/mocks/patients"
+import React, { useEffect, useMemo, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type ProfissionalStats = {
-  nome: string
-  total: number
-  confirmadas: number
-  pendentes: number
-  canceladas: number
-  concluidas: number
-  proximas: number
-}
+  nome: string;
+  total: number; // total de agendamentos (fonte: tabela agendamentos)
+  confirmadas: number; // fonte: agendamentos.status === 'confirmado'
+  pendentes: number; // fonte: consultas.status_consulta === 'pendente'
+  canceladas: number; // fonte: consultas.status_consulta === 'cancelado'
+  concluidas: number; // fonte: consultas.status_consulta === 'concluido'
+  proximas: number; // agendamentos futuros (fonte: agendamentos)
+};
 
 type ProfissionalCadastro = {
-  id: string
-  nome: string
-  email: string
-  especialidade: string
-  createdAt?: string
-}
+  id: string;
+  nome: string;
+  email?: string;
+  especialidade?: string;
+  createdAt?: string;
+};
 
-function agruparPorProfissional(agendamentos: Agendamento[]): Record<string, ProfissionalStats> {
-  const now = Date.now()
-  return agendamentos.reduce<Record<string, ProfissionalStats>>((acc, ag) => {
-    const nome = ag.profissionalNome
-    if (!acc[nome]) {
-      acc[nome] = {
-        nome,
+type AgendamentoNorm = {
+  id: string;
+  profissional_id?: string;
+  profissional_nome?: string;
+  data_hora?: string;
+  status_agendamento?: string; // ex: 'confirmado'
+};
+
+type ConsultaNorm = {
+  id: string;
+  profissional_id?: string;
+  profissional_nome?: string;
+  data_hora?: string;
+  status_consulta?: string; // ex: 'concluido', 'pendente', 'cancelado'
+};
+
+export function AdminDashboard() {
+  const [profissionais, setProfissionais] = useState<ProfissionalCadastro[]>(
+    []
+  );
+  const [agendamentosNorm, setAgendamentosNorm] = useState<AgendamentoNorm[]>(
+    []
+  );
+  const [consultasNorm, setConsultasNorm] = useState<ConsultaNorm[]>([]);
+
+  useEffect(() => {
+    async function fetchDados() {
+      // helper para extrair array de respostas diferentes (/api pode devolver { success: true, data: [...] } ou [] diretamente)
+      const getArray = (resJson: any) => {
+        if (!resJson) return [];
+        if (Array.isArray(resJson)) return resJson;
+        if (Array.isArray(resJson?.data)) return resJson.data;
+        if (Array.isArray(resJson?.resultado)) return resJson.resultado;
+        return [];
+      };
+
+      try {
+        // 1) Buscar agendamentos (fonte de "confirmadas" e "total")
+        const resAg = await fetch("/api/agendamentos");
+        const jsonAg = await resAg.json().catch(() => null);
+        const agArray = getArray(jsonAg);
+
+        const agNormalized: AgendamentoNorm[] = agArray.map((a: any) => ({
+          id: a.id,
+          profissional_id:
+            a.profissionalId ||
+            a.profissional_id ||
+            a.profissional?.id ||
+            a.profissional?.profissional_id ||
+            null,
+          profissional_nome:
+            a.profissionalNome ||
+            a.profissional?.nome ||
+            a.profissional_nome ||
+            a.profissional?.name ||
+            (typeof a.profissional === "string" ? a.profissional : null) ||
+            "Sem Profissional",
+          data_hora:
+            a.dataISO || a.data_consulta || a.data_hora || a.data || null,
+          status_agendamento: (a.status || a.status_agendamento || "")
+            .toString()
+            .toLowerCase(),
+        }));
+        setAgendamentosNorm(agNormalized);
+
+        // 2) Buscar consultas (fonte de "concluidas", "pendentes", "canceladas", etc)
+        const resCons = await fetch("/api/consultas");
+        const jsonCons = await resCons.json().catch(() => null);
+        const consArray = getArray(jsonCons);
+
+        const consNormalized: ConsultaNorm[] = consArray.map((c: any) => ({
+          id: c.id,
+          profissional_id:
+            c.profissionalId ||
+            c.profissional_id ||
+            c.profissional?.id ||
+            c.profissionais?.id ||
+            null,
+          profissional_nome:
+            c.profissionalNome ||
+            c.profissional?.nome ||
+            c.profissionais?.nome ||
+            c.profissional_nome ||
+            (typeof c.profissional === "string" ? c.profissional : null) ||
+            "Sem Profissional",
+          data_hora:
+            c.dataISO || c.data_consulta || c.data_hora || c.data || null,
+          status_consulta: (
+            c.status_consulta ||
+            c.status ||
+            c.statusConsulta ||
+            c.status_consulta ||
+            ""
+          )
+            .toString()
+            .toLowerCase(),
+        }));
+        setConsultasNorm(consNormalized);
+
+        // 3) Profissionais (para garantir exibição mesmo sem agendamentos)
+        const resProf = await fetch("/api/profissionais");
+        const jsonProf = await resProf.json().catch(() => null);
+        const profArray = getArray(jsonProf);
+
+        const profNorm: ProfissionalCadastro[] = profArray.map((p: any) => ({
+          id: p.id,
+          nome: p.nome || p.display_name || "Sem Nome",
+          email: p.email,
+          especialidade:
+            p.informacoes_adicionais?.especialidade || p.especialidade || "",
+          createdAt: p.created_at || p.createdAt || undefined,
+        }));
+        setProfissionais(profNorm);
+      } catch (err) {
+        console.error("Erro ao buscar dados do dashboard:", err);
+      }
+    }
+
+    fetchDados();
+  }, []);
+
+  // Agrupar: confirmadas => do agendamentos; concluidas => das consultas
+  const statsCompletas: ProfissionalStats[] = useMemo(() => {
+    const now = Date.now();
+
+    // Indexar por profissional (usar id quando possível, senão nome)
+    const byId: Record<string, ProfissionalStats & { keyId: string }> = {};
+
+    // Inicializar com lista de profissionais cadastrados (garante que aparecem mesmo sem dados)
+    for (const p of profissionais) {
+      const key = p.id ?? p.nome;
+      byId[key] = {
+        keyId: key,
+        nome: p.nome,
+        total: 0,
+        confirmadas: 0,
+        pendentes: 0,
+        canceladas: 0,
+        concluidas: 0,
+        proximas: 0,
+      } as ProfissionalStats & { keyId: string };
+    }
+
+    // Agendamentos -> total & confirmadas & proximas
+    for (const a of agendamentosNorm) {
+      // determine key: try profissional_id then profissional_nome
+      const pid =
+        a.profissional_id ?? a.profissional_nome ?? "Sem Profissional";
+      const key = pid;
+
+      if (!byId[key]) {
+        byId[key] = {
+          keyId: key,
+          nome: a.profissional_nome || String(pid),
+          total: 0,
+          confirmadas: 0,
+          pendentes: 0,
+          canceladas: 0,
+          concluidas: 0,
+          proximas: 0,
+        } as ProfissionalStats & { keyId: string };
+      }
+
+      const s = byId[key];
+      s.total += 1;
+
+      if ((a.status_agendamento || "").toLowerCase() === "confirmado")
+        s.confirmadas += 1;
+
+      // próximas: conta agendamentos futuros (considerando confirmado/pendente como "próxima")
+      const dt = a.data_hora ? Date.parse(a.data_hora) : NaN;
+      if (!isNaN(dt) && dt > now) {
+        const st = (a.status_agendamento || "").toLowerCase();
+        if (st === "confirmado" || st === "pendente") s.proximas += 1;
+      }
+    }
+
+    // Consultas -> concluidas, pendentes, canceladas (não mexe em confirmadas/totais que vêm de agendamentos)
+    for (const c of consultasNorm) {
+      const pid =
+        c.profissional_id ?? c.profissional_nome ?? "Sem Profissional";
+      const key = pid;
+
+      if (!byId[key]) {
+        byId[key] = {
+          keyId: key,
+          nome: c.profissional_nome || String(pid),
+          total: 0,
+          confirmadas: 0,
+          pendentes: 0,
+          canceladas: 0,
+          concluidas: 0,
+          proximas: 0,
+        } as ProfissionalStats & { keyId: string };
+      }
+
+      const s = byId[key];
+      const st = (c.status_consulta || "").toLowerCase();
+      if (st === "concluido" || st === "concluida" || st === "concluída")
+        s.concluidas += 1;
+      if (st === "pendente") s.pendentes += 1;
+      if (st === "cancelado" || st === "cancelada") s.canceladas += 1;
+
+      // total: opcional — se quiser que 'total' inclua também consultas sem agendamento,
+      // você pode somar aqui. Mas como você pediu "total de agendamentos", mantive total vindo de agendamentos.
+    }
+
+    // Converter para array e ordenar (por total desc, depois nome)
+    const arr = Object.values(byId).map(
+      ({ keyId, ...rest }) => rest as ProfissionalStats
+    );
+    arr.sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
+    return arr;
+  }, [agendamentosNorm, consultasNorm, profissionais]);
+
+  // Totais gerais
+  const totais = useMemo(() => {
+    return statsCompletas.reduce(
+      (acc, s) => {
+        acc.profissionais += 1;
+        acc.total += s.total;
+        acc.confirmadas += s.confirmadas;
+        acc.pendentes += s.pendentes;
+        acc.canceladas += s.canceladas;
+        acc.concluidas += s.concluidas;
+        acc.proximas += s.proximas;
+        return acc;
+      },
+      {
+        profissionais: 0,
         total: 0,
         confirmadas: 0,
         pendentes: 0,
@@ -37,173 +258,59 @@ function agruparPorProfissional(agendamentos: Agendamento[]): Record<string, Pro
         concluidas: 0,
         proximas: 0,
       }
-    }
-    const s = acc[nome]
-    s.total += 1
-    if (ag.status === "confirmado") s.confirmadas += 1
-    if (ag.status === "pendente") s.pendentes += 1
-    if (ag.status === "cancelado") s.canceladas += 1
-    if (ag.status === "concluido") s.concluidas += 1
-    if (new Date(ag.dataISO).getTime() > now && (ag.status === "confirmado" || ag.status === "pendente")) {
-      s.proximas += 1
-    }
-    return acc
-  }, {})
-}
+    );
+  }, [statsCompletas]);
 
-function carregarProfissionaisCadastro(): ProfissionalCadastro[] {
-  if (typeof window === "undefined") return []
-  try {
-    const raw = window.localStorage.getItem("mock_profissionais")
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as ProfissionalCadastro[]
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-export function AdminDashboard() {
-  const [cadastros, setCadastros] = useState<ProfissionalCadastro[]>([])
-
-  // Agendamentos mock (fonte base para estatísticas)
-  const agendamentos = useMemo(() => generateMockAgendamentos(), [])
-  const agrupado = useMemo(() => agruparPorProfissional(agendamentos), [agendamentos])
-
-  // Mescla profissionais cadastrados (localStorage) para garantir exibição mesmo sem agendamentos
-  const statsCompletas: ProfissionalStats[] = useMemo(() => {
-    const base = { ...agrupado }
-    for (const p of cadastros) {
-      if (!base[p.nome]) {
-        base[p.nome] = {
-          nome: p.nome,
-          total: 0,
-          confirmadas: 0,
-          pendentes: 0,
-          canceladas: 0,
-          concluidas: 0,
-          proximas: 0,
-        }
-      }
-    }
-    return Object.values(base).sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome))
-  }, [agrupado, cadastros])
-
-  // Totais gerais incluindo métricas de pacientes
-  const totais = useMemo(() => {
-    const baseStats = statsCompletas.reduce(
-      (acc, s) => {
-        acc.profissionais += 1
-        acc.total += s.total
-        acc.confirmadas += s.confirmadas
-        acc.pendentes += s.pendentes
-        acc.canceladas += s.canceladas
-        acc.concluidas += s.concluidas
-        acc.proximas += s.proximas
-        return acc
-      },
-      { profissionais: 0, total: 0, confirmadas: 0, pendentes: 0, canceladas: 0, concluidas: 0, proximas: 0 }
-    )
-
-    // Adicionar métricas de pacientes
-    const pacientesUnicos = getPacientesAtendidos(agendamentos)
-    const pacientesHoje = getPacientesAtendidosHoje(agendamentos)
-
-    return {
-      ...baseStats,
-      pacientesUnicos: pacientesUnicos.length,
-      pacientesHoje: pacientesHoje.length
-    }
-  }, [statsCompletas, agendamentos])
-
-  useEffect(() => {
-    setCadastros(carregarProfissionaisCadastro())
-    const handler = () => setCadastros(carregarProfissionaisCadastro())
-    window.addEventListener("profissionais-updated", handler as EventListener)
-    return () => window.removeEventListener("profissionais-updated", handler as EventListener)
-  }, [])
-
+  // JSX: igual ao que você já tinha (apenas usando statsCompletas / totais)
   return (
     <div className="w-full">
       {/* Métricas Principais */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-azul-escuro mb-4">Métricas Principais</h2>
+        <h2 className="text-xl font-semibold text-azul-escuro mb-4">
+          Métricas Principais
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-lg">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-blue-100">Profissionais Cadastrados</CardTitle>
+              <CardTitle className="text-sm text-blue-100">
+                Profissionais Cadastrados
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">{totais.profissionais}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0 shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-green-100">Pacientes Únicos Atendidos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{totais.pacientesUnicos}</p>
-            </CardContent>
-          </Card>
-
           <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0 shadow-lg">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-purple-100">Total de Agendamentos</CardTitle>
+              <CardTitle className="text-sm text-purple-100">
+                Total de Agendamentos
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">{totais.total}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0 shadow-lg">
+          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0 shadow-lg">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-orange-100">Pacientes Atendidos Hoje</CardTitle>
+              <CardTitle className="text-sm text-green-100">
+                Agendamentos Confirmados
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{totais.pacientesHoje}</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Status dos Agendamentos */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-azul-escuro mb-4">Status dos Agendamentos</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Card className="bg-white border border-gray-200 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-500">Confirmadas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-green-600">{totais.confirmadas}</p>
+              <p className="text-3xl font-bold">{totais.confirmadas}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border border-gray-200 shadow-sm">
+          <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white border-0 shadow-lg">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-500">Pendentes</CardTitle>
+              <CardTitle className="text-sm text-red-100">
+                Agendamentos Cancelados
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-amber-600">{totais.pendentes}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border border-gray-200 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-500">Canceladas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-red-600">{totais.canceladas}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border border-gray-200 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-500">Concluídas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-indigo-600">{totais.concluidas}</p>
+              <p className="text-3xl font-bold">{totais.canceladas}</p>
             </CardContent>
           </Card>
         </div>
@@ -211,54 +318,79 @@ export function AdminDashboard() {
 
       {/* Estatísticas por Profissional */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-azul-escuro mb-4">Desempenho por Profissional</h2>
+        <h2 className="text-xl font-semibold text-azul-escuro mb-4">
+          Desempenho por Profissional
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {statsCompletas.map((p) => {
-            const taxaComparecimento = p.total > 0 ? Math.round((p.concluidas / p.total) * 100) : 0
-            const taxaCancelamento = p.total > 0 ? Math.round((p.canceladas / p.total) * 100) : 0
-            
+            const taxaComparecimento =
+              p.total > 0 ? Math.round((p.concluidas / p.total) * 100) : 0;
+            const taxaCancelamento =
+              p.total > 0 ? Math.round((p.canceladas / p.total) * 100) : 0;
+
             return (
-              <Card key={p.nome} className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <Card
+                key={p.nome}
+                className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow h-full flex flex-col"
+              >
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg text-azul-escuro">{p.nome}</CardTitle>
+                  <CardTitle className="text-lg text-azul-escuro">
+                    {p.nome}
+                  </CardTitle>
                   <div className="flex gap-4 text-sm text-gray-600">
-                    <span>Comparecimento: <strong className="text-green-600">{taxaComparecimento}%</strong></span>
-                    <span>Cancelamento: <strong className="text-red-600">{taxaCancelamento}%</strong></span>
+                    <span>
+                      Comparecimento:{" "}
+                      <strong className="text-green-600">
+                        {taxaComparecimento}%
+                      </strong>
+                    </span>
+                    <span>
+                      Cancelamento:{" "}
+                      <strong className="text-red-600">
+                        {taxaCancelamento}%
+                      </strong>
+                    </span>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="rounded-md bg-gray-50 p-3">
-                      <p className="text-gray-500">Total</p>
-                      <p className="text-xl font-semibold text-azul-escuro">{p.total}</p>
+                <CardContent className="flex-1">
+                  <div className="grid grid-cols-2 gap-2 text-sm h-full">
+                    <div className="rounded-md bg-gray-50 p-3 h-full flex flex-col justify-between">
+                      <p className="text-gray-500">Agendamento total</p>
+                      <p className="text-xl font-semibold text-azul-escuro">
+                        {p.total}
+                      </p>
                     </div>
-                    <div className="rounded-md bg-green-50 p-3">
-                      <p className="text-gray-600">Confirmadas</p>
-                      <p className="text-xl font-semibold text-green-700">{p.confirmadas}</p>
+                    <div className="rounded-md bg-green-50 p-3 h-full flex flex-col justify-between">
+                      <p className="text-gray-600">Agendamento confirmado</p>
+                      <p className="text-xl font-semibold text-green-700">
+                        {p.confirmadas}
+                      </p>
                     </div>
-                    <div className="rounded-md bg-amber-50 p-3">
-                      <p className="text-gray-600">Pendentes</p>
-                      <p className="text-xl font-semibold text-amber-700">{p.pendentes}</p>
+                    <div className="rounded-md bg-red-50 p-3 h-full flex flex-col justify-between">
+                      <p className="text-gray-600">Agendamento cancelado</p>
+                      <p className="text-xl font-semibold text-red-700">
+                        {p.canceladas}
+                      </p>
                     </div>
-                    <div className="rounded-md bg-red-50 p-3">
-                      <p className="text-gray-600">Canceladas</p>
-                      <p className="text-xl font-semibold text-red-700">{p.canceladas}</p>
+                    <div className="rounded-md bg-indigo-50 p-3 h-full flex flex-col justify-between">
+                      <p className="text-gray-600">Consulta concluída</p>
+                      <p className="text-xl font-semibold text-indigo-700">
+                        {p.concluidas}
+                      </p>
                     </div>
-                    <div className="rounded-md bg-indigo-50 p-3">
-                      <p className="text-gray-600">Concluídas</p>
-                      <p className="text-xl font-semibold text-indigo-700">{p.concluidas}</p>
-                    </div>
-                    <div className="rounded-md bg-blue-50 p-3">
-                      <p className="text-gray-600">Próximas</p>
-                      <p className="text-xl font-semibold text-blue-700">{p.proximas}</p>
+                    <div className="rounded-md bg-blue-50 p-3 h-full col-span-2 flex flex-col justify-between">
+                      <p className="text-gray-600">Próximas consultas</p>
+                      <p className="text-xl font-semibold text-blue-700">
+                        {p.proximas}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            )
+            );
           })}
         </div>
       </div>
     </div>
-  )
+  );
 }

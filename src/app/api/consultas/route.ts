@@ -75,3 +75,28 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: "Erro desconhecido" }, { status: 500 });
     }
 }
+
+
+
+export async function GET() {
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+        .from("consultas")
+        .select(`
+      id,
+      paciente_id,
+      paciente:paciente_id(nome, email),
+      profissional_id,
+      profissional:profissional_id(nome),
+      status,
+      data_hora
+    `)
+        .order("data_hora", { ascending: true });
+
+    if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data ?? []);
+}
