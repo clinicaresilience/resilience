@@ -1,32 +1,54 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Calendar, Clock, User, MapPin, CheckCircle, AlertCircle } from "lucide-react"
-import moment from 'moment'
-import 'moment/locale/pt-br'
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Calendar,
+  Clock,
+  User,
+  MapPin,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
+import moment from "moment";
+import "moment/locale/pt-br";
 
-moment.locale('pt-br')
+moment.locale("pt-br");
 
 type AgendaSlot = {
-  id: string
-  data: string
-  hora: string
-  disponivel: boolean
-}
+  id: string;
+  data: string;
+  hora: string;
+  disponivel: boolean;
+};
+
+type Modalidade = "presencial" | "online";
 
 type BookingConfirmationProps = {
-  isOpen: boolean
-  onClose: () => void
-  slot: AgendaSlot | null
-  profissionalNome: string
-  profissionalId: string
-  onConfirm?: (agendamento: { id: string; usuarioId: string; profissionalId: string; dataISO: string; status: string }) => void
-}
+  isOpen: boolean;
+  onClose: () => void;
+  slot: AgendaSlot | null;
+  profissionalNome: string;
+  profissionalId: string;
+  onConfirm?: (agendamento: {
+    id: string;
+    usuarioId: string;
+    profissionalId: string;
+    dataISO: string;
+    status: string;
+    modalidade: Modalidade;
+  }) => void;
+};
 
 export function BookingConfirmation({
   isOpen,
@@ -34,85 +56,72 @@ export function BookingConfirmation({
   slot,
   profissionalNome,
   profissionalId,
-  onConfirm
+  onConfirm,
 }: BookingConfirmationProps) {
-  const [notas, setNotas] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState("")
+  const [notas, setNotas] = useState("");
+  const [modalidade, setModalidade] = useState<Modalidade>("presencial");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
-  // Função para confirmar o agendamento
   const handleConfirm = async () => {
-    if (!slot) return
+    if (!slot) return;
 
     try {
-      setLoading(true)
-      setError("")
+      setLoading(true);
+      setError("");
 
-      // Combinar data e hora para criar o datetime no formato ISO correto
-      const dataHora = `${slot.data}T${slot.hora}:00.000Z`
+      const dataHora = `${slot.data}T${slot.hora}:00.000Z`;
 
-      const response = await fetch('/api/agendamentos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch("/api/agendamentos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profissional_id: profissionalId,
           data_hora: dataHora,
-          local: 'Clínica Resilience',
-          notas: notas.trim() || undefined
-        })
-      })
+          local: "Clínica Resilience",
+          notas: notas.trim() || undefined,
+          modalidade,
+        }),
+      });
 
       if (response.ok) {
-        const data = await response.json()
-        setSuccess(true)
-        
-        // Chamar callback se fornecido
-        if (onConfirm) {
-          onConfirm(data.data)
-        }
+        const data = await response.json();
+        setSuccess(true);
 
-        // Fechar modal após 3 segundos
-        setTimeout(() => {
-          handleClose()
-        }, 3000)
+        if (onConfirm) onConfirm(data.data);
+
+        setTimeout(() => handleClose(), 3000);
       } else {
-        const errorData = await response.json()
-        if (response.status === 401) {
-          setError('Você precisa estar logado para fazer um agendamento.')
-        } else {
-          setError(errorData.error || 'Erro ao criar agendamento')
-        }
+        const errorData = await response.json();
+        setError(errorData.error || "Erro ao criar agendamento");
       }
     } catch (err) {
-      setError('Erro de conexão. Tente novamente.')
+      setError("Erro de conexão. Tente novamente.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  // Função para fechar o modal
   const handleClose = () => {
-    setNotas("")
-    setError("")
-    setSuccess(false)
-    onClose()
-  }
+    setNotas("");
+    setModalidade("presencial");
+    setError("");
+    setSuccess(false);
+    onClose();
+  };
 
-  // Função para formatar data e hora
   const formatDateTime = (data: string, hora: string) => {
-    const dateTime = moment(`${data} ${hora}`, 'YYYY-MM-DD HH:mm')
+    const dateTime = moment(`${data} ${hora}`, "YYYY-MM-DD HH:mm");
     return {
-      date: dateTime.format('dddd, DD [de] MMMM [de] YYYY'),
-      time: dateTime.format('HH:mm')
-    }
-  }
+      date: dateTime.format("dddd, DD [de] MMMM [de] YYYY"),
+      time: dateTime.format("HH:mm"),
+    };
+  };
 
-  if (!slot) return null
+  if (!slot) return null;
 
-  const { date, time } = formatDateTime(slot.data, slot.hora)
+  const { date, time } = formatDateTime(slot.data, slot.hora);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -132,34 +141,31 @@ export function BookingConfirmation({
             )}
           </DialogTitle>
           <DialogDescription>
-            {success 
+            {success
               ? "Seu agendamento foi criado com sucesso!"
-              : "Revise os detalhes do seu agendamento antes de confirmar"
-            }
+              : "Revise os detalhes do seu agendamento antes de confirmar"}
           </DialogDescription>
         </DialogHeader>
 
         {success ? (
-          <div className="space-y-4">
-            <div className="text-center py-8">
-              <CheckCircle className="h-16 w-16 mx-auto mb-4 text-green-600" />
-              <h3 className="text-lg font-semibold text-green-800 mb-2">
-                Agendamento Realizado!
-              </h3>
-              <p className="text-sm text-gray-600">
-                Você receberá uma confirmação por email em breve.
-              </p>
-            </div>
+          <div className="space-y-4 text-center py-8">
+            <CheckCircle className="h-16 w-16 mx-auto mb-4 text-green-600" />
+            <h3 className="text-lg font-semibold text-green-800 mb-2">
+              Agendamento Realizado!
+            </h3>
+            <p className="text-sm text-gray-600">
+              Você receberá uma confirmação por email em breve.
+            </p>
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Detalhes do Agendamento */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Detalhes do Agendamento</CardTitle>
+                <CardTitle className="text-base">
+                  Detalhes do Agendamento
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Profissional */}
                 <div className="flex items-center gap-3">
                   <User className="h-4 w-4 text-blue-600" />
                   <div>
@@ -168,7 +174,6 @@ export function BookingConfirmation({
                   </div>
                 </div>
 
-                {/* Data e Hora */}
                 <div className="flex items-center gap-3">
                   <Calendar className="h-4 w-4 text-green-600" />
                   <div>
@@ -185,7 +190,6 @@ export function BookingConfirmation({
                   </div>
                 </div>
 
-                {/* Local */}
                 <div className="flex items-center gap-3">
                   <MapPin className="h-4 w-4 text-red-600" />
                   <div>
@@ -193,10 +197,25 @@ export function BookingConfirmation({
                     <p className="text-sm text-gray-500">Local</p>
                   </div>
                 </div>
+
+                {/* Modalidade */}
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="modalidade">Modalidade</Label>
+                  <select
+                    id="modalidade"
+                    value={modalidade}
+                    onChange={(e) =>
+                      setModalidade(e.target.value as Modalidade)
+                    }
+                    className="border rounded px-3 py-2"
+                  >
+                    <option value="presencial">Presencial</option>
+                    <option value="online">Online</option>
+                  </select>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Observações */}
             <div className="space-y-2">
               <Label htmlFor="notas">Observações (opcional)</Label>
               <Textarea
@@ -207,12 +226,9 @@ export function BookingConfirmation({
                 rows={3}
                 className="resize-none"
               />
-              <p className="text-xs text-gray-500">
-                Máximo 500 caracteres
-              </p>
+              <p className="text-xs text-gray-500">Máximo 500 caracteres</p>
             </div>
 
-            {/* Erro */}
             {error && (
               <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
                 <AlertCircle className="h-4 w-4 text-red-600" />
@@ -220,7 +236,6 @@ export function BookingConfirmation({
               </div>
             )}
 
-            {/* Botões */}
             <div className="flex gap-3 pt-4">
               <Button
                 variant="outline"
@@ -242,5 +257,5 @@ export function BookingConfirmation({
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

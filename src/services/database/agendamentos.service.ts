@@ -2,14 +2,16 @@ import { createClient } from '@/lib/server';
 import { createClient as createClientBrowser } from '@/lib/client';
 
 export type StatusAgendamento = 'confirmado' | 'cancelado';
+export type Modalidade = 'presencial' | 'online';
 
 export interface Agendamento {
   id: string;
   paciente_id: string;   // igual ao banco
   profissional_id: string;
   data_consulta: string; // igual ao banco
+  modalidade: Modalidade;
   status: StatusAgendamento;
-  local: string;
+  // local: string;
   notas?: string;
   created_at?: string;
   updated_at?: string;
@@ -30,8 +32,9 @@ export interface Agendamento {
 export interface CreateAgendamentoDTO {
   usuario_id: string;
   profissional_id: string;
+  modalidade: Modalidade;
   data_hora: string;
-  local: string;
+  // local: string;
   notas?: string;
 }
 
@@ -53,14 +56,16 @@ export class AgendamentosService {
           profissional_id: data.profissional_id,
           data_consulta: data.data_hora,
           status: 'confirmado',
+          // local: data.local,
+          modalidade: data.modalidade, // <-- adiciona aqui
+          notas: data.notas,
         })
         .select(`
-          *,
-          paciente:usuarios!agendamentos_paciente_id_fkey(nome, email),
-          profissional:usuarios!agendamentos_profissional_id_fkey(nome)
-        `)
+        *,
+        paciente:usuarios!agendamentos_paciente_id_fkey(nome, email),
+        profissional:usuarios!agendamentos_profissional_id_fkey(nome)
+      `)
         .single();
-
       if (agendamentoError) {
         console.error('Erro ao criar agendamento:', agendamentoError);
         throw agendamentoError;
@@ -75,7 +80,7 @@ export class AgendamentosService {
         profissional_id: agendamento.profissional_id,
         data_consulta: agendamento.data_consulta,      // banco → frontend
         status: agendamento.status,
-        local: agendamento.local ?? data.local,    // pega do banco, fallback pro DTO
+        // local: agendamento.local ?? data.local,    // pega do banco, fallback pro DTO
         notas: agendamento.notas ?? data.notas,    // pega do banco, fallback pro DTO
         usuario: agendamento.paciente,
         profissional: agendamento.profissional,
@@ -334,7 +339,7 @@ export class AgendamentosServiceClient {
       profissionalNome: ag.profissional?.nome || 'Profissional',
       especialidade: ag.profissional?.especialidade || '',
       dataISO: ag.data_consulta,
-      local: 'Clínica Resilience',
+      // local: 'Clínica Resilience',
       status: ag.status,
       notas: ag.notas,
     }));

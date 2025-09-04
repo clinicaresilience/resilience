@@ -106,6 +106,7 @@ export async function GET() {
       local: "Clínica Resilience",
       status: ag.status,
       notas: ag.notas,
+      modalidade:ag.modalidade,
       // Dados do paciente para o profissional
       pacienteNome: ag.paciente?.nome || "Paciente",
       pacienteEmail: ag.paciente?.email || "",
@@ -128,43 +129,53 @@ export async function GET() {
 
 // POST /api/agendamentos
 // Cria um agendamento para o usuário logado
+// POST /api/agendamentos
+// Cria um agendamento para o usuário logado
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createClient();
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const body = await req.json().catch(() => ({}))
-    const { profissional_id, data_hora, local, notas } = body || {}
+    const body = await req.json().catch(() => ({}));
+    const { profissional_id, data_hora, local, notas, modalidade } = body || {};
 
     // Validar dados obrigatórios
-    if (!profissional_id || !data_hora || !local) {
+    if (!profissional_id || !data_hora || !local || !modalidade) {
       return NextResponse.json(
         {
           error: "Campos obrigatórios ausentes",
-          required: ["profissional_id", "data_hora", "local"]
+          required: ["profissional_id", "data_hora", "local", "modalidade"],
         },
         { status: 400 }
-      )
+      );
+    }
+
+    // Validar modalidade
+    if (!['presencial', 'online'].includes(modalidade)) {
+      return NextResponse.json(
+        { error: "Modalidade inválida. Escolha 'presencial' ou 'online'." },
+        { status: 400 }
+      );
     }
 
     // Verificar disponibilidade
     const isAvailable = await AgendamentosService.checkAvailability(
       profissional_id,
       data_hora
-    )
+    );
 
     if (!isAvailable) {
       return NextResponse.json(
         { error: "Horário não disponível" },
         { status: 409 }
-      )
+      );
     }
 
     // Criar agendamento
@@ -172,9 +183,10 @@ export async function POST(req: NextRequest) {
       usuario_id: user.id,
       profissional_id,
       data_hora,
+      modalidade,
       local,
       notas,
-    })
+    });
 
     // Formatar resposta
     const formattedAgendamento = {
@@ -184,21 +196,25 @@ export async function POST(req: NextRequest) {
       profissionalNome: agendamento.profissional?.nome || "Profissional",
       especialidade: agendamento.profissional?.especialidade || "",
       dataISO: agendamento.data_consulta,
-      local: local,
+      local,
       status: agendamento.status,
       notas: agendamento.notas,
-    }
+      modalidade: agendamento.modalidade,
+    };
 
-    return NextResponse.json({
-      success: true,
-      data: formattedAgendamento,
-    }, { status: 201 })
+    return NextResponse.json(
+      {
+        success: true,
+        data: formattedAgendamento,
+      },
+      { status: 201 }
+    );
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    console.error("Erro ao criar agendamento:", error)
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    console.error("Erro ao criar agendamento:", error);
     return NextResponse.json(
       { error: "Erro ao criar agendamento", detail: errorMessage },
       { status: 500 }
-    )
+    );
   }
 }

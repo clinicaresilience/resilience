@@ -11,7 +11,7 @@ export async function fetchConsultasByProfissional(profissionalId: string) {
       profissional_id,
       status,
       local,
-      notas,
+      observacoes,
       data_hora
     `)
         .eq("profissional_id", profissionalId)
@@ -25,7 +25,7 @@ export async function fetchConsultasByProfissional(profissionalId: string) {
         usuario: c.paciente,
         status: c.status || "pendente",
         local: c.local || "",
-        notas: c.notas || null,
+        observacoes: c.observacoes || null,
         dataISO: c.data_hora,
     })) ?? [];
 }
@@ -35,7 +35,7 @@ export async function updateConsultaStatus(id: string, status: string) {
     return supabase.from("consultas").update({ status }).eq("id", id);
 }
 
-export async function updateConsultaNotas(id: string, notas: string) {
+export async function updateConsultaObservacoes(id: string, observacoes: string) {
     const supabase = createClient();
-    return supabase.from("consultas").update({ notas }).eq("id", id);
+    return supabase.from("consultas").update({ observacoes }).eq("id", id);
 }
