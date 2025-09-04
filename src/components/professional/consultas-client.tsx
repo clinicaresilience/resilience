@@ -58,8 +58,7 @@ export function ProfessionalConsultasClient({
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroData, setFiltroData] = useState("");
   const [busca, setBusca] = useState("");
-  const [consultaSelecionada, setConsultaSelecionada] =
-    useState<Consulta | null>(null);
+  const [consultaSelecionada, setConsultaSelecionada] = useState<Consulta | null>(null);
   const [observacoes, setObservacoes] = useState("");
 
   useEffect(() => {
@@ -110,12 +109,11 @@ export function ProfessionalConsultasClient({
 
   const handleAcaoConsulta = async (
     consulta: Consulta,
-    acao: "confirmar" | "cancelar" | "concluir"
+    acao: "concluir" | "cancelar"
   ) => {
     const supabase = createClient();
     let statusNovo = consulta.status;
 
-    if (acao === "confirmar") statusNovo = "confirmado";
     if (acao === "concluir") statusNovo = "concluido";
     if (acao === "cancelar") statusNovo = "cancelado";
 
@@ -164,21 +162,9 @@ export function ProfessionalConsultasClient({
         {[
           { icone: Calendar, titulo: "Total", valor: estatisticas.total },
           { icone: Clock, titulo: "Hoje", valor: estatisticas.hoje },
-          {
-            icone: AlertCircle,
-            titulo: "Pendentes",
-            valor: estatisticas.pendentes,
-          },
-          {
-            icone: CheckCircle,
-            titulo: "Confirmadas",
-            valor: estatisticas.confirmadas,
-          },
-          {
-            icone: CheckCircle,
-            titulo: "Concluídas",
-            valor: estatisticas.concluidas,
-          },
+          { icone: AlertCircle, titulo: "Pendentes", valor: estatisticas.pendentes },
+          { icone: CheckCircle, titulo: "Confirmadas", valor: estatisticas.confirmadas },
+          { icone: CheckCircle, titulo: "Concluídas", valor: estatisticas.concluidas },
         ].map(({ icone: Icon, titulo, valor }) => (
           <Card key={titulo}>
             <CardContent className="p-4 flex items-center space-x-2">
@@ -253,18 +239,12 @@ export function ProfessionalConsultasClient({
         {consultasFiltradas.map((consulta) => {
           const { data, hora, diaSemana } = formatarData(consulta.dataISO);
           return (
-            <Card
-              key={consulta.id}
-              className="hover:shadow-md transition-shadow"
-            >
+            <Card key={consulta.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6 flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
                 <div className="flex-1">
                   <div className="flex items-center space-x-4 mb-2">
                     <h3 className="font-semibold text-lg">
-                      Paciente:{" "}
-                      {consulta.usuario?.nome ||
-                        consulta.usuario_id ||
-                        "Não informado"}
+                      Paciente: {consulta.usuario?.nome || consulta.usuario_id || "Não informado"}
                     </h3>
                     <StatusBadge status={consulta.status as any} />
                   </div>
@@ -272,9 +252,7 @@ export function ProfessionalConsultasClient({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-4 w-4" />
-                      <span>
-                        {data} ({diaSemana})
-                      </span>
+                      <span>{data} ({diaSemana})</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Clock className="h-4 w-4" />
@@ -294,55 +272,27 @@ export function ProfessionalConsultasClient({
                 </div>
 
                 <div className="flex flex-col space-y-2 md:ml-4">
-                  {["pendente", "confirmado"].includes(consulta.status) && (
+                  {/* Botões: só concluir ou cancelar */}
+                  {consulta.status !== "concluido" && consulta.status !== "cancelado" && (
                     <>
-                      {consulta.status === "pendente" && (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              handleAcaoConsulta(consulta, "confirmar")
-                            }
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" /> Confirmar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() =>
-                              handleAcaoConsulta(consulta, "cancelar")
-                            }
-                          >
-                            <XCircle className="h-4 w-4 mr-1" /> Cancelar
-                          </Button>
-                        </>
-                      )}
-                      {consulta.status === "confirmado" && (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              handleAcaoConsulta(consulta, "concluir")
-                            }
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" /> Concluir
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() =>
-                              handleAcaoConsulta(consulta, "cancelar")
-                            }
-                          >
-                            <XCircle className="h-4 w-4 mr-1" /> Cancelar
-                          </Button>
-                        </>
-                      )}
+                      <Button
+                        size="sm"
+                        onClick={() => handleAcaoConsulta(consulta, "concluir")}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" /> Concluir
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleAcaoConsulta(consulta, "cancelar")}
+                      >
+                        <XCircle className="h-4 w-4 mr-1" /> Cancelar
+                      </Button>
                     </>
                   )}
 
+                  {/* Detalhes */}
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button
@@ -370,30 +320,22 @@ export function ProfessionalConsultasClient({
                             <div>
                               <Label>Paciente</Label>
                               <p className="font-medium">
-                                {consultaSelecionada.usuario?.nome ||
-                                  consultaSelecionada.usuario_id ||
-                                  "Não informado"}
+                                {consultaSelecionada.usuario?.nome || consultaSelecionada.usuario_id || "Não informado"}
                               </p>
                             </div>
                             <div>
                               <Label>Status</Label>
-                              <StatusBadge
-                                status={consultaSelecionada.status as any}
-                              />
+                              <StatusBadge status={consultaSelecionada.status as any} />
                             </div>
                             <div>
                               <Label>Data e Hora</Label>
                               <p className="font-medium">
-                                {formatarData(consultaSelecionada.dataISO).data}{" "}
-                                às{" "}
-                                {formatarData(consultaSelecionada.dataISO).hora}
+                                {formatarData(consultaSelecionada.dataISO).data} às {formatarData(consultaSelecionada.dataISO).hora}
                               </p>
                             </div>
                             <div>
                               <Label>Local</Label>
-                              <p className="font-medium">
-                                {consultaSelecionada.local}
-                              </p>
+                              <p className="font-medium">{consultaSelecionada.local}</p>
                             </div>
                           </div>
 
@@ -426,9 +368,7 @@ export function ProfessionalConsultasClient({
           <Card>
             <CardContent className="p-8 text-center">
               <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Nenhuma consulta encontrada
-              </h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma consulta encontrada</h3>
               <p className="text-gray-600">
                 Não há consultas que correspondam aos filtros selecionados.
               </p>
