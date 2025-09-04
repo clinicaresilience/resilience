@@ -187,7 +187,7 @@ export default function TelaUsuario() {
           </Link>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        {/* <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/tela-usuario/recursos">
             <CardHeader className="pb-3">
               <div className="flex items-center space-x-2">
@@ -201,7 +201,7 @@ export default function TelaUsuario() {
               </CardDescription>
             </CardContent>
           </Link>
-        </Card>
+        </Card> */}
       </div>
 
       {/* Próximas Consultas */}
@@ -214,7 +214,7 @@ export default function TelaUsuario() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4 max-h-48 overflow-y-auto h-full">
+            <div className="space-y-4 max-h-48 overflow-y-auto ">
               {consultas.length === 0 && (
                 <p className="text-gray-600">
                   Você não tem próximas consultas agendadas.
