@@ -265,24 +265,15 @@ export class AgendamentosService {
   /**
    * Atualizar status do agendamento
    */
-  static async updateAgendamentoStatus(id: string, status: StatusAgendamento, notas?: string) {
+  static async updateAgendamentoStatus(
+    id: string,
+    updates: Partial<{ status: StatusAgendamento; notas: string }>
+  ) {
     const supabase = await createClient();
-
-    const updateData: {
-      status: StatusAgendamento;
-      atualizado_em?: string;
-      notas?: string;
-    } = {
-      status,
-    };
-
-    if (notas) {
-      updateData.notas = notas;
-    }
 
     const { data, error } = await supabase
       .from('agendamentos')
-      .update(updateData)
+      .update(updates)
       .eq('id', id)
       .select(`
         *,
@@ -299,13 +290,15 @@ export class AgendamentosService {
     return data as Agendamento;
   }
 
+
   /**
    * Cancelar agendamento
    */
   static async cancelAgendamento(id: string, motivo: string) {
-    return this.updateAgendamentoStatus(id, 'cancelado', motivo);
+    return this.updateAgendamentoStatus(id, { status: "cancelado", notas: motivo });
   }
 }
+
 
 // Versão para uso no cliente (browser)
 export class AgendamentosServiceClient {

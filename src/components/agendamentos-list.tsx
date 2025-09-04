@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import React, { useMemo, useState } from "react"
+import React, { useMemo, useState } from "react";
 
-import Link from "next/link"
-import { StatusAgendamento, type UiAgendamento } from "@/types/agendamento"
-import { StatusBadge } from "@/components/ui/status-badge"
+import Link from "next/link";
+import { StatusAgendamento, type UiAgendamento } from "@/types/agendamento";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Card,
   CardContent,
@@ -12,8 +12,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -22,24 +22,24 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 type Props = {
-  userId?: string
-  initialAgendamentos?: UiAgendamento[]
-}
+  userId?: string;
+  initialAgendamentos?: UiAgendamento[];
+};
 
-type StatusFiltro = "todos" | StatusAgendamento
+type StatusFiltro = "todos" | StatusAgendamento;
 
 const statusOptions: { label: string; value: StatusFiltro }[] = [
   { label: "Todos", value: "todos" },
@@ -47,10 +47,10 @@ const statusOptions: { label: string; value: StatusFiltro }[] = [
   { label: "Pendentes", value: "pendente" },
   { label: "Cancelados", value: "cancelado" },
   { label: "Concluídos", value: "concluido" },
-]
+];
 
 function formatarDataHora(iso: string) {
-  const d = new Date(iso)
+  const d = new Date(iso);
   return d.toLocaleString("pt-BR", {
     weekday: "short",
     day: "2-digit",
@@ -58,76 +58,94 @@ function formatarDataHora(iso: string) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  })
+  });
 }
 
+export default function AgendamentosList({
+  userId,
+  initialAgendamentos,
+}: Props) {
+  const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(
+    initialAgendamentos ?? []
+  );
 
-export default function AgendamentosList({ userId, initialAgendamentos }: Props) {
-const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(initialAgendamentos ?? [])
-
-  const [busca, setBusca] = useState("")
-  const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>("todos")
-  const [cancelamentoModal, setCancelamentoModal] = useState<{ isOpen: boolean; agendamentoId: string | null }>({
+  const [busca, setBusca] = useState("");
+  const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>("todos");
+  const [cancelamentoModal, setCancelamentoModal] = useState<{
+    isOpen: boolean;
+    agendamentoId: string | null;
+  }>({
     isOpen: false,
-    agendamentoId: null
-  })
-  const [justificativaCancelamento, setJustificativaCancelamento] = useState("")
-  const [loadingCancelamento, setLoadingCancelamento] = useState(false)
+    agendamentoId: null,
+  });
+  const [justificativaCancelamento, setJustificativaCancelamento] =
+    useState("");
+  const [loadingCancelamento, setLoadingCancelamento] = useState(false);
 
-  const agora = Date.now()
+  const agora = Date.now();
 
   const listagem = useMemo(() => {
-    const buscaLower = busca.toLowerCase()
+    const buscaLower = busca.toLowerCase();
     const byTerm = (a: UiAgendamento) =>
       a.profissionalNome.toLowerCase().includes(buscaLower) ||
       (a.especialidade ?? "").toLowerCase().includes(buscaLower) ||
-      a.local.toLowerCase().includes(buscaLower)
+      a.local.toLowerCase().includes(buscaLower);
 
     const byStatus =
       statusFiltro === "todos"
         ? () => true
-        : (a: UiAgendamento) => a.status === statusFiltro
+        : (a: UiAgendamento) => a.status === statusFiltro;
 
     const sorted = [...agendamentos].sort(
       (a, b) => +new Date(a.dataISO) - +new Date(b.dataISO)
-    )
+    );
 
-    return sorted.filter((a) => byTerm(a) && byStatus(a))
-  }, [agendamentos, busca, statusFiltro])
+    return sorted.filter((a) => byTerm(a) && byStatus(a));
+  }, [agendamentos, busca, statusFiltro]);
 
   function podeCancelar(a: UiAgendamento) {
-    const ehPassado = +new Date(a.dataISO) < agora
-    return a.status !== "cancelado" && a.status !== "concluido" && !ehPassado
+    const ehPassado = +new Date(a.dataISO) < agora;
+    return a.status !== "cancelado" && a.status !== "concluido" && !ehPassado;
   }
 
   function abrirModalCancelamento(id: string) {
-    setCancelamentoModal({ isOpen: true, agendamentoId: id })
-    setJustificativaCancelamento("")
+    setCancelamentoModal({ isOpen: true, agendamentoId: id });
+    setJustificativaCancelamento("");
   }
 
   function fecharModalCancelamento() {
-    setCancelamentoModal({ isOpen: false, agendamentoId: null })
-    setJustificativaCancelamento("")
-    setLoadingCancelamento(false)
+    setCancelamentoModal({ isOpen: false, agendamentoId: null });
+    setJustificativaCancelamento("");
+    setLoadingCancelamento(false);
   }
 
   async function confirmarCancelamento() {
     if (!cancelamentoModal.agendamentoId || !justificativaCancelamento.trim()) {
-      return
+      return;
     }
 
-    setLoadingCancelamento(true)
+    setLoadingCancelamento(true);
 
     try {
-      // Tenta cancelar via API quando a lista veio do backend
       if (initialAgendamentos && initialAgendamentos.length) {
-        const res = await fetch(`/api/agendamentos/${cancelamentoModal.agendamentoId}`, { 
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ justificativa: justificativaCancelamento })
-        })
+        const res = await fetch(
+          `/api/agendamentos/${cancelamentoModal.agendamentoId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status: "cancelado",
+              justificativa: justificativaCancelamento,
+            }),
+
+            // Tenta cancelar via API quando a lista veio do backend
+          }
+        );
         if (!res.ok) {
-          console.error("Falha ao cancelar (API):", await res.text().catch(() => ""))
+          console.error(
+            "Falha ao cancelar (API):",
+            await res.text().catch(() => "")
+          );
         }
       }
 
@@ -144,12 +162,12 @@ const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(initialAgendam
               }
             : a
         )
-      )
+      );
 
-      fecharModalCancelamento()
+      fecharModalCancelamento();
     } catch (e) {
-      console.error("Erro de rede ao cancelar (API):", e)
-      setLoadingCancelamento(false)
+      console.error("Erro de rede ao cancelar (API):", e);
+      setLoadingCancelamento(false);
     }
   }
 
@@ -219,8 +237,8 @@ const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(initialAgendam
         )}
 
         {listagem.map((a) => {
-          const data = new Date(a.dataISO)
-          const ehPassado = +data < agora
+          const data = new Date(a.dataISO);
+          const ehPassado = +data < agora;
           return (
             <Card key={a.id} className="border-muted">
               <CardHeader className="flex-row items-start justify-between gap-4">
@@ -229,7 +247,9 @@ const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(initialAgendam
                     {a.profissionalNome}
                   </CardTitle>
                   <CardDescription className="text-sm">
-                    {a.especialidade ? `${a.especialidade} • ${a.local}` : a.local}
+                    {a.especialidade
+                      ? `${a.especialidade} • ${a.local}`
+                      : a.local}
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
@@ -245,7 +265,9 @@ const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(initialAgendam
               <CardContent className="grid gap-2">
                 <div className="text-sm">
                   <span className="text-muted-foreground">Data/Hora: </span>
-                  <span className="font-medium">{formatarDataHora(a.dataISO)}</span>
+                  <span className="font-medium">
+                    {formatarDataHora(a.dataISO)}
+                  </span>
                 </div>
                 {a.notas ? (
                   <div className="text-sm">
@@ -270,12 +292,18 @@ const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(initialAgendam
 
                     <div className="grid gap-2 text-sm">
                       <div>
-                        <span className="text-muted-foreground">Profissional: </span>
-                        <span className="font-medium">{a.profissionalNome}</span>
+                        <span className="text-muted-foreground">
+                          Profissional:{" "}
+                        </span>
+                        <span className="font-medium">
+                          {a.profissionalNome}
+                        </span>
                       </div>
                       {a.especialidade ? (
                         <div>
-                          <span className="text-muted-foreground">Especialidade: </span>
+                          <span className="text-muted-foreground">
+                            Especialidade:{" "}
+                          </span>
                           <span>{a.especialidade}</span>
                         </div>
                       ) : null}
@@ -338,17 +366,21 @@ const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(initialAgendam
                 </Button>
               </CardFooter>
             </Card>
-          )
+          );
         })}
       </div>
 
       {/* Modal de Justificativa de Cancelamento */}
-      <Dialog open={cancelamentoModal.isOpen} onOpenChange={fecharModalCancelamento}>
+      <Dialog
+        open={cancelamentoModal.isOpen}
+        onOpenChange={fecharModalCancelamento}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Cancelar Agendamento</DialogTitle>
             <DialogDescription>
-              Para cancelar este agendamento, é necessário informar o motivo do cancelamento.
+              Para cancelar este agendamento, é necessário informar o motivo do
+              cancelamento.
             </DialogDescription>
           </DialogHeader>
 
@@ -382,7 +414,9 @@ const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(initialAgendam
             <Button
               variant="destructive"
               onClick={confirmarCancelamento}
-              disabled={!justificativaCancelamento.trim() || loadingCancelamento}
+              disabled={
+                !justificativaCancelamento.trim() || loadingCancelamento
+              }
             >
               {loadingCancelamento ? (
                 <div className="flex items-center gap-2">
@@ -397,5 +431,5 @@ const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(initialAgendam
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

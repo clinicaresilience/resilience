@@ -29,7 +29,7 @@ export async function PATCH(
 
     // Verificar se o usuário tem permissão para atualizar este agendamento
     const agendamento = await AgendamentosService.getAgendamentoById(id)
-    
+
     if (!agendamento) {
       return NextResponse.json({ error: "Agendamento não encontrado" }, { status: 404 })
     }
@@ -41,7 +41,8 @@ export async function PATCH(
       .eq("id", user.id)
       .single()
 
-    const isOwner = agendamento.usuario_id === user.id
+    const isOwner = agendamento.paciente_id === user.id
+
     const isProfessional = agendamento.profissional_id === user.id
     const isAdmin = userData?.tipo_usuario === "administrador"
 
@@ -51,7 +52,7 @@ export async function PATCH(
 
     // Atualizar baseado no status fornecido
     let updatedAgendamento
-    
+
     if (status === "cancelado" && justificativa) {
       updatedAgendamento = await AgendamentosService.cancelAgendamento(id, justificativa)
     } else if (status === "confirmado") {
@@ -59,7 +60,7 @@ export async function PATCH(
     } else if (status === "concluido") {
       updatedAgendamento = await AgendamentosService.completeAgendamento(id, notas)
     } else if (status) {
-      updatedAgendamento = await AgendamentosService.updateAgendamentoStatus(id, status, notas)
+      updatedAgendamento = await AgendamentosService.updateAgendamentoStatus(id, { status, notas })
     } else {
       return NextResponse.json({ error: "Status ou ação não especificada" }, { status: 400 })
     }

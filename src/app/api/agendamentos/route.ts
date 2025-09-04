@@ -2,6 +2,63 @@ import { NextResponse, NextRequest } from "next/server"
 import { AgendamentosService } from "@/services/database/agendamentos.service"
 import { createClient } from "@/lib/server"
 
+
+
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  if (!id) {
+    return NextResponse.json(
+      { error: "ID do agendamento não fornecido" },
+      { status: 400 }
+    );
+  }
+
+  const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const { justificativa } = body;
+
+  if (!justificativa || justificativa.trim().length === 0) {
+    return NextResponse.json(
+      { error: "Justificativa é obrigatória" },
+      { status: 400 }
+    );
+  }
+
+  const agendamento = await AgendamentosService.updateAgendamentoStatus(id, {
+    status: "cancelado",
+    notas: justificativa,
+  });
+
+  if (!agendamento) {
+    return NextResponse.json(
+      { error: "Agendamento não encontrado" },
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      id: agendamento.id,
+      status: agendamento.status,
+      notas: agendamento.notas,
+    },
+  });
+}
+
+
+
 // GET /api/agendamentos
 // Retorna os agendamentos do usuário logado
 export async function GET() {
@@ -28,7 +85,7 @@ export async function GET() {
       usuario_id?: string;
       profissional_id?: string;
     } = {}
-    
+
     if (userData?.tipo_usuario === "comum") {
       filters.usuario_id = user.id
     } else if (userData?.tipo_usuario === "profissional") {
@@ -37,7 +94,7 @@ export async function GET() {
     // Admins podem ver todos, então não adiciona filtros
 
     const agendamentos = await AgendamentosService.listAgendamentos(filters)
-    
+
     // Mapear para o formato esperado pelo frontend
     const formattedAgendamentos = agendamentos.map((ag: any) => ({
       id: ag.id,
@@ -54,7 +111,7 @@ export async function GET() {
       pacienteEmail: ag.paciente?.email || "",
       pacienteTelefone: ag.paciente?.telefone || "",
     }))
-    
+
     return NextResponse.json({
       success: true,
       data: formattedAgendamentos,
@@ -89,9 +146,9 @@ export async function POST(req: NextRequest) {
     // Validar dados obrigatórios
     if (!profissional_id || !data_hora || !local) {
       return NextResponse.json(
-        { 
-          error: "Campos obrigatórios ausentes", 
-          required: ["profissional_id", "data_hora", "local"] 
+        {
+          error: "Campos obrigatórios ausentes",
+          required: ["profissional_id", "data_hora", "local"]
         },
         { status: 400 }
       )
@@ -131,7 +188,7 @@ export async function POST(req: NextRequest) {
       status: agendamento.status,
       notas: agendamento.notas,
     }
-    
+
     return NextResponse.json({
       success: true,
       data: formattedAgendamento,
