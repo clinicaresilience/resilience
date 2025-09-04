@@ -2,9 +2,22 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Calendar, User, Clock, FileText, Heart, Phone } from "lucide-react";
 import PendingAppointmentResumer from "@/components/user/pending-appointment-resumer";
+
+type Consulta = {
+  id: string;
+  profissional_nome: string;
+  tipo: string;
+  data_consulta: string;
+};
 
 export default async function TelaUsuario() {
   const supabase = await createClient();
@@ -21,13 +34,46 @@ export default async function TelaUsuario() {
     .eq("id", user.id)
     .single();
 
-  if (error || !usuario) {
-    redirect("/auth/login");
-  }
-
-  // se for admin, encaminha pro painel administrativo
-  if (usuario.tipo_usuario === "administrador") {
+  if (error || !usuario) redirect("/auth/login");
+  if (usuario.tipo_usuario === "administrador")
     redirect("/painel-administrativo");
+
+  const agoraISO = new Date().toISOString();
+  const { data: consultasData } = await supabase
+    .from("agendamentos")
+    .select("id, data_consulta, status, profissional_id")
+    .eq("paciente_id", user.id)
+    .eq("status", "confirmado")
+    .gte("data_consulta", agoraISO)
+    .order("data_consulta", { ascending: true });
+
+  // buscar nomes dos profissionais
+  let consultas: Consulta[] = [];
+  if (consultasData && consultasData.length > 0) {
+    const profIds = Array.from(
+      new Set(consultasData.map((c) => c.profissional_id).filter(Boolean))
+    );
+
+    const { data: profs } = await supabase
+      .from("usuarios")
+      .select("id, nome")
+      .in("id", profIds)
+      .eq("tipo_usuario", "profissional");
+
+    const profMap =
+      profs?.reduce<Record<string, string>>((acc, p) => {
+        acc[p.id] = p.nome;
+        return acc;
+      }, {}) || {};
+
+    consultas = consultasData.map((c) => ({
+      id: c.id,
+      profissional_nome: c.profissional_id
+        ? profMap[c.profissional_id]
+        : "Profissional",
+      tipo: "Consulta",
+      data_consulta: c.data_consulta,
+    }));
   }
 
   return (
@@ -39,7 +85,7 @@ export default async function TelaUsuario() {
           Área do Paciente
         </h1>
         <p className="mt-2 text-lg text-gray-600">
-          Bem-vindo, <span className="font-semibold">{usuario.nome}</span>! 
+          Bem-vindo, <span className="font-semibold">{usuario.nome}</span>!
           Gerencie seus agendamentos e acompanhe seu cuidado.
         </p>
       </div>
@@ -146,7 +192,7 @@ export default async function TelaUsuario() {
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <Link href="/portal-publico">
+          <Link href="/portal-publico/profissionais">
             <CardHeader className="pb-3">
               <div className="flex items-center space-x-2">
                 <User className="h-6 w-6 text-azul-escuro" />
@@ -195,7 +241,7 @@ export default async function TelaUsuario() {
       </div>
 
       {/* Próximas Consultas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 ">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -204,30 +250,38 @@ export default async function TelaUsuario() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Dr. Silva Santos</p>
-                  <p className="text-sm text-gray-600">Consulta de acompanhamento</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">14:30</p>
-                  <p className="text-sm text-gray-600">Hoje</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Dra. Ana Costa</p>
-                  <p className="text-sm text-gray-600">Sessão de terapia</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">10:00</p>
-                  <p className="text-sm text-gray-600">Amanhã</p>
-                </div>
-              </div>
+            <div className="space-y-4 max-h-48 overflow-y-auto h-full">
+              {consultas.length === 0 && (
+                <p className="text-gray-600">
+                  Você não tem próximas consultas agendadas.
+                </p>
+              )}
+              {consultas.map((c) => {
+                const dataObj = new Date(c.data_consulta);
+                const hora = dataObj.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                const diaTexto = dataObj.toLocaleDateString();
+
+                return (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium">Dr. {c.profissional_nome}</p>
+                      <p className="text-sm text-gray-600">{c.tipo}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">{hora}</p>
+                      <p className="text-sm text-gray-600">{diaTexto}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            
+
             <div className="mt-4">
               <Button asChild className="w-full">
                 <Link href="/tela-usuario/agendamentos">
@@ -248,12 +302,14 @@ export default async function TelaUsuario() {
           <CardContent>
             <div className="space-y-4">
               <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                <p className="font-medium text-blue-800">Respiração Consciente</p>
+                <p className="font-medium text-blue-800">
+                  Respiração Consciente
+                </p>
                 <p className="text-sm text-blue-600 mt-1">
                   Pratique 5 minutos de respiração profunda pela manhã
                 </p>
               </div>
-              
+
               <div className="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
                 <p className="font-medium text-green-800">Exercício Regular</p>
                 <p className="text-sm text-green-600 mt-1">
