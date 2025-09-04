@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/server';
 import { createClient as createClientBrowser } from '@/lib/client';
 
-export type StatusAgendamento = 'confirmado' | 'pendente' | 'cancelado' | 'concluido';
+export type StatusAgendamento = 'confirmado' | 'cancelado';
 
 export interface Agendamento {
   id: string;
@@ -45,14 +45,14 @@ export class AgendamentosService {
     try {
       console.log('Criando agendamento:', data);
 
-      // Criar agendamento sem empresa_id
+      // Criar agendamento 
       const { data: agendamento, error: agendamentoError } = await supabase
         .from('agendamentos')
         .insert({
           paciente_id: data.usuario_id,
           profissional_id: data.profissional_id,
           data_consulta: data.data_hora,
-          status: 'pendente',
+          status: 'confirmado',
         })
         .select(`
           *,
