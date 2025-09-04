@@ -1,3 +1,4 @@
+"use client";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import Link from "next/link";
@@ -11,70 +12,33 @@ import {
 } from "@/components/ui/card";
 import { Calendar, User, Clock, FileText, Heart, Phone } from "lucide-react";
 import PendingAppointmentResumer from "@/components/user/pending-appointment-resumer";
+import { useEffect, useState } from "react";
 
 type Consulta = {
   id: string;
   profissional_nome: string;
   tipo: string;
   data_consulta: string;
+  modalidade: string;
 };
 
-export default async function TelaUsuario() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function TelaUsuario() {
+  const [consultas, setConsultas] = useState<Consulta[]>([]);
+  const [usuario, setUsuario] = useState("");
 
-  if (!user) redirect("/auth/login");
+  useEffect(() => {
+    async function fetchConsultas() {
+      const res = await fetch("/api/agendamentos/proximos");
+      const data = await res.json();
+      if (data.success) {
+        setConsultas(data.data);
+        setUsuario(data.usuario);
+      }
+    }
+    fetchConsultas();
+  }, []);
 
-  // buscar dados do usuário
-  const { data: usuario, error } = await supabase
-    .from("usuarios")
-    .select("tipo_usuario, nome")
-    .eq("id", user.id)
-    .single();
-
-  if (error || !usuario) redirect("/auth/login");
-  if (usuario.tipo_usuario === "administrador")
-    redirect("/painel-administrativo");
-
-  const agoraISO = new Date().toISOString();
-  const { data: consultasData } = await supabase
-    .from("agendamentos")
-    .select("id, data_consulta, status, profissional_id")
-    .eq("paciente_id", user.id)
-    .eq("status", "confirmado")
-    .gte("data_consulta", agoraISO)
-    .order("data_consulta", { ascending: true });
-
-  // buscar nomes dos profissionais
-  let consultas: Consulta[] = [];
-  if (consultasData && consultasData.length > 0) {
-    const profIds = Array.from(
-      new Set(consultasData.map((c) => c.profissional_id).filter(Boolean))
-    );
-
-    const { data: profs } = await supabase
-      .from("usuarios")
-      .select("id, nome")
-      .in("id", profIds)
-      .eq("tipo_usuario", "profissional");
-
-    const profMap =
-      profs?.reduce<Record<string, string>>((acc, p) => {
-        acc[p.id] = p.nome;
-        return acc;
-      }, {}) || {};
-
-    consultas = consultasData.map((c) => ({
-      id: c.id,
-      profissional_nome: c.profissional_id
-        ? profMap[c.profissional_id]
-        : "Profissional",
-      tipo: "Consulta",
-      data_consulta: c.data_consulta,
-    }));
-  }
+  console.log(usuario);
 
   return (
     <>
@@ -85,8 +49,8 @@ export default async function TelaUsuario() {
           Área do Paciente
         </h1>
         <p className="mt-2 text-lg text-gray-600">
-          Bem-vindo, <span className="font-semibold">{usuario.nome}</span>!
-          Gerencie seus agendamentos e acompanhe seu cuidado.
+          Bem-vindo, <span className="font-semibold">{usuario}</span>! Gerencie
+          seus agendamentos e acompanhe seu cuidado.
         </p>
       </div>
 
@@ -272,6 +236,7 @@ export default async function TelaUsuario() {
                     <div>
                       <p className="font-medium">Dr. {c.profissional_nome}</p>
                       <p className="text-sm text-gray-600">{c.tipo}</p>
+                      <p className="text-sm text-gray-500">{c.modalidade}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{hora}</p>
