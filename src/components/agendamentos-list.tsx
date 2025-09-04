@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useMemo, useState, useEffect } from "react"
+import React, { useMemo, useState } from "react"
+
 import Link from "next/link"
 import { StatusAgendamento, type UiAgendamento } from "@/types/agendamento"
 import { StatusBadge } from "@/components/ui/status-badge"
@@ -62,21 +63,8 @@ function formatarDataHora(iso: string) {
 
 
 export default function AgendamentosList({ userId, initialAgendamentos }: Props) {
-  const seed = useMemo<UiAgendamento[]>(() => {
-    if (initialAgendamentos && initialAgendamentos.length) return initialAgendamentos
-    return generateMockAgendamentos(userId).map((m) => ({
-      id: m.id,
-      usuarioId: m.usuarioId ?? (userId ?? "mock"),
-      profissionalId: "mock",
-      profissionalNome: m.profissionalNome,
-      especialidade: m.especialidade,
-      dataISO: m.dataISO,
-      local: m.local,
-      status: m.status,
-      notas: m.notas,
-    }))
-  }, [initialAgendamentos, userId])
-  const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(seed)
+const [agendamentos, setAgendamentos] = useState<UiAgendamento[]>(initialAgendamentos ?? [])
+
   const [busca, setBusca] = useState("")
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro>("todos")
   const [cancelamentoModal, setCancelamentoModal] = useState<{ isOpen: boolean; agendamentoId: string | null }>({

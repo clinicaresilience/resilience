@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/server"
 import AgendamentosList from "@/components/agendamentos-list"
 import { BackButton } from "@/components/ui/back-button"
-import type { UiAgendamento } from "@/types/agendamento"
+import { AgendamentosService } from "@/services/database/agendamentos.service" 
 
 export default async function AgendamentosPage() {
   const supabase = await createClient()
@@ -28,17 +28,23 @@ export default async function AgendamentosPage() {
     redirect("/painel-administrativo")
   }
 
-  // Busca inicial via API (SSR) para seguir separação Frontend/Backend
-  let initialAgendamentos: UiAgendamento[] = []
-  try {
-    const res = await fetch("/api/agendamentos", { cache: "no-store" })
-    if (res.ok) {
-      const json = await res.json()
-      initialAgendamentos = json?.data ?? []
-    }
-  } catch {
-    // fallback silencioso; componente usará mocks se vazio
-  }
+  // Busca inicial direto no service (SSR)
+  const agendamentos = await AgendamentosService.listAgendamentos({
+    usuario_id: user.id,
+  })
+
+  // Mapeia para o formato do componente de UI
+  const initialAgendamentos = agendamentos.map((ag) => ({
+    id: ag.id,
+    usuarioId: ag.paciente_id,
+    profissionalId: ag.profissional_id,
+    profissionalNome: ag.profissional?.nome || "Profissional",
+    especialidade: ag.profissional?.especialidade || "",
+    dataISO: ag.data_consulta,
+    local: ag.local || "Clínica Resilience",
+    status: ag.status,
+    notas: ag.notas,
+  }))
 
   return (
     <div className="min-h-screen w-full bg-gray-50 pt-16">
@@ -46,7 +52,7 @@ export default async function AgendamentosPage() {
         <div className="mb-4">
           <BackButton href="/tela-usuario" texto="Voltar para Área do Paciente" />
         </div>
-        
+
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-azul-escuro-secundario text-center">
             Meus agendamentos

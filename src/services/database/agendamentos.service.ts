@@ -5,14 +5,16 @@ export type StatusAgendamento = 'confirmado' | 'pendente' | 'cancelado' | 'concl
 
 export interface Agendamento {
   id: string;
-  usuario_id: string;
+  paciente_id: string;   // igual ao banco
   profissional_id: string;
-  data_hora: string;
+  data_consulta: string; // igual ao banco
   status: StatusAgendamento;
   local: string;
   notas?: string;
   created_at?: string;
   updated_at?: string;
+  paciente?: { nome: string; email: string; telefone?: string };
+
   // Campos relacionados (joins)
   usuario?: {
     nome: string;
@@ -39,10 +41,10 @@ export class AgendamentosService {
    */
   static async createAgendamento(data: CreateAgendamentoDTO) {
     const supabase = await createClient();
-    
+
     try {
       console.log('Criando agendamento:', data);
-      
+
       // Criar agendamento sem empresa_id
       const { data: agendamento, error: agendamentoError } = await supabase
         .from('agendamentos')
@@ -69,15 +71,15 @@ export class AgendamentosService {
       // Mapear para o formato esperado
       return {
         id: agendamento.id,
-        usuario_id: agendamento.paciente_id,
+        paciente_id: agendamento.paciente_id,       // banco → frontend
         profissional_id: agendamento.profissional_id,
-        data_hora: agendamento.data_consulta,
+        data_consulta: agendamento.data_consulta,      // banco → frontend
         status: agendamento.status,
-        local: data.local,
-        notas: data.notas,
+        local: agendamento.local ?? data.local,    // pega do banco, fallback pro DTO
+        notas: agendamento.notas ?? data.notas,    // pega do banco, fallback pro DTO
         usuario: agendamento.paciente,
-        profissional: agendamento.profissional
-      } as Agendamento;
+        profissional: agendamento.profissional,
+      } satisfies Agendamento;
     } catch (error) {
       console.error('Erro no createAgendamento:', error);
       throw error;
@@ -89,7 +91,7 @@ export class AgendamentosService {
    */
   static async getAgendamentoById(id: string) {
     const supabase = await createClient();
-    
+
     const { data, error } = await supabase
       .from('agendamentos')
       .select(`
@@ -119,7 +121,7 @@ export class AgendamentosService {
     data_fim?: string;
   }) {
     const supabase = await createClient();
-    
+
     let query = supabase
       .from('agendamentos')
       .select(`
@@ -166,14 +168,14 @@ export class AgendamentosService {
     data_hora: string
   ): Promise<boolean> {
     const supabase = await createClient();
-    
+
     try {
       console.log('=== VERIFICANDO DISPONIBILIDADE ===');
       console.log('Input recebido:', { profissional_id, data_hora });
-      
+
       // Extrair data e hora do datetime
       let dataObj;
-      
+
       if (data_hora.includes('Z')) {
         dataObj = new Date(data_hora);
       } else if (data_hora.includes('T')) {
@@ -181,18 +183,18 @@ export class AgendamentosService {
       } else {
         dataObj = new Date(data_hora);
       }
-      
+
       if (isNaN(dataObj.getTime())) {
         console.error('Data inválida:', data_hora);
         return false;
       }
-      
+
       const data = dataObj.toISOString().split('T')[0]; // YYYY-MM-DD
       const hora = dataObj.toISOString().split('T')[1].substring(0, 5); // HH:MM
       const diaSemana = dataObj.getDay(); // 0=domingo, 1=segunda, etc.
-      
+
       console.log('Data/hora processadas:', { data, hora, diaSemana });
-      
+
       // 1. Verificar se o profissional atende neste dia da semana
       const { data: configuracao, error: configError } = await supabase
         .from('agenda_configuracoes')
@@ -265,7 +267,7 @@ export class AgendamentosService {
    */
   static async updateAgendamentoStatus(id: string, status: StatusAgendamento, notas?: string) {
     const supabase = await createClient();
-    
+
     const updateData: {
       status: StatusAgendamento;
       atualizado_em?: string;
@@ -312,9 +314,9 @@ export class AgendamentosServiceClient {
    */
   static async getMyAgendamentos() {
     const supabase = createClientBrowser();
-    
+
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) throw new Error('Usuário não autenticado');
 
     const { data, error } = await supabase

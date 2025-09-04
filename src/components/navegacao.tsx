@@ -35,7 +35,7 @@ export default function Navegacao() {
   ];
 
   return (
-    <Cabecalho className="w-full h-24 items-center flex justify-center py-3 px-4 sm:px-8 lg:px-20 fixed drop-shadow-xl z-[99] bg-white shadow">
+    <Cabecalho className="w-full h-24 items-center flex justify-center py-3 px-4 sm:px-8 lg:px-20  drop-shadow-xl z-[99] bg-white shadow">
       <nav className="flex items-center justify-between w-full">
         {/* Logo e Título */}
         <div className="flex items-center gap-3 sm:gap-6">

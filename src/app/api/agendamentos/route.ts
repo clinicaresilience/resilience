@@ -122,11 +122,11 @@ export async function POST(req: NextRequest) {
     // Formatar resposta
     const formattedAgendamento = {
       id: agendamento.id,
-      usuarioId: agendamento.usuario_id,
+      usuarioId: agendamento.paciente_id,
       profissionalId: agendamento.profissional_id,
       profissionalNome: agendamento.profissional?.nome || "Profissional",
       especialidade: agendamento.profissional?.especialidade || "",
-      dataISO: agendamento.data_hora,
+      dataISO: agendamento.data_consulta,
       local: local,
       status: agendamento.status,
       notas: agendamento.notas,
