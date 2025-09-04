@@ -40,7 +40,7 @@ interface Consulta {
   usuario?: { nome: string; email: string };
   status: string;
   local: string;
-  notas: string | null;
+  observacoes: string | null;
   dataISO: string;
 }
 
@@ -58,8 +58,10 @@ export function ProfessionalConsultasClient({
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroData, setFiltroData] = useState("");
   const [busca, setBusca] = useState("");
-  const [consultaSelecionada, setConsultaSelecionada] = useState<Consulta | null>(null);
+  const [consultaSelecionada, setConsultaSelecionada] =
+    useState<Consulta | null>(null);
   const [observacoes, setObservacoes] = useState("");
+  const [consultaAbertaId, setConsultaAbertaId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -87,7 +89,7 @@ export function ProfessionalConsultasClient({
       resultado = resultado.filter(
         (c) =>
           c.usuario_id.toLowerCase().includes(busca.toLowerCase()) ||
-          (c.notas?.toLowerCase().includes(busca.toLowerCase()) ?? false)
+          (c.obsevacoes?.toLowerCase().includes(busca.toLowerCase()) ?? false)
       );
 
     return resultado.sort(
@@ -153,6 +155,34 @@ export function ProfessionalConsultasClient({
     };
   }, [consultas]);
 
+  const handleSalvarObservacoes = async () => {
+    if (!consultaSelecionada) return;
+
+    try {
+      const res = await fetch("/api/consultas", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: consultaSelecionada.id,
+          observacoes,
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro ao salvar");
+
+      setConsultas((prev) =>
+        prev.map((c) =>
+          c.id === consultaSelecionada.id ? { ...c, observacoes } : c
+        )
+      );
+
+      console.log("Observações salvas com sucesso!");
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   if (loading) return <p>Carregando consultas...</p>;
 
   return (
@@ -162,9 +192,21 @@ export function ProfessionalConsultasClient({
         {[
           { icone: Calendar, titulo: "Total", valor: estatisticas.total },
           { icone: Clock, titulo: "Hoje", valor: estatisticas.hoje },
-          { icone: AlertCircle, titulo: "Pendentes", valor: estatisticas.pendentes },
-          { icone: CheckCircle, titulo: "Confirmadas", valor: estatisticas.confirmadas },
-          { icone: CheckCircle, titulo: "Concluídas", valor: estatisticas.concluidas },
+          {
+            icone: AlertCircle,
+            titulo: "Pendentes",
+            valor: estatisticas.pendentes,
+          },
+          {
+            icone: CheckCircle,
+            titulo: "Confirmadas",
+            valor: estatisticas.confirmadas,
+          },
+          {
+            icone: CheckCircle,
+            titulo: "Concluídas",
+            valor: estatisticas.concluidas,
+          },
         ].map(({ icone: Icon, titulo, valor }) => (
           <Card key={titulo}>
             <CardContent className="p-4 flex items-center space-x-2">
@@ -239,12 +281,18 @@ export function ProfessionalConsultasClient({
         {consultasFiltradas.map((consulta) => {
           const { data, hora, diaSemana } = formatarData(consulta.dataISO);
           return (
-            <Card key={consulta.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={consulta.id}
+              className="hover:shadow-md transition-shadow"
+            >
               <CardContent className="p-6 flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
                 <div className="flex-1">
                   <div className="flex items-center space-x-4 mb-2">
                     <h3 className="font-semibold text-lg">
-                      Paciente: {consulta.usuario?.nome || consulta.usuario_id || "Não informado"}
+                      Paciente:{" "}
+                      {consulta.usuario?.nome ||
+                        consulta.usuario_id ||
+                        "Não informado"}
                     </h3>
                     <StatusBadge status={consulta.status as any} />
                   </div>
@@ -252,7 +300,9 @@ export function ProfessionalConsultasClient({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-4 w-4" />
-                      <span>{data} ({diaSemana})</span>
+                      <span>
+                        {data} ({diaSemana})
+                      </span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Clock className="h-4 w-4" />
@@ -264,100 +314,51 @@ export function ProfessionalConsultasClient({
                     </div>
                   </div>
 
-                  {consulta.notas && (
+                  {consulta.observacoes && (
                     <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                      <strong>Observações:</strong> {consulta.notas}
+                      <strong>Observações:</strong> {consulta.observacoes}
                     </div>
                   )}
                 </div>
 
                 <div className="flex flex-col space-y-2 md:ml-4">
-                  {/* Botões: só concluir ou cancelar */}
-                  {consulta.status !== "concluido" && consulta.status !== "cancelado" && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => handleAcaoConsulta(consulta, "concluir")}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" /> Concluir
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleAcaoConsulta(consulta, "cancelar")}
-                      >
-                        <XCircle className="h-4 w-4 mr-1" /> Cancelar
-                      </Button>
-                    </>
-                  )}
+                  {/* Botões: Concluir ou Cancelar */}
+                  {consulta.status !== "concluido" &&
+                    consulta.status !== "cancelado" && (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            handleAcaoConsulta(consulta, "concluir")
+                          }
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" /> Concluir
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() =>
+                            handleAcaoConsulta(consulta, "cancelar")
+                          }
+                        >
+                          <XCircle className="h-4 w-4 mr-1" /> Cancelar
+                        </Button>
+                      </>
+                    )}
 
-                  {/* Detalhes */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setConsultaSelecionada(consulta);
-                          setObservacoes(consulta.notas || "");
-                        }}
-                      >
-                        <FileText className="h-4 w-4 mr-1" /> Detalhes
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>Detalhes da Consulta</DialogTitle>
-                        <DialogDescription>
-                          Informações completas e observações da consulta
-                        </DialogDescription>
-                      </DialogHeader>
-
-                      {consultaSelecionada && (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label>Paciente</Label>
-                              <p className="font-medium">
-                                {consultaSelecionada.usuario?.nome || consultaSelecionada.usuario_id || "Não informado"}
-                              </p>
-                            </div>
-                            <div>
-                              <Label>Status</Label>
-                              <StatusBadge status={consultaSelecionada.status as any} />
-                            </div>
-                            <div>
-                              <Label>Data e Hora</Label>
-                              <p className="font-medium">
-                                {formatarData(consultaSelecionada.dataISO).data} às {formatarData(consultaSelecionada.dataISO).hora}
-                              </p>
-                            </div>
-                            <div>
-                              <Label>Local</Label>
-                              <p className="font-medium">{consultaSelecionada.local}</p>
-                            </div>
-                          </div>
-
-                          <div>
-                            <Label htmlFor="observacoes">Observações</Label>
-                            <Textarea
-                              id="observacoes"
-                              value={observacoes}
-                              onChange={(e) => setObservacoes(e.target.value)}
-                              placeholder="Adicione observações sobre a consulta..."
-                              rows={4}
-                            />
-                          </div>
-
-                          <div className="flex justify-end space-x-2">
-                            <Button variant="outline">Cancelar</Button>
-                            <Button>Salvar Observações</Button>
-                          </div>
-                        </div>
-                      )}
-                    </DialogContent>
-                  </Dialog>
+                  {/* Botão para abrir detalhes */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setConsultaSelecionada(consulta);
+                      setObservacoes(consulta.observacoes || "");
+                      setConsultaAbertaId(consulta.id);
+                    }}
+                  >
+                    <FileText className="h-4 w-4 mr-1" /> Detalhes
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -368,7 +369,9 @@ export function ProfessionalConsultasClient({
           <Card>
             <CardContent className="p-8 text-center">
               <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma consulta encontrada</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Nenhuma consulta encontrada
+              </h3>
               <p className="text-gray-600">
                 Não há consultas que correspondam aos filtros selecionados.
               </p>
@@ -376,6 +379,79 @@ export function ProfessionalConsultasClient({
           </Card>
         )}
       </div>
+
+      {/* Dialog de Observações - fora do map */}
+      {consultaSelecionada && (
+        <Dialog
+          open={consultaAbertaId !== null}
+          onOpenChange={(open) => !open && setConsultaAbertaId(null)}
+        >
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Detalhes da Consulta</DialogTitle>
+              <DialogDescription>
+                Informações completas e observações da consulta
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Paciente</Label>
+                  <p className="font-medium">
+                    {consultaSelecionada.usuario?.nome ||
+                      consultaSelecionada.usuario_id ||
+                      "Não informado"}
+                  </p>
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <StatusBadge status={consultaSelecionada.status as any} />
+                </div>
+                <div>
+                  <Label>Data e Hora</Label>
+                  <p className="font-medium">
+                    {formatarData(consultaSelecionada.dataISO).data} às{" "}
+                    {formatarData(consultaSelecionada.dataISO).hora}
+                  </p>
+                </div>
+                <div>
+                  <Label>Local</Label>
+                  <p className="font-medium">{consultaSelecionada.local}</p>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="observacoes">Observações</Label>
+                <Textarea
+                  id="observacoes"
+                  value={observacoes}
+                  onChange={(e) => setObservacoes(e.target.value)}
+                  placeholder="Adicione observações sobre a consulta..."
+                  rows={4}
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button
+                  onClick={() => setConsultaAbertaId(null)}
+                  variant="outline"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={async () => {
+                    await handleSalvarObservacoes();
+                    setConsultaAbertaId(null);
+                  }}
+                >
+                  Salvar Observações
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

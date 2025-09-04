@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/client";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function fetchConsultasByProfissional(profissionalId: string) {
     const supabase = createClient();
@@ -38,4 +39,39 @@ export async function updateConsultaStatus(id: string, status: string) {
 export async function updateConsultaObservacoes(id: string, observacoes: string) {
     const supabase = createClient();
     return supabase.from("consultas").update({ observacoes }).eq("id", id);
+}
+
+// route.ts em /api/consultas
+
+
+
+export async function PATCH(req: NextRequest) {
+    try {
+        const supabase = await createClient();
+        const { id, observacoes } = await req.json();
+
+        if (!id || observacoes === undefined) {
+            return NextResponse.json(
+                { error: "Campos obrigatórios ausentes: id e observacoes" },
+                { status: 400 }
+            );
+        }
+
+        const { data, error } = await supabase
+            .from("consultas")
+            .update({ observacoes })
+            .eq("id", id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Erro ao atualizar observações:", error);
+            return NextResponse.json({ error: "Erro ao atualizar observações" }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true, data }, { status: 200 });
+    } catch (err) {
+        console.error("Erro desconhecido:", err);
+        return NextResponse.json({ error: "Erro desconhecido" }, { status: 500 });
+    }
 }
