@@ -2,7 +2,6 @@
 import ProfissionaisAgendamentos from "./profissionais/page";
 
 export default async function AgendamentosPublico() {
-
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
   // Chama sua API interna (sem precisar de SITE_URL)
@@ -30,7 +29,7 @@ export default async function AgendamentosPublico() {
         Nossos Psicólogos
       </h1>
 
-      <ProfissionaisAgendamentos data={profissionais} />
+      <ProfissionaisAgendamentos data={profissionais ?? []} />
     </div>
   );
 }
