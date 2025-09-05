@@ -35,8 +35,9 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body
-        className={`!bg-azul-ciano-claro min-h-screen ${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`!bg-azul-ciano-claro flex h-screen overflow-hidden ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+
         <AuthProvider>
           <AuthenticatedLayout>
             {children}

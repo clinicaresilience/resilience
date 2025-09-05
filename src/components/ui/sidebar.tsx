@@ -6,11 +6,13 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { User, Menu, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { useNavigation } from "@/features/navigation/hooks/use-navigation"
+import type { Role } from "@/features/auth/types"
 
 interface SidebarProps {
-  userType: "administrador" | "profissional" | "usuario"
+  userType: Role
   userName: string
 }
+
 
 
 export function Sidebar({ userType, userName }: SidebarProps) {
@@ -24,19 +26,21 @@ export function Sidebar({ userType, userName }: SidebarProps) {
     switch (userType) {
       case "administrador": return "Administrador"
       case "profissional": return "Profissional"
-      case "usuario": return "Paciente"
+      case "comum": return "Paciente"
       default: return "Usuário"
     }
   }
+
 
   const getUserTypeColor = () => {
     switch (userType) {
       case "administrador": return "from-purple-400 to-purple-600"
       case "profissional": return "from-blue-400 to-blue-600"
-      case "usuario": return "from-green-400 to-green-600"
+      case "comum": return "from-green-400 to-green-600"
       default: return "from-gray-400 to-gray-600"
     }
   }
+
 
   return (
     <>
@@ -60,7 +64,7 @@ export function Sidebar({ userType, userName }: SidebarProps) {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 shadow-sm transition-all duration-300 z-50",
+        "relative bg-white border-r border-gray-200 shadow-sm transition-all duration-300",
         isCollapsed ? "w-16" : "w-64",
         isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
@@ -68,13 +72,14 @@ export function Sidebar({ userType, userName }: SidebarProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="absolute -right-3 top-6 hidden md:flex h-6 w-6 rounded-full border border-gray-200 bg-white shadow-sm"
+          className="absolute -right-3 top-6 hidden md:flex h-6 w-6 rounded-full border border-gray-200 bg-white shadow-sm z-20"
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
           {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
         </Button>
 
         <div className="flex flex-col h-full">
+
           {/* User Info */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center space-x-3">

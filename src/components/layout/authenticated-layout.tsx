@@ -58,19 +58,21 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
 
   // Para rotas com sidebar
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex flex-col w-full h-full bg-gray-50">
       <ConditionalNavigation />
       {usuario && (
-        <div className="flex">
+        <div className="flex flex-1 overflow-hidden">
           <Sidebar 
             userType={usuario.tipo_usuario} 
             userName={usuario.nome}
           />
-          <main className="flex-1 ml-0 md:ml-64 transition-all duration-300 pt-16">
+          <main className="flex-1 overflow-y-auto pt-16">
             <div className="p-4 sm:p-6 lg:p-8">
               {children}
             </div>
           </main>
+
+
         </div>
       )}
     </div>
