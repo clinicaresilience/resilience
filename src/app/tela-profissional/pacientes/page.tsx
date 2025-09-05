@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import { BackButton } from "@/components/ui/back-button";
-import { ProfessionalPacientesClient } from "@/components/professional/pacientes-client";
+import { PacientesOverview } from "@/components/professional/pacientes-client";
 
 export default async function PacientesProfissionalPage() {
   const supabase = await createClient();
@@ -47,7 +47,7 @@ export default async function PacientesProfissionalPage() {
           </p>
         </div>
 
-        <ProfessionalPacientesClient 
+        <PacientesOverview 
           profissionalNome={`Dr(a). ${usuario.nome}`}
           profissionalId={user.id}
         />
