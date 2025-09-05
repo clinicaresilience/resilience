@@ -2,8 +2,22 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Users, FileText, Clock, TrendingUp, AlertCircle } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Calendar,
+  Users,
+  FileText,
+  Clock,
+  TrendingUp,
+  AlertCircle,
+} from "lucide-react";
+import PrimeiroAcessoModal from "./primeiro-acesso";
 
 export default async function TelaProfissional() {
   const supabase = await createClient();
@@ -16,7 +30,7 @@ export default async function TelaProfissional() {
   // buscar dados do usuário
   const { data: usuario, error } = await supabase
     .from("usuarios")
-    .select("tipo_usuario, nome")
+    .select("tipo_usuario, nome, primeiro_acesso")
     .eq("id", user.id)
     .single();
 
@@ -36,13 +50,19 @@ export default async function TelaProfissional() {
   return (
     <>
       {/* Cabeçalho da Página */}
+      <PrimeiroAcessoModal
+        primeiroAcesso={usuario.primeiro_acesso}
+        userId={user.id}
+        userEmail={user.email!}
+      />
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-azul-escuro">
           Área do Profissional
         </h1>
         <p className="mt-2 text-lg text-gray-600">
-          Bem-vindo, <span className="font-semibold">Dr(a). {usuario.nome}</span>! 
-          Gerencie suas consultas e acompanhe seus pacientes.
+          Bem-vindo,{" "}
+          <span className="font-semibold">Dr(a). {usuario.nome}</span>! Gerencie
+          suas consultas e acompanhe seus pacientes.
         </p>
       </div>
 
@@ -209,14 +229,16 @@ export default async function TelaProfissional() {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div>
                 <p className="font-medium">Maria Silva Santos</p>
-                <p className="text-sm text-gray-600">Consulta de retorno - Ansiedade</p>
+                <p className="text-sm text-gray-600">
+                  Consulta de retorno - Ansiedade
+                </p>
               </div>
               <div className="text-right">
                 <p className="font-medium">14:30</p>
                 <p className="text-sm text-gray-600">Hoje</p>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div>
                 <p className="font-medium">João Carlos Oliveira</p>
@@ -239,7 +261,7 @@ export default async function TelaProfissional() {
               </div>
             </div>
           </div>
-          
+
           <div className="mt-4">
             <Button asChild className="w-full">
               <Link href="/tela-profissional/consultas">
