@@ -306,9 +306,9 @@ export function PacientesListClient() {
 
       {/* Modal de Detalhes */}
       <Dialog open={modalAberto} onOpenChange={setModalAberto}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-azul-escuro">
               <User className="h-5 w-5" />
               Detalhes do Paciente
             </DialogTitle>
@@ -317,7 +317,7 @@ export function PacientesListClient() {
           {pacienteSelecionado && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">{pacienteSelecionado.nome}</h3>
+                <h3 className="font-semibold text-lg text-azul-escuro">{pacienteSelecionado.nome}</h3>
                 <Badge className={getStatusColor(pacienteSelecionado.status)}>
                   {getStatusLabel(pacienteSelecionado.status)}
                 </Badge>
@@ -325,22 +325,22 @@ export function PacientesListClient() {
 
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">{pacienteSelecionado.email}</span>
+                  <Mail className="h-4 w-4 text-gray-600" />
+                  <span className="text-sm text-gray-900">{pacienteSelecionado.email}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">{pacienteSelecionado.telefone}</span>
+                  <Phone className="h-4 w-4 text-gray-600" />
+                  <span className="text-sm text-gray-900">{pacienteSelecionado.telefone}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">{pacienteSelecionado.totalConsultas} consulta(s) realizadas</span>
+                  <Calendar className="h-4 w-4 text-gray-600" />
+                  <span className="text-sm text-gray-900">{pacienteSelecionado.totalConsultas} consulta(s) realizadas</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-medium">Histórico:</h4>
-                <div className="text-sm text-gray-600 space-y-1">
+                <h4 className="font-medium text-gray-800">Histórico:</h4>
+                <div className="text-sm text-gray-700 space-y-1">
                   <p>Última consulta: {formatarData(pacienteSelecionado.ultimaConsulta)}</p>
                   {pacienteSelecionado.proximaConsulta && (
                     <p>Próxima consulta: {formatarData(pacienteSelecionado.proximaConsulta)}</p>
@@ -349,7 +349,7 @@ export function PacientesListClient() {
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-medium">Profissionais Atendentes:</h4>
+                <h4 className="font-medium text-gray-800">Profissionais Atendentes:</h4>
                 <div className="flex flex-wrap gap-1">
                   {pacienteSelecionado.profissionaisAtendentes.map((prof, index) => (
                     <Badge key={index} variant="secondary" className="text-xs">
@@ -359,8 +359,8 @@ export function PacientesListClient() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t">
-                <Button 
+              <div className="pt-4 border-t border-gray-200">
+                <Button
                   onClick={() => setModalAberto(false)}
                   className="w-full"
                   variant="outline"

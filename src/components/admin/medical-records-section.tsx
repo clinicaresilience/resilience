@@ -14,6 +14,7 @@ import {
 } from "@/lib/mocks/medical-records"
 import { Search, FileText, User, Calendar, Filter, Eye } from "lucide-react"
 import { StatusBadge, type GenericStatus } from "@/components/ui/status-badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 type ViewMode = "prontuarios" | "historico"
 
@@ -21,7 +22,7 @@ export function MedicalRecordsSection() {
   const [viewMode, setViewMode] = useState<ViewMode>("prontuarios")
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("todos")
-  const [selectedRecord, setSelectedRecord] = useState<ProntuarioMedico | null>(null)
+
 
   // Dados mock
   const allProntuarios = useMemo(() => generateMockProntuarios(), [])
@@ -194,15 +195,65 @@ export function MedicalRecordsSection() {
 
                   {/* Botão sempre na base */}
                   <div className="mt-auto pt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedRecord(prontuario)}
-                      className="w-full flex items-center gap-1 justify-center"
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span>Ver Detalhes</span>
-                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full flex items-center gap-1 justify-center"
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span>Ver Detalhes</span>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle className="text-azul-escuro">Detalhes do Prontuário</DialogTitle>
+                        </DialogHeader>
+
+                        <div className="space-y-4">
+                          <div>
+                            <strong className="text-sm text-gray-800 font-medium">Tipo de Consulta:</strong>
+                            <p className="mt-1 text-gray-900">{prontuario.tipoConsulta}</p>
+                          </div>
+
+                          {prontuario.diagnostico && (
+                            <div>
+                              <strong className="text-sm text-gray-800 font-medium">Diagnóstico:</strong>
+                              <p className="mt-1 text-gray-900">{prontuario.diagnostico}</p>
+                            </div>
+                          )}
+
+                          <div>
+                            <strong className="text-sm text-gray-800 font-medium">Observações:</strong>
+                            <p className="mt-1 text-gray-900 whitespace-pre-wrap">{prontuario.observacoes}</p>
+                          </div>
+
+                          {prontuario.prescricoes && prontuario.prescricoes.length > 0 && (
+                            <div>
+                              <strong className="text-sm text-gray-800 font-medium">Prescrições/Recomendações:</strong>
+                              <ul className="mt-1 list-disc list-inside space-y-1">
+                                {prontuario.prescricoes.map((prescricao: string, index: number) => (
+                                  <li key={index} className="text-sm text-gray-900">{prescricao}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {prontuario.proximaConsulta && (
+                            <div>
+                              <strong className="text-sm text-gray-800 font-medium">Próxima Consulta:</strong>
+                              <p className="mt-1 text-gray-900">{formatDate(prontuario.proximaConsulta)}</p>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between text-xs text-gray-600 pt-4 border-t border-gray-200">
+                            <span>Criado em: {formatDate(prontuario.criadoEm)}</span>
+                            <span>Atualizado em: {formatDate(prontuario.atualizadoEm)}</span>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </CardContent>
               </Card>
@@ -267,70 +318,7 @@ export function MedicalRecordsSection() {
         </div>
       )}
 
-      {/* Modal de Detalhes do Prontuário */}
-      {selectedRecord && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-azul-escuro">{selectedRecord.pacienteNome}</h3>
-                  <p className="text-gray-600">Dr(a). {selectedRecord.profissionalNome} • {formatDate(selectedRecord.dataConsulta)}</p>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedRecord(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </Button>
-              </div>
 
-              <div className="space-y-4">
-                <div>
-                  <strong className="text-sm text-gray-700">Tipo de Consulta:</strong>
-                  <p className="mt-1">{selectedRecord.tipoConsulta}</p>
-                </div>
-
-                {selectedRecord.diagnostico && (
-                  <div>
-                    <strong className="text-sm text-gray-700">Diagnóstico:</strong>
-                    <p className="mt-1">{selectedRecord.diagnostico}</p>
-                  </div>
-                )}
-
-                <div>
-                  <strong className="text-sm text-gray-700">Observações:</strong>
-                  <p className="mt-1 whitespace-pre-wrap">{selectedRecord.observacoes}</p>
-                </div>
-
-                {selectedRecord.prescricoes && selectedRecord.prescricoes.length > 0 && (
-                  <div>
-                    <strong className="text-sm text-gray-700">Prescrições/Recomendações:</strong>
-                    <ul className="mt-1 list-disc list-inside space-y-1">
-                      {selectedRecord.prescricoes.map((prescricao, index) => (
-                        <li key={index} className="text-sm">{prescricao}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {selectedRecord.proximaConsulta && (
-                  <div>
-                    <strong className="text-sm text-gray-700">Próxima Consulta:</strong>
-                    <p className="mt-1">{formatDate(selectedRecord.proximaConsulta)}</p>
-                  </div>
-                )}
-
-                <div className="flex justify-between text-xs text-gray-500 pt-4 border-t">
-                  <span>Criado em: {formatDate(selectedRecord.criadoEm)}</span>
-                  <span>Atualizado em: {formatDate(selectedRecord.atualizadoEm)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

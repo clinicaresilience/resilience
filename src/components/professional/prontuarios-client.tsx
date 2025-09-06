@@ -224,7 +224,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                   Novo Prontuário
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-[95vw] sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Criar Novo Prontuário</DialogTitle>
                   <DialogDescription>
@@ -380,12 +380,12 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                       Ver/Editar
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <div className="flex items-center justify-between">
                         <div>
-                          <DialogTitle>Prontuário Médico</DialogTitle>
-                          <DialogDescription>
+                          <DialogTitle className="text-azul-escuro">Prontuário Médico</DialogTitle>
+                          <DialogDescription className="text-gray-700">
                             {prontuarioSelecionado?.pacienteNome} - {prontuarioSelecionado?.tipoConsulta}
                           </DialogDescription>
                         </div>
@@ -415,19 +415,19 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                         {/* Informações Básicas */}
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <Label>Paciente</Label>
-                            <p className="font-medium">{prontuarioSelecionado.pacienteNome}</p>
+                            <Label className="text-gray-800 font-medium">Paciente</Label>
+                            <p className="font-medium text-gray-900">{prontuarioSelecionado.pacienteNome}</p>
                           </div>
                           <div>
-                            <Label>Data da Consulta</Label>
-                            <p className="font-medium">{formatarData(prontuarioSelecionado.dataConsulta)}</p>
+                            <Label className="text-gray-800 font-medium">Data da Consulta</Label>
+                            <p className="font-medium text-gray-900">{formatarData(prontuarioSelecionado.dataConsulta)}</p>
                           </div>
                         </div>
 
                         {/* Campos Editáveis */}
                         <div className="space-y-4">
                           <div>
-                            <Label htmlFor="tipoConsultaEdit">Tipo de Consulta</Label>
+                            <Label htmlFor="tipoConsultaEdit" className="text-gray-800 font-medium">Tipo de Consulta</Label>
                             {modoEdicao ? (
                               <Input
                                 id="tipoConsultaEdit"
@@ -435,12 +435,12 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                 onChange={(e) => setDadosEdicao({...dadosEdicao, tipoConsulta: e.target.value})}
                               />
                             ) : (
-                              <p className="p-2 bg-gray-50 rounded">{prontuarioSelecionado.tipoConsulta}</p>
+                              <p className="p-2 bg-gray-50 rounded text-gray-900">{prontuarioSelecionado.tipoConsulta}</p>
                             )}
                           </div>
 
                           <div>
-                            <Label htmlFor="diagnosticoEdit">Diagnóstico</Label>
+                            <Label htmlFor="diagnosticoEdit" className="text-gray-800 font-medium">Diagnóstico</Label>
                             {modoEdicao ? (
                               <Input
                                 id="diagnosticoEdit"
@@ -449,12 +449,12 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                 placeholder="Diagnóstico médico"
                               />
                             ) : (
-                              <p className="p-2 bg-gray-50 rounded">{prontuarioSelecionado.diagnostico || "Não informado"}</p>
+                              <p className="p-2 bg-gray-50 rounded text-gray-900">{prontuarioSelecionado.diagnostico || "Não informado"}</p>
                             )}
                           </div>
 
                           <div>
-                            <Label htmlFor="observacoesEdit">Observações</Label>
+                            <Label htmlFor="observacoesEdit" className="text-gray-800 font-medium">Observações</Label>
                             {modoEdicao ? (
                               <Textarea
                                 id="observacoesEdit"
@@ -463,14 +463,14 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                 rows={4}
                               />
                             ) : (
-                              <p className="p-2 bg-gray-50 rounded whitespace-pre-wrap">{prontuarioSelecionado.observacoes}</p>
+                              <p className="p-2 bg-gray-50 rounded whitespace-pre-wrap text-gray-900">{prontuarioSelecionado.observacoes}</p>
                             )}
                           </div>
 
                           {/* Prescrições */}
                           <div>
                             <div className="flex items-center justify-between mb-2">
-                              <Label>Prescrições</Label>
+                              <Label className="text-gray-800 font-medium">Prescrições</Label>
                               {modoEdicao && (
                                 <Button size="sm" variant="outline" onClick={adicionarPrescricao}>
                                   <Plus className="h-4 w-4 mr-1" />
@@ -487,8 +487,8 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                       onChange={(e) => atualizarPrescricao(index, e.target.value)}
                                       placeholder="Digite a prescrição"
                                     />
-                                    <Button 
-                                      size="sm" 
+                                    <Button
+                                      size="sm"
                                       variant="outline"
                                       onClick={() => removerPrescricao(index)}
                                     >
@@ -502,11 +502,11 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                 {prontuarioSelecionado.prescricoes && prontuarioSelecionado.prescricoes.length > 0 ? (
                                   <ul className="list-disc list-inside space-y-1">
                                     {prontuarioSelecionado.prescricoes.map((prescricao, index) => (
-                                      <li key={index}>{prescricao}</li>
+                                      <li key={index} className="text-gray-900">{prescricao}</li>
                                     ))}
                                   </ul>
                                 ) : (
-                                  <p className="text-gray-500">Nenhuma prescrição registrada</p>
+                                  <p className="text-gray-600">Nenhuma prescrição registrada</p>
                                 )}
                               </div>
                             )}
@@ -514,7 +514,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
 
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <Label htmlFor="proximaConsultaEdit">Próxima Consulta</Label>
+                              <Label htmlFor="proximaConsultaEdit" className="text-gray-800 font-medium">Próxima Consulta</Label>
                               {modoEdicao ? (
                                 <Input
                                   id="proximaConsultaEdit"
@@ -523,14 +523,14 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                   onChange={(e) => setDadosEdicao({...dadosEdicao, proximaConsulta: e.target.value ? new Date(e.target.value).toISOString() : ""})}
                                 />
                               ) : (
-                                <p className="p-2 bg-gray-50 rounded">
+                                <p className="p-2 bg-gray-50 rounded text-gray-900">
                                   {prontuarioSelecionado.proximaConsulta ? formatarData(prontuarioSelecionado.proximaConsulta) : "Não agendada"}
                                 </p>
                               )}
                             </div>
 
                             <div>
-                              <Label htmlFor="statusEdit">Status</Label>
+                              <Label htmlFor="statusEdit" className="text-gray-800 font-medium">Status</Label>
                               {modoEdicao ? (
                                 <Select
                                   value={dadosEdicao.status || ""}
@@ -555,9 +555,9 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                         </div>
 
                         {/* Informações de Auditoria */}
-                        <div className="pt-4 border-t text-sm text-gray-500">
-                          <p>Criado em: {formatarData(prontuarioSelecionado.criadoEm)}</p>
-                          <p>Última atualização: {formatarData(prontuarioSelecionado.atualizadoEm)}</p>
+                        <div className="pt-4 border-t border-gray-200 text-sm text-gray-600">
+                          <p className="text-gray-700">Criado em: {formatarData(prontuarioSelecionado.criadoEm)}</p>
+                          <p className="text-gray-700">Última atualização: {formatarData(prontuarioSelecionado.atualizadoEm)}</p>
                         </div>
                       </div>
                     )}
