@@ -1,9 +1,15 @@
 "use client"
 
+import React, { useState, createContext, useContext } from "react"
 import { usePathname } from "next/navigation"
 import { Sidebar } from "@/components/ui/sidebar"
 import ConditionalNavigation from "@/components/conditional-navigation"
 import { useAuth } from "@/features/auth/context/auth-context"
+
+// Context for sidebar state
+const SidebarContext = createContext<{ collapsed: boolean }>({ collapsed: false })
+
+export const useSidebar = () => useContext(SidebarContext)
 
 interface AuthenticatedLayoutProps {
   children: React.ReactNode
@@ -13,6 +19,7 @@ interface AuthenticatedLayoutProps {
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   const { user: usuario, loading } = useAuth()
   const pathname = usePathname()
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
 
   // Verificar se deve mostrar a sidebar
@@ -58,21 +65,24 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
 
   // Para rotas com sidebar
   return (
-    <div className="flex flex-col w-full h-full bg-gray-50">
-      {pathname.startsWith('/painel-administrativo') ? null : <ConditionalNavigation />}
-      {usuario && (
-        <>
-          <Sidebar
-            userType={usuario.tipo_usuario}
-            userName={usuario.nome}
-          />
-          <main className={`ml-16 md:ml-64 transition-all duration-300 overflow-y-auto min-h-screen ${pathname.startsWith('/painel-administrativo') ? 'pt-0' : 'pt-16'}`}>
-            <div className="p-4 sm:p-6 lg:p-8">
-              {children}
-            </div>
-          </main>
-        </>
-      )}
-    </div>
+    <SidebarContext.Provider value={{ collapsed: sidebarCollapsed }}>
+      <div className="flex flex-col w-full h-full bg-gray-50">
+        {pathname.startsWith('/painel-administrativo') ? null : <ConditionalNavigation />}
+        {usuario && (
+          <>
+            <Sidebar
+              userType={usuario.tipo_usuario}
+              userName={usuario.nome}
+              onCollapseChange={setSidebarCollapsed}
+            />
+            <main className={`transition-all duration-500 ease-in-out overflow-y-auto min-h-screen ${pathname.startsWith('/painel-administrativo') ? 'pt-0' : 'pt-16'} ${sidebarCollapsed ? 'ml-16' : 'ml-16 md:ml-64'}`}>
+              <div className="p-0 w-full max-w-none">
+                {children}
+              </div>
+            </main>
+          </>
+        )}
+      </div>
+    </SidebarContext.Provider>
   )
 }

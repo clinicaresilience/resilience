@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,13 +20,21 @@ import {
 interface SidebarProps {
   userType: "administrador" | "profissional" | "comum";
   userName: string;
+  onCollapseChange?: (collapsed: boolean) => void;
 }
 
-export function Sidebar({ userType, userName }: SidebarProps) {
+export function Sidebar({ userType, userName, onCollapseChange }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const { activeTab, setActiveTab } = useTabStore();
+
+  // Call callback when collapse state changes
+  useEffect(() => {
+    if (onCollapseChange) {
+      onCollapseChange(isCollapsed);
+    }
+  }, [isCollapsed, onCollapseChange]);
 
   const tabs = [
     {
@@ -104,7 +112,7 @@ export function Sidebar({ userType, userName }: SidebarProps) {
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed left-0 top-0 h-screen bg-white border-r border-gray-200 shadow-sm transition-all duration-300 z-30",
+          "fixed left-0 top-0 h-screen bg-white border-r border-gray-200 shadow-sm transition-all duration-500 ease-in-out z-30",
           isCollapsed ? "w-16" : "w-64",
           isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}

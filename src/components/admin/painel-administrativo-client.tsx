@@ -1,6 +1,7 @@
 "use client";
 
 import { useTabStore, TabType } from "../../app/store/useTabStore";
+import { useSidebar } from "@/components/layout/authenticated-layout";
 import { CadastrarProfissionalDialog } from "@/components/admin/cadastrar-profissional-dialog";
 import { ProfissionaisList } from "@/components/admin/profissionais-list";
 import { AdminDashboard } from "@/components/admin/dashboard";
@@ -24,6 +25,7 @@ interface PainelAdministrativoClientProps {
     nome: string;
   };
   userEmail: string;
+  sidebarCollapsed?: boolean;
 }
 
 export function PainelAdministrativoClient({
@@ -31,6 +33,7 @@ export function PainelAdministrativoClient({
   userEmail,
 }: PainelAdministrativoClientProps) {
   const { activeTab, setActiveTab } = useTabStore();
+  const { collapsed } = useSidebar();
 
   const tabs = [
     {
@@ -102,7 +105,11 @@ export function PainelAdministrativoClient({
     <div className="min-h-screen w-full bg-gray-50">
       {/* Fixed Top Navigation Bar */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div
+          className={`transition-all duration-500 ease-in-out ${
+            collapsed ? "w-full px-4 sm:px-6" : "mx-auto max-w-7xl px-4 sm:px-6"
+          }`}
+        >
           <div className="flex justify-between items-center h-16">
             {/* Logo/Title */}
             <div className="flex items-center">
@@ -170,7 +177,11 @@ export function PainelAdministrativoClient({
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 md:pb-6 pb-20">
+      <div
+        className={`transition-all duration-500 ease-in-out w-full ${
+          collapsed ? " px-2 sm:px-4" : "mx-auto  px-4 sm:px-6"
+        } py-6 md:pb-6 pb-20`}
+      >
         {/* Welcome Header */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
