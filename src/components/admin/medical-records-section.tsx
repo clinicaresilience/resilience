@@ -13,7 +13,7 @@ import {
   type HistoricoPaciente 
 } from "@/lib/mocks/medical-records"
 import { Search, FileText, User, Calendar, Filter, Eye } from "lucide-react"
-import { StatusBadge } from "@/components/ui/status-badge"
+import { StatusBadge, type GenericStatus } from "@/components/ui/status-badge"
 
 type ViewMode = "prontuarios" | "historico"
 
@@ -152,50 +152,58 @@ export function MedicalRecordsSection() {
             </Card>
           ) : (
             filteredProntuarios.map((prontuario) => (
-              <Card key={prontuario.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg text-azul-escuro">{prontuario.pacienteNome}</CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                        <span>Dr(a). {prontuario.profissionalNome}</span>
-                        <span>•</span>
-                        <span>{formatDate(prontuario.dataConsulta)}</span>
-                        <span>•</span>
-                        <span>{prontuario.tipoConsulta}</span>
+              <Card key={prontuario.id} className="hover:shadow-md transition-shadow flex flex-col h-full">
+                <CardHeader className="pb-3 flex-shrink-0">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg text-azul-escuro break-words">{prontuario.pacienteNome}</CardTitle>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 mt-1">
+                          <span className="break-words">Dr(a). {prontuario.profissionalNome}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="break-words">{formatDate(prontuario.dataConsulta)}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="break-words">{prontuario.tipoConsulta}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <StatusBadge status={prontuario.status as any} />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedRecord(prontuario)}
-                        className="flex items-center gap-1"
-                      >
-                        <Eye className="h-4 w-4" />
-                        Ver Detalhes
-                      </Button>
+                      <div className="flex-shrink-0">
+                        <StatusBadge status={prontuario.status as GenericStatus} />
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  {prontuario.diagnostico && (
+                <CardContent className="flex-1 flex flex-col">
+                  <div className="flex-1">
+                    {prontuario.diagnostico && (
+                      <div className="mb-3">
+                        <strong className="text-sm text-gray-700">Diagnóstico:</strong>
+                        <p className="text-sm text-gray-600 mt-1">{prontuario.diagnostico}</p>
+                      </div>
+                    )}
                     <div className="mb-3">
-                      <strong className="text-sm text-gray-700">Diagnóstico:</strong>
-                      <p className="text-sm text-gray-600 mt-1">{prontuario.diagnostico}</p>
+                      <strong className="text-sm text-gray-700">Observações:</strong>
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{prontuario.observacoes}</p>
                     </div>
-                  )}
-                  <div className="mb-3">
-                    <strong className="text-sm text-gray-700">Observações:</strong>
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">{prontuario.observacoes}</p>
+                    {prontuario.proximaConsulta && (
+                      <div className="flex items-center gap-2 text-sm text-blue-600">
+                        <Calendar className="h-4 w-4" />
+                        <span>Próxima consulta: {formatDate(prontuario.proximaConsulta)}</span>
+                      </div>
+                    )}
                   </div>
-                  {prontuario.proximaConsulta && (
-                    <div className="flex items-center gap-2 text-sm text-blue-600">
-                      <Calendar className="h-4 w-4" />
-                      <span>Próxima consulta: {formatDate(prontuario.proximaConsulta)}</span>
-                    </div>
-                  )}
+
+                  {/* Botão sempre na base */}
+                  <div className="mt-auto pt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedRecord(prontuario)}
+                      className="w-full flex items-center gap-1 justify-center"
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span>Ver Detalhes</span>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))
@@ -232,7 +240,7 @@ export function MedicalRecordsSection() {
                         )}
                       </div>
                     </div>
-                    <StatusBadge status={historico.statusAtual as any} />
+                    <StatusBadge status={historico.statusAtual as GenericStatus} />
                   </div>
                 </CardHeader>
                 <CardContent>

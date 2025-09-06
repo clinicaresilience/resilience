@@ -247,49 +247,54 @@ export function PacientesListClient() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {pacientesFiltrados.map((paciente) => (
-                <Card key={paciente.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-semibold text-azul-escuro">{paciente.nome}</h3>
-                      <Badge className={getStatusColor(paciente.status)}>
-                        {getStatusLabel(paciente.status)}
-                      </Badge>
-                    </div>
+                <Card key={paciente.id} className="hover:shadow-md transition-shadow flex flex-col h-full">
+                  <CardContent className="p-4 flex-1 flex flex-col">
+                    <div className="flex flex-col gap-3 flex-1">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 flex-shrink-0">
+                        <h3 className="font-semibold text-azul-escuro break-words flex-1 min-w-0">{paciente.nome}</h3>
+                        <Badge className={`${getStatusColor(paciente.status)} flex-shrink-0`}>
+                          {getStatusLabel(paciente.status)}
+                        </Badge>
+                      </div>
 
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Mail className="h-4 w-4" />
-                        <span>{paciente.email}</span>
+                      <div className="space-y-2 text-sm flex-1">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Mail className="h-4 w-4 flex-shrink-0" />
+                          <span className="break-words">{paciente.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Phone className="h-4 w-4 flex-shrink-0" />
+                          <span className="break-words">{paciente.telefone}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Calendar className="h-4 w-4 flex-shrink-0" />
+                          <span className="break-words">{paciente.totalConsultas} consulta(s)</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Phone className="h-4 w-4" />
-                        <span>{paciente.telefone}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Calendar className="h-4 w-4" />
-                        <span>{paciente.totalConsultas} consulta(s)</span>
-                      </div>
-                    </div>
 
-                    <div className="mt-4 pt-3 border-t">
-                      <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
-                        <span>Última: {formatarData(paciente.ultimaConsulta)}</span>
-                        {paciente.proximaConsulta && (
-                          <span className="text-blue-600">Próxima: {formatarData(paciente.proximaConsulta)}</span>
-                        )}
+                      <div className="flex-1 flex flex-col justify-end">
+                        <div className="flex flex-col gap-2 text-xs text-gray-500 mb-3">
+                          <span className="break-words">Última: {formatarData(paciente.ultimaConsulta)}</span>
+                          {paciente.proximaConsulta && (
+                            <span className="text-blue-600 break-words">Próxima: {formatarData(paciente.proximaConsulta)}</span>
+                          )}
+                        </div>
+
+                        {/* Botão sempre na base */}
+                        <div className="mt-auto">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full flex items-center gap-2 justify-center"
+                            onClick={() => abrirDetalhes(paciente)}
+                          >
+                            <Eye className="h-3 w-3 flex-shrink-0" />
+                            <span>Ver Detalhes</span>
+                          </Button>
+                        </div>
                       </div>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full flex items-center gap-2"
-                        onClick={() => abrirDetalhes(paciente)}
-                      >
-                        <Eye className="h-3 w-3" />
-                        Ver Detalhes
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>

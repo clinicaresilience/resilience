@@ -331,41 +331,45 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
       </Card>
 
       {/* Lista de Prontuários */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {prontuariosProfissional.map((prontuario) => (
-          <Card key={prontuario.id} className="hover:shadow-md transition-shadow flex flex-col">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{prontuario.pacienteNome}</CardTitle>
-                <StatusBadge status={prontuario.status as any} />
-              </div>
-              <CardDescription>{prontuario.tipoConsulta}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <div className="space-y-3 flex-1">
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <Calendar className="h-4 w-4" />
-                  <span>{formatarData(prontuario.dataConsulta)}</span>
-                </div>
-
-                {prontuario.diagnostico && (
-                  <div className="p-2 bg-blue-50 rounded text-sm">
-                    <p className="font-medium text-blue-800">Diagnóstico:</p>
-                    <p className="text-blue-700 line-clamp-2">{prontuario.diagnostico}</p>
+          <Card key={prontuario.id} className="hover:shadow-md transition-shadow flex flex-col h-full">
+            <CardHeader className="pb-3 flex-shrink-0">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg leading-tight break-words pr-2">{prontuario.pacienteNome}</CardTitle>
+                    <CardDescription className="mt-1 break-words">{prontuario.tipoConsulta}</CardDescription>
                   </div>
-                )}
-
-                <div className="text-sm text-gray-600 flex-1">
-                  <p className="line-clamp-3">{prontuario.observacoes.substring(0, 150)}...</p>
+                  <div className="flex-shrink-0 mt-1">
+                    <StatusBadge status={prontuario.status} />
+                  </div>
                 </div>
               </div>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col space-y-3">
+              <div className="flex items-center space-x-2 text-sm text-gray-600 flex-shrink-0">
+                <Calendar className="h-4 w-4 flex-shrink-0" />
+                <span className="break-words">{formatarData(prontuario.dataConsulta)}</span>
+              </div>
 
-              {/* Botão sempre no footer */}
-              <div className="mt-4 pt-3 border-t">
+              {prontuario.diagnostico && (
+                <div className="p-2 bg-blue-50 rounded text-sm flex-shrink-0">
+                  <p className="font-medium text-blue-800">Diagnóstico:</p>
+                  <p className="text-blue-700 break-words">{prontuario.diagnostico}</p>
+                </div>
+              )}
+
+              <div className="text-sm text-gray-600 flex-1 min-h-0 overflow-hidden">
+                <p className="break-words line-clamp-3">{prontuario.observacoes.substring(0, 150)}...</p>
+              </div>
+
+              {/* Botão sempre na base */}
+              <div className="mt-auto pt-3 border-t flex-shrink-0">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button 
-                      className="w-full" 
+                    <Button
+                      className="w-full"
                       variant="outline"
                       onClick={() => {
                         setProntuarioSelecionado(prontuario)
@@ -528,9 +532,9 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                             <div>
                               <Label htmlFor="statusEdit">Status</Label>
                               {modoEdicao ? (
-                                <Select 
-                                  value={dadosEdicao.status || ""} 
-                                  onValueChange={(value) => setDadosEdicao({...dadosEdicao, status: value as any})}
+                                <Select
+                                  value={dadosEdicao.status || ""}
+                                  onValueChange={(value) => setDadosEdicao({...dadosEdicao, status: value as "ativo" | "arquivado" | "em_andamento"})}
                                 >
                                   <SelectTrigger>
                                     <SelectValue placeholder="Selecione o status" />
@@ -543,7 +547,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                 </Select>
                               ) : (
                                 <div className="p-2">
-                                  <StatusBadge status={prontuarioSelecionado.status as any} />
+                                  <StatusBadge status={prontuarioSelecionado.status} />
                                 </div>
                               )}
                             </div>
