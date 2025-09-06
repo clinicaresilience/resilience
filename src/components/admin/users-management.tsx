@@ -7,6 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CadastrarProfissionalDialog } from "@/components/admin/cadastrar-profissional-dialog";
+import { Users, UserCheck } from "lucide-react";
 
 type Usuario = {
   id: string;
@@ -32,8 +35,13 @@ function genPassword(): string {
 export function UsersManagement() {
   const supabase = createClient();
 
-  const [items, setItems] = useState<Usuario[]>([]);
+  const [profissionais, setProfissionais] = useState<Usuario[]>([]);
+  const [pacientes, setPacientes] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filtros de busca
+  const [searchProfissionais, setSearchProfissionais] = useState("");
+  const [searchPacientes, setSearchPacientes] = useState("");
 
   // form
   const [nome, setNome] = useState("");
@@ -50,23 +58,68 @@ export function UsersManagement() {
 
   async function fetchUsers() {
     setLoading(true);
-    const { data, error } = await supabase
+
+    // Buscar profissionais
+    const { data: profData, error: profError } = await supabase
       .from("usuarios")
       .select("*")
       .eq("tipo_usuario", "profissional")
       .order("criado_em", { ascending: false });
 
-    if (error) {
-      console.error("Erro ao buscar usuários:", error);
+    // Buscar pacientes
+    const { data: pacData, error: pacError } = await supabase
+      .from("usuarios")
+      .select("*")
+      .eq("tipo_usuario", "comum")
+      .order("criado_em", { ascending: false });
+
+    if (profError) {
+      console.error("Erro ao buscar profissionais:", profError);
     } else {
-      setItems(data as Usuario[]);
+      setProfissionais(profData as Usuario[]);
     }
+
+    if (pacError) {
+      console.error("Erro ao buscar pacientes:", pacError);
+    } else {
+      setPacientes(pacData as Usuario[]);
+    }
+
     setLoading(false);
   }
 
-  const totalAtivos = useMemo(
-    () => items.filter((i) => i.ativo).length,
-    [items]
+  // Filtragem de profissionais
+  const filteredProfissionais = useMemo(() => {
+    if (!searchProfissionais.trim()) return profissionais;
+    const termoLower = searchProfissionais.toLowerCase();
+    return profissionais.filter(
+      (prof) =>
+        prof.nome.toLowerCase().includes(termoLower) ||
+        prof.email.toLowerCase().includes(termoLower) ||
+        (prof.informacoes_adicionais?.area?.toLowerCase().includes(termoLower)) ||
+        (prof.informacoes_adicionais?.especialidade?.toLowerCase().includes(termoLower))
+    );
+  }, [profissionais, searchProfissionais]);
+
+  // Filtragem de pacientes
+  const filteredPacientes = useMemo(() => {
+    if (!searchPacientes.trim()) return pacientes;
+    const termoLower = searchPacientes.toLowerCase();
+    return pacientes.filter(
+      (pac) =>
+        pac.nome.toLowerCase().includes(termoLower) ||
+        pac.email.toLowerCase().includes(termoLower)
+    );
+  }, [pacientes, searchPacientes]);
+
+  const totalProfissionaisAtivos = useMemo(
+    () => filteredProfissionais.filter((i) => i.ativo).length,
+    [filteredProfissionais]
+  );
+
+  const totalPacientesAtivos = useMemo(
+    () => filteredPacientes.filter((i) => i.ativo).length,
+    [filteredPacientes]
   );
 
   function resetForm() {
@@ -99,16 +152,16 @@ export function UsersManagement() {
       });
 
       setSuccess(
-        `Usuário criado com sucesso! Senha temporária: ${senhaGerada}`
+        `Profissional criado com sucesso! Senha temporária: ${senhaGerada}`
       );
       resetForm();
       fetchUsers();
 
       // Limpa a mensagem de sucesso após 5s
       setTimeout(() => setSuccess(null), 5000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erro ao criar profissional:", err);
-      setError(err.message || "Erro ao criar profissional");
+      setError(err instanceof Error ? err.message : "Erro ao criar profissional");
     }
   }
 
@@ -133,7 +186,7 @@ export function UsersManagement() {
       if (authError) throw authError;
       setSuccess(`Senha redefinida: ${nova}`);
       setTimeout(() => setSuccess(null), 5000);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Erro ao resetar senha:", err);
       setError("Erro ao resetar senha");
     }
@@ -141,119 +194,355 @@ export function UsersManagement() {
 
   return (
     <div className="w-full space-y-6">
-      {/* FORM */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Cadastrar novo profissional</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onCreateUser} className="grid gap-4">
-            <div>
-              <Label>Nome</Label>
-              <Input value={nome} onChange={(e) => setNome(e.target.value)} />
-            </div>
-            <div>
-              <Label>Email</Label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Área</Label>
-              <Input value={area} onChange={(e) => setArea(e.target.value)} />
-            </div>
-            <div>
-              <Label>Especialidade</Label>
-              <Input
-                value={especialidade}
-                onChange={(e) => setEspecialidade(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Senha gerada</Label>
-              <div className="flex gap-2">
-                <Input value={senhaGerada} readOnly />
-                <Button
-                  type="button"
-                  onClick={() => setSenhaGerada(genPassword())}
-                >
-                  Gerar outra
-                </Button>
+      {/* Cabeçalho com gradiente */}
+      <div className="bg-gradient-to-r from-azul-escuro to-blue-600 rounded-xl p-6 text-white shadow-lg">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-white/20 rounded-lg">
+            <Users className="h-6 w-6" />
+          </div>
+          <h2 className="text-2xl font-bold">
+            Gerenciamento de Usuários
+          </h2>
+        </div>
+        <p className="text-blue-100 text-sm">
+          Gerencie profissionais e pacientes do sistema
+        </p>
+      </div>
+
+      {/* Tabs para Profissionais e Pacientes */}
+      <Tabs defaultValue="profissionais" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="profissionais" className="flex items-center gap-2">
+            <UserCheck className="h-4 w-4" />
+            Profissionais ({profissionais.length})
+          </TabsTrigger>
+          <TabsTrigger value="pacientes" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Pacientes ({pacientes.length})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Aba Profissionais */}
+        <TabsContent value="profissionais" className="space-y-6">
+          {/* Botão de cadastro */}
+          <div className="flex justify-end">
+            <CadastrarProfissionalDialog />
+          </div>
+
+          {/* Campo de busca para profissionais */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Users className="h-5 w-5 text-azul-escuro/60" />
+                </div>
+                <Input
+                  placeholder="Buscar por nome, email, área ou especialidade..."
+                  value={searchProfissionais}
+                  onChange={(e) => setSearchProfissionais(e.target.value)}
+                  className="pl-10 h-12 border-2 border-gray-200 rounded-lg focus:border-azul-escuro focus:ring-2 focus:ring-azul-escuro/20 text-gray-900 placeholder-gray-500"
+                />
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {error && <p className="text-red-600">{error}</p>}
-            {success && <p className="text-green-600">{success}</p>}
+          {/* Lista de Profissionais */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserCheck className="h-5 w-5 text-azul-escuro" />
+                Profissionais ({filteredProfissionais.length}) — Ativos: {totalProfissionaisAtivos}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-azul-escuro"></div>
+                </div>
+              ) : profissionais.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <UserCheck className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p>Nenhum profissional encontrado.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left border-b border-gray-200">
+                          <th className="pb-3 font-semibold text-gray-900">Nome</th>
+                          <th className="pb-3 font-semibold text-gray-900">Email</th>
+                          <th className="pb-3 font-semibold text-gray-900">Área</th>
+                          <th className="pb-3 font-semibold text-gray-900">Especialidade</th>
+                          <th className="pb-3 font-semibold text-gray-900">Acesso</th>
+                          <th className="pb-3 font-semibold text-gray-900">Criado em</th>
+                          <th className="pb-3 font-semibold text-gray-900">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {filteredProfissionais.map((u) => (
+                          <tr key={u.id} className="hover:bg-gray-50">
+                            <td className="py-3 pr-4">
+                              <div className="font-medium text-gray-900 truncate max-w-48">{u.nome}</div>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <div className="text-gray-600 truncate max-w-48">{u.email}</div>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <div className="text-gray-600 truncate max-w-32">{u.informacoes_adicionais?.area || "-"}</div>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <div className="text-gray-600 truncate max-w-32">{u.informacoes_adicionais?.especialidade || "-"}</div>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                u.ativo
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}>
+                                {u.ativo ? "Ativo" : "Inativo"}
+                              </span>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <div className="text-gray-600 text-xs whitespace-nowrap">
+                                {new Date(u.criado_em).toLocaleDateString("pt-BR")}
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => onToggleActive(u)}
+                                  className="text-xs"
+                                >
+                                  {u.ativo ? "Desativar" : "Ativar"}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => onResetPassword(u)}
+                                  className="text-xs"
+                                >
+                                  Resetar
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-            <div className="flex gap-2">
-              <Button type="submit" className="bg-azul-escuro text-white">
-                Criar
-              </Button>
-              <Button type="button" variant="outline" onClick={resetForm}>
-                Limpar
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                  {/* Mobile Cards */}
+                  <div className="md:hidden space-y-4">
+                    {filteredProfissionais.map((u) => (
+                      <div key={u.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate">{u.nome}</h3>
+                            <p className="text-sm text-gray-600 truncate">{u.email}</p>
+                          </div>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ml-2 ${
+                            u.ativo
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}>
+                            {u.ativo ? "Ativo" : "Inativo"}
+                          </span>
+                        </div>
 
-      {/* LISTA */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Profissionais ({items.length}) — Ativos: {totalAtivos}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p>Carregando...</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left">
-                  <th>Nome</th>
-                  <th>Email</th>
-                  <th>Área</th>
-                  <th>Especialidade</th>
-                  <th>Acesso</th>
-                  <th>Criado em</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((u) => (
-                  <tr key={u.id}>
-                    <td>{u.nome}</td>
-                    <td>{u.email}</td>
-                    <td>{u.informacoes_adicionais?.area || "-"}</td>
-                    <td>{u.informacoes_adicionais?.especialidade || "-"}</td>
-                    <td>{u.ativo ? "Ativo" : "Inativo"}</td>
-                    <td>{new Date(u.criado_em).toLocaleString()}</td>
-                    <td className="space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onToggleActive(u)}
-                      >
-                        {u.ativo ? "Desativar" : "Ativar"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => onResetPassword(u)}
-                      >
-                        Resetar senha
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </CardContent>
-      </Card>
+                        <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                          <div>
+                            <span className="font-medium text-gray-700">Área:</span>
+                            <p className="text-gray-600 truncate">{u.informacoes_adicionais?.area || "-"}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Especialidade:</span>
+                            <p className="text-gray-600 truncate">{u.informacoes_adicionais?.especialidade || "-"}</p>
+                          </div>
+                        </div>
+
+                        <div className="text-xs text-gray-500 mb-3">
+                          Criado em: {new Date(u.criado_em).toLocaleDateString("pt-BR")}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onToggleActive(u)}
+                            className="flex-1 text-xs"
+                          >
+                            {u.ativo ? "Desativar" : "Ativar"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => onResetPassword(u)}
+                            className="flex-1 text-xs"
+                          >
+                            Resetar
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Aba Pacientes */}
+        <TabsContent value="pacientes" className="space-y-6">
+          {/* Campo de busca para pacientes */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Users className="h-5 w-5 text-azul-escuro/60" />
+                </div>
+                <Input
+                  placeholder="Buscar por nome ou email..."
+                  value={searchPacientes}
+                  onChange={(e) => setSearchPacientes(e.target.value)}
+                  className="pl-10 h-12 border-2 border-gray-200 rounded-lg focus:border-azul-escuro focus:ring-2 focus:ring-azul-escuro/20 text-gray-900 placeholder-gray-500"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-azul-escuro" />
+                Pacientes ({filteredPacientes.length}) — Ativos: {totalPacientesAtivos}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-azul-escuro"></div>
+                </div>
+              ) : pacientes.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p>Nenhum paciente encontrado.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left border-b border-gray-200">
+                          <th className="pb-3 font-semibold text-gray-900">Nome</th>
+                          <th className="pb-3 font-semibold text-gray-900">Email</th>
+                          <th className="pb-3 font-semibold text-gray-900">Acesso</th>
+                          <th className="pb-3 font-semibold text-gray-900">Criado em</th>
+                          <th className="pb-3 font-semibold text-gray-900">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {filteredPacientes.map((u) => (
+                          <tr key={u.id} className="hover:bg-gray-50">
+                            <td className="py-3 pr-4">
+                              <div className="font-medium text-gray-900 truncate max-w-48">{u.nome}</div>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <div className="text-gray-600 truncate max-w-48">{u.email}</div>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                u.ativo
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}>
+                                {u.ativo ? "Ativo" : "Inativo"}
+                              </span>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <div className="text-gray-600 text-xs whitespace-nowrap">
+                                {new Date(u.criado_em).toLocaleDateString("pt-BR")}
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => onToggleActive(u)}
+                                  className="text-xs"
+                                >
+                                  {u.ativo ? "Desativar" : "Ativar"}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => onResetPassword(u)}
+                                  className="text-xs"
+                                >
+                                  Resetar
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Cards */}
+                  <div className="md:hidden space-y-4">
+                    {filteredPacientes.map((u) => (
+                      <div key={u.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate">{u.nome}</h3>
+                            <p className="text-sm text-gray-600 truncate">{u.email}</p>
+                          </div>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ml-2 ${
+                            u.ativo
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}>
+                            {u.ativo ? "Ativo" : "Inativo"}
+                          </span>
+                        </div>
+
+                        <div className="text-xs text-gray-500 mb-3">
+                          Criado em: {new Date(u.criado_em).toLocaleDateString("pt-BR")}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onToggleActive(u)}
+                            className="flex-1 text-xs"
+                          >
+                            {u.ativo ? "Desativar" : "Ativar"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => onResetPassword(u)}
+                            className="flex-1 text-xs"
+                          >
+                            Resetar
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

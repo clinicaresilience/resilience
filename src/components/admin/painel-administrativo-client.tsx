@@ -177,12 +177,8 @@ export function PainelAdministrativoClient({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-gray-600">
-                Bem-vindo, <span className="font-semibold">{usuario.nome}</span>{" "}
-                ({userEmail})
+                Bem-vindo, <span className="font-semibold">{usuario.nome}</span> ({userEmail})
               </p>
-            </div>
-            <div className="flex gap-2">
-              <CadastrarProfissionalDialog />
             </div>
           </div>
         </div>
