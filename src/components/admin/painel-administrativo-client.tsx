@@ -1,9 +1,10 @@
 "use client";
 
+import React from "react";
 import { useTabStore, TabType } from "../../app/store/useTabStore";
 import { useSidebar } from "@/components/layout/authenticated-layout";
 import { CadastrarProfissionalDialog } from "@/components/admin/cadastrar-profissional-dialog";
-import { ProfissionaisList } from "@/components/admin/profissionais-list";
+
 import { AdminDashboard } from "@/components/admin/dashboard";
 import { MedicalRecordsSection } from "@/components/admin/medical-records-section";
 import { SchedulesSection } from "@/components/admin/schedules-section";
@@ -60,12 +61,7 @@ export function PainelAdministrativoClient({
       icon: TrendingUp,
       description: "Análises detalhadas por profissional",
     },
-    {
-      id: "profissionais" as TabType,
-      label: "Profissionais",
-      icon: Users,
-      description: "Gerenciar profissionais cadastrados",
-    },
+
     {
       id: "usuarios" as TabType,
       label: "Usuários",
@@ -90,8 +86,6 @@ export function PainelAdministrativoClient({
         return <SchedulesSection />;
       case "analytics":
         return <ProfessionalAnalytics />;
-      case "profissionais":
-        return <ProfissionaisList />;
       case "usuarios":
         return <UsersManagement />;
       case "empresas":
@@ -105,21 +99,15 @@ export function PainelAdministrativoClient({
     <div className="min-h-screen w-full bg-gray-50">
       {/* Fixed Top Navigation Bar */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div
-          className={`transition-all duration-500 ease-in-out ${
-            collapsed ? "w-full px-4 sm:px-6" : "mx-auto max-w-7xl px-4 sm:px-6"
-          }`}
-        >
-          <div className="flex justify-between items-center h-16">
-            {/* Logo/Title */}
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-azul-escuro">
-                Painel Administrativo
-              </h1>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="flex justify-center items-center h-16 relative">
+            {/* Admin Title - Left on Mobile, Right on Desktop */}
+            <div className="md:absolute md:right-0 flex items-center">
+              <h1 className="text-xl font-bold text-azul-escuro">Admin</h1>
             </div>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
+            {/* Desktop Navigation - Centered */}
+            <nav className="hidden md:flex items-center space-x-6 xl:space-x-8">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -128,21 +116,23 @@ export function PainelAdministrativoClient({
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex flex-col items-center gap-1 px-2 py-2 rounded-md text-xs font-medium transition-colors ${
                       isActive
                         ? "bg-azul-escuro text-white"
                         : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
                     }`}
                   >
                     <Icon className="h-4 w-4" />
-                    <span>{tab.label}</span>
+                    <span className="text-center leading-tight">
+                      {tab.label}
+                    </span>
                   </button>
                 );
               })}
             </nav>
 
             {/* Mobile Menu Button */}
-            <div className="md:hidden">
+            <div className="md:hidden absolute right-0">
               <span className="text-sm font-medium text-azul-escuro">
                 {tabs.find((tab) => tab.id === activeTab)?.label}
               </span>
@@ -179,7 +169,7 @@ export function PainelAdministrativoClient({
 
       <div
         className={`transition-all duration-500 ease-in-out w-full ${
-          collapsed ? " px-2 sm:px-4" : "mx-auto  px-4 sm:px-6"
+          collapsed ? "px-2 sm:px-4" : "mx-auto px-4 sm:px-6"
         } py-6 md:pb-6 pb-20`}
       >
         {/* Welcome Header */}

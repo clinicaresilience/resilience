@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
-import { ProfissionaisList } from "@/components/admin/profissionais-list";
 
 export default async function ProfissionaisPage() {
   const supabase = await createClient();
@@ -33,11 +32,13 @@ export default async function ProfissionaisPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-azul-escuro">Gerenciar Profissionais</h1>
-        <p className="text-gray-600">Visualize e gerencie todos os profissionais cadastrados no sistema.</p>
+        <h1 className="text-2xl font-bold text-azul-escuro">
+          Gerenciar Profissionais
+        </h1>
+        <p className="text-gray-600">
+          Visualize e gerencie todos os profissionais cadastrados no sistema.
+        </p>
       </div>
-      
-      <ProfissionaisList />
     </div>
   );
 }

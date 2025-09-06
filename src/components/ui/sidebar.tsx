@@ -23,7 +23,11 @@ interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
 }
 
-export function Sidebar({ userType, userName, onCollapseChange }: SidebarProps) {
+export function Sidebar({
+  userType,
+  userName,
+  onCollapseChange,
+}: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -61,12 +65,7 @@ export function Sidebar({ userType, userName, onCollapseChange }: SidebarProps) 
       icon: TrendingUp,
       description: "Análises detalhadas por profissional",
     },
-    {
-      id: "profissionais" as TabType,
-      label: "Profissionais",
-      icon: Users,
-      description: "Gerenciar profissionais cadastrados",
-    },
+
     {
       id: "usuarios" as TabType,
       label: "Usuários",
