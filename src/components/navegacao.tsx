@@ -30,7 +30,7 @@ export default function Navegacao() {
 
   const botoesNavegacao = [
     { rotulo: "Home", link: "/", ativo: true },
-    { rotulo: "Sobre", link: "#" },
+    { rotulo: "Sobre", link: "/portal-publico/sobre/page" },
     { rotulo: "Contato", link: "#" },
   ];
 

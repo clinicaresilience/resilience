@@ -61,19 +61,17 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
     <div className="flex flex-col w-full h-full bg-gray-50">
       <ConditionalNavigation />
       {usuario && (
-        <div className="flex flex-1 overflow-hidden">
+        <>
           <Sidebar 
             userType={usuario.tipo_usuario} 
             userName={usuario.nome}
           />
-          <main className="flex-1 overflow-y-auto pt-16">
+          <main className="ml-16 md:ml-64 transition-all duration-300 overflow-y-auto pt-16 min-h-screen">
             <div className="p-4 sm:p-6 lg:p-8">
               {children}
             </div>
           </main>
-
-
-        </div>
+        </>
       )}
     </div>
   )

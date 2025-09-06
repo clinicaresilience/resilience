@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LogoutButton } from "@/components/logout-button"
 import { useAuth } from "@/features/auth/context/auth-context"
 import { BackButton } from "@/components/ui/back-button"
 import { User, Settings, Home, Users, Calendar, FileText, BarChart3, Clock, Stethoscope, ArrowLeft } from "lucide-react"
@@ -29,23 +28,13 @@ export default function AuthenticatedHeader() {
     <header className="w-full bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo e Título da Área */}
+          {/* Título da Área */}
           <div className="flex items-center space-x-4">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-azul-vivido to-roxo rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">CR</span>
-              </div>
-              <span className="text-xl font-semibold text-azul-escuro">Clínica Resilience</span>
-            </Link>
-            
-            <div className="hidden sm:block">
-              <span className="text-gray-400">|</span>
-              <span className="ml-3 text-gray-600 font-medium">
-                {isAdminPanel ? "Painel Administrativo" : 
-                 isProfessionalPanel ? "Área do Profissional" :
-                 isUserPanel ? "Área do Paciente" : "Sistema"}
-              </span>
-            </div>
+            <span className="text-xl font-semibold text-azul-escuro">
+              {isAdminPanel ? "Painel Administrativo" : 
+               isProfessionalPanel ? "Área do Profissional" :
+               isUserPanel ? "Área do Paciente" : "Sistema"}
+            </span>
           </div>
 
           {/* Navegação Central - Admin */}
@@ -178,7 +167,6 @@ export default function AuthenticatedHeader() {
               </div>
             )}
             
-            <LogoutButton />
           </div>
         </div>
       </div>

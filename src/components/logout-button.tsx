@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/context/auth-context";
 import { ROUTES } from "@/config/routes";
+import { LogOut } from "lucide-react";
 
 type Props = {
   className?: string;
@@ -19,8 +20,8 @@ export function LogoutButton({ className }: Props) {
   };
 
   return (
-    <Button className="px-4 py-2 bg-azul-medio" onClick={logout}>
-      Logout
+    <Button className={`py-2 bg-azul-medio flex items-center justify-center ${className}`} onClick={logout}>
+      <LogOut className="w-4 h-4" />
     </Button>
   );
 }

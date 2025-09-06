@@ -2,10 +2,12 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { User, Menu, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { useNavigation } from "@/features/navigation/hooks/use-navigation"
+import { LogoutButton } from "@/components/logout-button"
 import type { Role } from "@/features/auth/types"
 
 interface SidebarProps {
@@ -64,7 +66,7 @@ export function Sidebar({ userType, userName }: SidebarProps) {
 
       {/* Sidebar */}
       <div className={cn(
-        "relative bg-white border-r border-gray-200 shadow-sm transition-all duration-300",
+        "fixed left-0 top-0 h-screen bg-white border-r border-gray-200 shadow-sm transition-all duration-300 z-30",
         isCollapsed ? "w-16" : "w-64",
         isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
@@ -79,6 +81,26 @@ export function Sidebar({ userType, userName }: SidebarProps) {
         </Button>
 
         <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="p-4 border-b border-gray-200 flex items-center justify-center">
+            {!isCollapsed ? (
+              <Image
+                src="/logoResilience.png"
+                alt="Logo Clínica Resilience"
+                width={120}
+                height={40}
+                className="object-contain"
+              />
+            ) : (
+              <Image
+                src="/logoResilience.png"
+                alt="Logo Clínica Resilience"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
+            )}
+          </div>
 
           {/* User Info */}
           <div className="p-4 border-b border-gray-200">
@@ -136,7 +158,12 @@ export function Sidebar({ userType, userName }: SidebarProps) {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 space-y-3">
+            <LogoutButton className={cn(
+              "w-full justify-center",
+              isCollapsed ? "px-2" : "px-4"
+            )} />
+            
             {!isCollapsed && (
               <div className="text-xs text-gray-500 text-center">
                 © 2025 Clínica Resilience
