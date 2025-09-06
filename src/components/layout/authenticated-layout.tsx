@@ -59,14 +59,14 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   // Para rotas com sidebar
   return (
     <div className="flex flex-col w-full h-full bg-gray-50">
-      <ConditionalNavigation />
+      {pathname.startsWith('/painel-administrativo') ? null : <ConditionalNavigation />}
       {usuario && (
         <>
-          <Sidebar 
-            userType={usuario.tipo_usuario} 
+          <Sidebar
+            userType={usuario.tipo_usuario}
             userName={usuario.nome}
           />
-          <main className="ml-16 md:ml-64 transition-all duration-300 overflow-y-auto pt-16 min-h-screen">
+          <main className={`ml-16 md:ml-64 transition-all duration-300 overflow-y-auto min-h-screen ${pathname.startsWith('/painel-administrativo') ? 'pt-0' : 'pt-16'}`}>
             <div className="p-4 sm:p-6 lg:p-8">
               {children}
             </div>

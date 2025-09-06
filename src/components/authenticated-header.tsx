@@ -18,7 +18,7 @@ export default function AuthenticatedHeader() {
 
   const isAdmin = usuario?.tipo_usuario === "administrador"
   const isProfessional = usuario?.tipo_usuario === "profissional"
-  const isUser = usuario?.tipo_usuario === "usuario"
+  const isUser = usuario?.tipo_usuario === "comum"
   
   const isAdminPanel = pathname.startsWith("/painel-administrativo")
   const isUserPanel = pathname.startsWith("/tela-usuario")
@@ -31,28 +31,13 @@ export default function AuthenticatedHeader() {
           {/* Título da Área */}
           <div className="flex items-center space-x-4">
             <span className="text-xl font-semibold text-azul-escuro">
-              {isAdminPanel ? "Painel Administrativo" : 
+              {isAdminPanel ? "" :
                isProfessionalPanel ? "Área do Profissional" :
                isUserPanel ? "Área do Paciente" : "Sistema"}
             </span>
           </div>
 
-          {/* Navegação Central - Admin */}
-          {isAdmin && isAdminPanel && (
-            <nav className="hidden md:flex items-center space-x-6">
-              <Link 
-                href="/painel-administrativo"
-                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname === "/painel-administrativo" 
-                    ? "bg-azul-escuro text-white" 
-                    : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
-                }`}
-              >
-                <BarChart3 className="w-4 h-4" />
-                <span>Dashboard</span>
-              </Link>
-            </nav>
-          )}
+          {/* Navegação Central - Admin - Removida, será feita no componente específico */}
 
           {/* Navegação Central - Profissional */}
           {isProfessional && isProfessionalPanel && (
@@ -174,22 +159,7 @@ export default function AuthenticatedHeader() {
       {/* Navegação Mobile */}
       <div className="md:hidden border-t border-gray-200 bg-gray-50">
         <div className="px-4 py-2">
-          {/* Admin Mobile */}
-          {isAdmin && isAdminPanel && (
-            <div className="flex space-x-4 overflow-x-auto">
-              <Link 
-                href="/painel-administrativo"
-                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
-                  pathname === "/painel-administrativo" 
-                    ? "bg-azul-escuro text-white" 
-                    : "text-gray-600"
-                }`}
-              >
-                <BarChart3 className="w-4 h-4" />
-                <span>Dashboard</span>
-              </Link>
-            </div>
-          )}
+          {/* Admin Mobile - Removida, será feita no componente específico */}
           
           {/* Professional Mobile */}
           {isProfessional && isProfessionalPanel && (
