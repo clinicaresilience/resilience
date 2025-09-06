@@ -9,8 +9,7 @@ import {
   generateHistoricoPacientes,
   buscarProntuarios,
   filtrarProntuariosPorStatus,
-  type ProntuarioMedico,
-  type HistoricoPaciente 
+ 
 } from "@/lib/mocks/medical-records"
 import { Search, FileText, User, Calendar, Filter, Eye } from "lucide-react"
 import { StatusBadge, type GenericStatus } from "@/components/ui/status-badge"
@@ -22,7 +21,6 @@ export function MedicalRecordsSection() {
   const [viewMode, setViewMode] = useState<ViewMode>("prontuarios")
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("todos")
-
 
   // Dados mock
   const allProntuarios = useMemo(() => generateMockProntuarios(), [])
@@ -52,14 +50,14 @@ export function MedicalRecordsSection() {
     })
   }
 
-
   return (
     <div className="w-full">
+      {/* Cabeçalho e filtros */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-azul-escuro mb-4">Prontuários e Histórico Médico</h2>
         
-        {/* Controles de Visualização */}
         <div className="flex flex-col sm:flex-row gap-4 mb-4">
+          {/* Botões de modo */}
           <div className="flex gap-2">
             <Button
               variant={viewMode === "prontuarios" ? "default" : "outline"}
@@ -80,24 +78,24 @@ export function MedicalRecordsSection() {
           </div>
 
           {/* Busca */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <div className="flex-1 relative min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder={viewMode === "prontuarios" ? "Buscar por paciente, profissional, diagnóstico..." : "Buscar por paciente ou profissional..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 w-full"
             />
           </div>
 
-          {/* Filtro de Status (apenas para prontuários) */}
+          {/* Filtro de status */}
           {viewMode === "prontuarios" && (
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-gray-500" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full sm:w-auto"
               >
                 <option value="todos">Todos os Status</option>
                 <option value="ativo">Ativo</option>
@@ -107,43 +105,11 @@ export function MedicalRecordsSection() {
             </div>
           )}
         </div>
-
-        {/* Estatísticas Rápidas */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-700">{allProntuarios.length}</div>
-              <div className="text-sm text-blue-600">Total de Prontuários</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-700">{historicoPacientes.length}</div>
-              <div className="text-sm text-green-600">Pacientes Únicos</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-purple-50 border-purple-200">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-purple-700">
-                {allProntuarios.filter(p => p.status === "ativo").length}
-              </div>
-              <div className="text-sm text-purple-600">Prontuários Ativos</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-orange-50 border-orange-200">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-orange-700">
-                {allProntuarios.filter(p => p.proximaConsulta).length}
-              </div>
-              <div className="text-sm text-orange-600">Próximas Consultas</div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
-      {/* Visualização de Prontuários */}
+      {/* Cards de Prontuários */}
       {viewMode === "prontuarios" && (
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProntuarios.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
@@ -153,55 +119,50 @@ export function MedicalRecordsSection() {
             </Card>
           ) : (
             filteredProntuarios.map((prontuario) => (
-              <Card key={prontuario.id} className="hover:shadow-md transition-shadow flex flex-col h-full">
-                <CardHeader className="pb-3 flex-shrink-0">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+              <Card key={prontuario.id} className="flex flex-col hover:shadow-md transition-shadow h-full overflow-hidden">
+                <CardHeader className="pb-3">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg text-azul-escuro break-words">{prontuario.pacienteNome}</CardTitle>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 mt-1">
-                          <span className="break-words">Dr(a). {prontuario.profissionalNome}</span>
+                        <CardTitle className="text-lg text-azul-escuro truncate">{prontuario.pacienteNome}</CardTitle>
+                        <div className="flex flex-wrap items-center gap-1 text-sm text-gray-600">
+                          <span className="truncate max-w-[150px]">Dr(a). {prontuario.profissionalNome}</span>
                           <span className="hidden sm:inline">•</span>
-                          <span className="break-words">{formatDate(prontuario.dataConsulta)}</span>
+                          <span>{formatDate(prontuario.dataConsulta)}</span>
                           <span className="hidden sm:inline">•</span>
-                          <span className="break-words">{prontuario.tipoConsulta}</span>
+                          <span className="truncate max-w-[120px]">{prontuario.tipoConsulta}</span>
                         </div>
                       </div>
-                      <div className="flex-shrink-0">
-                        <StatusBadge status={prontuario.status as GenericStatus} />
-                      </div>
+                      <StatusBadge status={prontuario.status as GenericStatus} />
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="flex-1 flex flex-col">
-                  <div className="flex-1">
+
+                <CardContent className="flex-1 flex flex-col overflow-hidden">
+                  <div className="flex-1 space-y-2">
                     {prontuario.diagnostico && (
-                      <div className="mb-3">
+                      <div>
                         <strong className="text-sm text-gray-700">Diagnóstico:</strong>
-                        <p className="text-sm text-gray-600 mt-1">{prontuario.diagnostico}</p>
+                        <p className="text-sm text-gray-600 mt-1 break-words line-clamp-2">{prontuario.diagnostico}</p>
                       </div>
                     )}
-                    <div className="mb-3">
+                    <div>
                       <strong className="text-sm text-gray-700">Observações:</strong>
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{prontuario.observacoes}</p>
+                      <p className="text-sm text-gray-600 mt-1 break-words line-clamp-2">{prontuario.observacoes}</p>
                     </div>
                     {prontuario.proximaConsulta && (
                       <div className="flex items-center gap-2 text-sm text-blue-600">
                         <Calendar className="h-4 w-4" />
-                        <span>Próxima consulta: {formatDate(prontuario.proximaConsulta)}</span>
+                        <span className="truncate">Próxima: {formatDate(prontuario.proximaConsulta)}</span>
                       </div>
                     )}
                   </div>
 
-                  {/* Botão sempre na base */}
+                  {/* Botão Ver Detalhes */}
                   <div className="mt-auto pt-4">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full flex items-center gap-1 justify-center"
-                        >
+                        <Button variant="outline" size="sm" className="w-full flex items-center gap-1 justify-center">
                           <Eye className="h-4 w-4" />
                           <span>Ver Detalhes</span>
                         </Button>
@@ -213,6 +174,16 @@ export function MedicalRecordsSection() {
 
                         <div className="space-y-4">
                           <div>
+                            <strong className="text-sm text-gray-800 font-medium">Paciente:</strong>
+                            <p className="mt-1 text-gray-900 break-words">{prontuario.pacienteNome}</p>
+                          </div>
+
+                          <div>
+                            <strong className="text-sm text-gray-800 font-medium">Profissional:</strong>
+                            <p className="mt-1 text-gray-900 break-words">{prontuario.profissionalNome}</p>
+                          </div>
+
+                          <div>
                             <strong className="text-sm text-gray-800 font-medium">Tipo de Consulta:</strong>
                             <p className="mt-1 text-gray-900">{prontuario.tipoConsulta}</p>
                           </div>
@@ -220,21 +191,21 @@ export function MedicalRecordsSection() {
                           {prontuario.diagnostico && (
                             <div>
                               <strong className="text-sm text-gray-800 font-medium">Diagnóstico:</strong>
-                              <p className="mt-1 text-gray-900">{prontuario.diagnostico}</p>
+                              <p className="mt-1 text-gray-900 break-words">{prontuario.diagnostico}</p>
                             </div>
                           )}
 
                           <div>
                             <strong className="text-sm text-gray-800 font-medium">Observações:</strong>
-                            <p className="mt-1 text-gray-900 whitespace-pre-wrap">{prontuario.observacoes}</p>
+                            <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">{prontuario.observacoes}</p>
                           </div>
 
                           {prontuario.prescricoes && prontuario.prescricoes.length > 0 && (
                             <div>
                               <strong className="text-sm text-gray-800 font-medium">Prescrições/Recomendações:</strong>
                               <ul className="mt-1 list-disc list-inside space-y-1">
-                                {prontuario.prescricoes.map((prescricao: string, index: number) => (
-                                  <li key={index} className="text-sm text-gray-900">{prescricao}</li>
+                                {prontuario.prescricoes.map((prescricao, index) => (
+                                  <li key={index} className="text-sm text-gray-900 break-words">{prescricao}</li>
                                 ))}
                               </ul>
                             </div>
@@ -262,7 +233,7 @@ export function MedicalRecordsSection() {
         </div>
       )}
 
-      {/* Visualização de Histórico por Paciente */}
+      {/* Histórico por Paciente */}
       {viewMode === "historico" && (
         <div className="grid gap-4">
           {filteredHistorico.length === 0 ? (
@@ -277,9 +248,9 @@ export function MedicalRecordsSection() {
               <Card key={historico.pacienteId} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg text-azul-escuro">{historico.pacienteNome}</CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                    <div className="min-w-0">
+                      <CardTitle className="text-lg text-azul-escuro truncate">{historico.pacienteNome}</CardTitle>
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 mt-1">
                         <span>{historico.totalConsultas} consulta(s)</span>
                         <span>•</span>
                         <span>Última: {formatDate(historico.ultimaConsulta)}</span>
@@ -299,7 +270,7 @@ export function MedicalRecordsSection() {
                     <strong className="text-sm text-gray-700">Profissionais Atendentes:</strong>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {historico.profissionaisAtendentes.map((prof, index) => (
-                        <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                        <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs truncate">
                           {prof}
                         </span>
                       ))}
@@ -308,7 +279,7 @@ export function MedicalRecordsSection() {
                   {historico.observacoesGerais && (
                     <div>
                       <strong className="text-sm text-gray-700">Observações Gerais:</strong>
-                      <p className="text-sm text-gray-600 mt-1">{historico.observacoesGerais}</p>
+                      <p className="text-sm text-gray-600 mt-1 break-words">{historico.observacoesGerais}</p>
                     </div>
                   )}
                 </CardContent>
@@ -317,8 +288,6 @@ export function MedicalRecordsSection() {
           )}
         </div>
       )}
-
-
     </div>
   )
 }

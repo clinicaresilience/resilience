@@ -247,7 +247,7 @@ export function PacientesListClient() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {pacientesFiltrados.map((paciente) => (
                 <Card key={paciente.id} className="hover:shadow-md transition-shadow flex flex-col h-full">
                   <CardContent className="p-4 flex-1 flex flex-col">
@@ -259,26 +259,26 @@ export function PacientesListClient() {
                         </Badge>
                       </div>
 
-                      <div className="space-y-2 text-sm flex-1">
+                      <div className="space-y-2 text-sm flex-1 overflow-hidden">
                         <div className="flex items-center gap-2 text-gray-600">
                           <Mail className="h-4 w-4 flex-shrink-0" />
-                          <span className="break-words">{paciente.email}</span>
+                          <span className="break-words truncate">{paciente.email}</span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-600">
                           <Phone className="h-4 w-4 flex-shrink-0" />
-                          <span className="break-words">{paciente.telefone}</span>
+                          <span className="break-words truncate">{paciente.telefone}</span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-600">
                           <Calendar className="h-4 w-4 flex-shrink-0" />
-                          <span className="break-words">{paciente.totalConsultas} consulta(s)</span>
+                          <span className="break-words truncate">{paciente.totalConsultas} consulta(s)</span>
                         </div>
                       </div>
 
                       <div className="flex-1 flex flex-col justify-end">
-                        <div className="flex flex-col gap-2 text-xs text-gray-500 mb-3">
-                          <span className="break-words">Última: {formatarData(paciente.ultimaConsulta)}</span>
+                        <div className="flex flex-col gap-1 text-xs text-gray-500 mb-3 overflow-hidden">
+                          <span className="break-words truncate">Última: {formatarData(paciente.ultimaConsulta)}</span>
                           {paciente.proximaConsulta && (
-                            <span className="text-blue-600 break-words">Próxima: {formatarData(paciente.proximaConsulta)}</span>
+                            <span className="text-blue-600 break-words truncate">Próxima: {formatarData(paciente.proximaConsulta)}</span>
                           )}
                         </div>
 

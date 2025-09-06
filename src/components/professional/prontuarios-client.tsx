@@ -338,8 +338,8 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
               <div className="flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg leading-tight break-words pr-2">{prontuario.pacienteNome}</CardTitle>
-                    <CardDescription className="mt-1 break-words">{prontuario.tipoConsulta}</CardDescription>
+                    <CardTitle className="text-lg leading-tight break-words truncate pr-2">{prontuario.pacienteNome}</CardTitle>
+                    <CardDescription className="mt-1 break-words truncate">{prontuario.tipoConsulta}</CardDescription>
                   </div>
                   <div className="flex-shrink-0 mt-1">
                     <StatusBadge status={prontuario.status} />
@@ -361,7 +361,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
               )}
 
               <div className="text-sm text-gray-600 flex-1 min-h-0 overflow-hidden">
-                <p className="break-words line-clamp-3">{prontuario.observacoes.substring(0, 150)}...</p>
+                <p className="break-words line-clamp-3 overflow-hidden break-all">{prontuario.observacoes.substring(0, 150)}...</p>
               </div>
 
               {/* Botão sempre na base */}
