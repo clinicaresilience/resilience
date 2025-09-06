@@ -1,54 +1,58 @@
-"use client"
+"use client";
 
-import React, { useState, createContext, useContext } from "react"
-import { usePathname } from "next/navigation"
-import { Sidebar } from "@/components/ui/sidebar"
-import ConditionalNavigation from "@/components/conditional-navigation"
-import { useAuth } from "@/features/auth/context/auth-context"
+import React, { useState, createContext, useContext } from "react";
+import { usePathname } from "next/navigation";
+import { Sidebar } from "@/components/ui/sidebar";
+import ConditionalNavigation from "@/components/conditional-navigation";
+import { useAuth } from "@/features/auth/context/auth-context";
 
 // Context for sidebar state
-const SidebarContext = createContext<{ collapsed: boolean }>({ collapsed: false })
+const SidebarContext = createContext<{ collapsed: boolean }>({
+  collapsed: false,
+});
 
-export const useSidebar = () => useContext(SidebarContext)
+export const useSidebar = () => useContext(SidebarContext);
 
 interface AuthenticatedLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
-
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
-  const { user: usuario, loading } = useAuth()
-  const pathname = usePathname()
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-
+  const { user: usuario, loading } = useAuth();
+  const pathname = usePathname();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Verificar se deve mostrar a sidebar
   const rotasComSidebar = [
-    '/painel-administrativo',
-    '/tela-usuario',
-    '/tela-profissional'
-  ]
-  
-  const mostrarSidebar = rotasComSidebar.some(rota => pathname.startsWith(rota))
+    "/painel-administrativo",
+    "/tela-usuario",
+    "/tela-profissional",
+  ];
+
+  const mostrarSidebar = rotasComSidebar.some((rota) =>
+    pathname.startsWith(rota)
+  );
 
   // Rotas que não devem mostrar nenhum cabeçalho (páginas de auth)
   const rotasSemCabecalho = [
-    '/auth/login',
-    '/auth/cadastro',
-    '/auth/forgot-password',
-    '/auth/update-password',
-    '/auth/sign-up-success',
-    '/auth/error'
-  ]
-  
-  const eRotaSemCabecalho = rotasSemCabecalho.some(rota => pathname.startsWith(rota))
+    "/auth/login",
+    "/auth/cadastro",
+    "/auth/forgot-password",
+    "/auth/update-password",
+    "/auth/sign-up-success",
+    "/auth/error",
+  ];
+
+  const eRotaSemCabecalho = rotasSemCabecalho.some((rota) =>
+    pathname.startsWith(rota)
+  );
 
   if (loading && mostrarSidebar) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-azul-escuro"></div>
       </div>
-    )
+    );
   }
 
   // Para rotas sem cabeçalho ou sem sidebar, renderiza apenas o children
@@ -60,14 +64,16 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
           {children}
         </main>
       </>
-    )
+    );
   }
 
   // Para rotas com sidebar
   return (
     <SidebarContext.Provider value={{ collapsed: sidebarCollapsed }}>
       <div className="flex flex-col w-full h-full bg-gray-50">
-        {pathname.startsWith('/painel-administrativo') ? null : <ConditionalNavigation />}
+        {pathname.startsWith("/painel-administrativo") ? null : (
+          <ConditionalNavigation />
+        )}
         {usuario && (
           <>
             <Sidebar
@@ -75,14 +81,17 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
               userName={usuario.nome}
               onCollapseChange={setSidebarCollapsed}
             />
-            <main className={`transition-all duration-500 ease-in-out overflow-y-auto min-h-screen ${pathname.startsWith('/painel-administrativo') ? 'pt-0' : 'pt-16'} ${sidebarCollapsed ? 'ml-16' : 'ml-16 md:ml-64'}`}>
-              <div className="p-0 w-full max-w-none">
-                {children}
-              </div>
+            <main
+              className={`transition-all duration-500 ease-in-out overflow-y-auto min-h-screen 
+    ${pathname.startsWith("/painel-administrativo") ? "pt-0" : "pt-16"} 
+    ${sidebarCollapsed ? "md:ml-16" : "md:ml-64"}
+  `}
+            >
+              <div className="p-0 w-full max-w-none">{children}</div>
             </main>
           </>
         )}
       </div>
     </SidebarContext.Provider>
-  )
+  );
 }
