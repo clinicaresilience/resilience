@@ -5,14 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { StatusBadge } from "@/components/ui/status-badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { generateMockProntuarios, type ProntuarioMedico } from "@/lib/mocks/medical-records"
-import { generateMockPacientes } from "@/lib/mocks/patients"
-import { FileText, Edit, Save, Plus, Search, Calendar, User, Stethoscope, X, Upload, AlertCircle, CheckCircle } from "lucide-react"
-import { PacienteAtendido } from "@/services/database/consultas.service"
+import { FileText, Edit, Save, Plus, Calendar, User, Stethoscope, Upload, AlertCircle, CheckCircle, X } from "lucide-react"
+import { PacienteAtendido, Consulta } from "@/services/database/consultas.service"
 
 interface ProfessionalProntuariosClientProps {
   profissionalNome: string
@@ -22,13 +19,17 @@ interface ProfessionalProntuariosClientProps {
 export function ProfessionalProntuariosClient({ profissionalNome, profissionalId }: ProfessionalProntuariosClientProps) {
   const [busca, setBusca] = useState("")
   const [filtroStatus, setFiltroStatus] = useState<string>("todos")
-  const [prontuarioSelecionado, setProntuarioSelecionado] = useState<ProntuarioMedico | null>(null)
+  const [prontuarioSelecionado, setProntuarioSelecionado] = useState<Consulta | null>(null)
   const [modoEdicao, setModoEdicao] = useState(false)
-  const [novosProntuarios, setNovosProntuarios] = useState<ProntuarioMedico[]>([])
   const [mostrarNovoProntuario, setMostrarNovoProntuario] = useState(false)
 
+  // Estados para dados do banco
+  const [prontuarios, setProntuarios] = useState<Consulta[]>([])
+  const [carregandoProntuarios, setCarregandoProntuarios] = useState(true)
+  const [erro, setErro] = useState<string>("")
+
   // Estados para edição
-  const [dadosEdicao, setDadosEdicao] = useState<Partial<ProntuarioMedico>>({})
+  const [dadosEdicao, setDadosEdicao] = useState<Partial<Consulta>>({})
 
   // Estados para criação de prontuário PDF
   const [pacientesAtendidos, setPacientesAtendidos] = useState<PacienteAtendido[]>([])
@@ -36,128 +37,94 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [carregandoPacientes, setCarregandoPacientes] = useState(false)
   const [enviando, setEnviando] = useState(false)
-  const [erro, setErro] = useState<string>("")
+  const [erroModal, setErroModal] = useState<string>("")
   const [sucesso, setSucesso] = useState<string>("")
 
-  // Gerar dados mock
-  const prontuariosMock = useMemo(() => generateMockProntuarios(), [])
-  const pacientesMock = useMemo(() => generateMockPacientes(), [])
+  // Buscar prontuários do banco
+  useEffect(() => {
+    buscarProntuarios()
+  }, [profissionalId])
 
-  // Filtrar prontuários do profissional
-  const prontuariosProfissional = useMemo(() => {
-    // Para demonstração, vamos mostrar todos os prontuários mock
-    // Em produção, filtraria apenas os do profissional logado
-    const prontuarios = [...prontuariosMock, ...novosProntuarios]
+  const buscarProntuarios = async () => {
+    try {
+      setCarregandoProntuarios(true)
+      setErro("")
+      const response = await fetch('/api/consultas/prontuarios')
+      const data = await response.json()
 
-    let resultado = prontuarios
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao buscar prontuários')
+      }
 
-    // Filtro por status
-    if (filtroStatus !== "todos") {
-      resultado = resultado.filter(p => p.status === filtroStatus)
+      setProntuarios(data.data || [])
+    } catch (error) {
+      console.error('Erro ao buscar prontuários:', error)
+      setErro('Erro ao carregar prontuários')
+    } finally {
+      setCarregandoProntuarios(false)
     }
+  }
+
+  // Filtrar prontuários
+  const prontuariosFiltrados = useMemo(() => {
+    let resultado = prontuarios
 
     // Busca
     if (busca.trim()) {
       const termoBusca = busca.toLowerCase()
       resultado = resultado.filter(p =>
-        p.pacienteNome.toLowerCase().includes(termoBusca) ||
-        p.tipoConsulta.toLowerCase().includes(termoBusca) ||
-        p.diagnostico?.toLowerCase().includes(termoBusca) ||
-        p.observacoes.toLowerCase().includes(termoBusca)
+        p.paciente?.nome.toLowerCase().includes(termoBusca) ||
+        p.observacoes?.toLowerCase().includes(termoBusca)
       )
     }
 
-    return resultado.sort((a, b) => new Date(b.dataConsulta).getTime() - new Date(a.dataConsulta).getTime())
-  }, [prontuariosMock, novosProntuarios, profissionalNome, filtroStatus, busca])
+    // Filtro por status
+    if (filtroStatus !== "todos") {
+      resultado = resultado.filter(p => p.status_consulta === filtroStatus)
+    }
+
+    return resultado.sort((a, b) => new Date(b.data_hora).getTime() - new Date(a.data_hora).getTime())
+  }, [prontuarios, busca, filtroStatus])
 
   const formatarData = (dataISO: string) => {
     const data = new Date(dataISO)
     return data.toLocaleDateString('pt-BR')
   }
 
-
-  const iniciarEdicao = (prontuario: ProntuarioMedico) => {
-    setProntuarioSelecionado(prontuario)
+  const iniciarEdicao = (consulta: Consulta) => {
+    setProntuarioSelecionado(consulta)
     setDadosEdicao({
-      tipoConsulta: prontuario.tipoConsulta,
-      diagnostico: prontuario.diagnostico || "",
-      observacoes: prontuario.observacoes,
-      prescricoes: prontuario.prescricoes || [],
-      proximaConsulta: prontuario.proximaConsulta || "",
-      status: prontuario.status
+      observacoes: consulta.observacoes || "",
+      modalidade: consulta.modalidade || "",
+      local: consulta.local || "",
+      status_consulta: consulta.status_consulta
     })
     setModoEdicao(true)
   }
 
-  const salvarEdicao = () => {
+  const salvarEdicao = async () => {
     if (!prontuarioSelecionado) return
 
-    // Atualizar prontuário (em um app real, seria uma chamada à API)
-    const prontuarioAtualizado = {
-      ...prontuarioSelecionado,
-      ...dadosEdicao,
-      atualizadoEm: new Date().toISOString()
-    }
+    try {
+      // Em uma implementação real, aqui faria uma chamada à API para atualizar
+      console.log("Dados para salvar:", dadosEdicao)
+      
+      // Simular atualização local por enquanto
+      const prontuarioAtualizado = {
+        ...prontuarioSelecionado,
+        ...dadosEdicao
+      }
 
-    // Atualizar na lista de novos prontuários se for um novo, senão simular atualização
-    if (novosProntuarios.find(p => p.id === prontuarioSelecionado.id)) {
-      setNovosProntuarios(prev => 
+      // Atualizar na lista local
+      setProntuarios(prev => 
         prev.map(p => p.id === prontuarioSelecionado.id ? prontuarioAtualizado : p)
       )
+
+      setModoEdicao(false)
+      setProntuarioSelecionado(prontuarioAtualizado)
+    } catch (error) {
+      console.error('Erro ao salvar edição:', error)
     }
-
-    console.log("Prontuário salvo:", prontuarioAtualizado)
-    setModoEdicao(false)
-    setProntuarioSelecionado(prontuarioAtualizado)
-  }
-
-  const criarNovoProntuario = () => {
-    const novoProntuario: ProntuarioMedico = {
-      id: `pront_${Date.now()}`,
-      pacienteId: dadosEdicao.pacienteId || "",
-      pacienteNome: dadosEdicao.pacienteNome || "",
-      profissionalId: profissionalId,
-      profissionalNome: profissionalNome,
-      dataConsulta: new Date().toISOString(),
-      tipoConsulta: dadosEdicao.tipoConsulta || "",
-      diagnostico: dadosEdicao.diagnostico,
-      observacoes: dadosEdicao.observacoes || "",
-      prescricoes: dadosEdicao.prescricoes || [],
-      proximaConsulta: dadosEdicao.proximaConsulta,
-      status: "ativo",
-      criadoEm: new Date().toISOString(),
-      atualizadoEm: new Date().toISOString()
-    }
-
-    setNovosProntuarios(prev => [novoProntuario, ...prev])
-    setMostrarNovoProntuario(false)
-    setDadosEdicao({})
-  }
-
-  const adicionarPrescricao = () => {
-    const prescricoes = dadosEdicao.prescricoes || []
-    setDadosEdicao({
-      ...dadosEdicao,
-      prescricoes: [...prescricoes, ""]
-    })
-  }
-
-  const atualizarPrescricao = (index: number, valor: string) => {
-    const prescricoes = [...(dadosEdicao.prescricoes || [])]
-    prescricoes[index] = valor
-    setDadosEdicao({
-      ...dadosEdicao,
-      prescricoes
-    })
-  }
-
-  const removerPrescricao = (index: number) => {
-    const prescricoes = [...(dadosEdicao.prescricoes || [])]
-    prescricoes.splice(index, 1)
-    setDadosEdicao({
-      ...dadosEdicao,
-      prescricoes
-    })
   }
 
   // Funções para criação de prontuário PDF
@@ -167,8 +134,6 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
       const response = await fetch('/api/consultas/pacientes-atendidos')
       const data = await response.json()
 
-      console.log("data pacientes atendidos", data)
-
       if (!response.ok) {
         throw new Error(data.error || 'Erro ao buscar pacientes')
       }
@@ -176,7 +141,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
       setPacientesAtendidos(data.data || [])
     } catch (error) {
       console.error('Erro ao buscar pacientes atendidos:', error)
-      setErro('Erro ao carregar lista de pacientes atendidos')
+      setErroModal('Erro ao carregar lista de pacientes atendidos')
     } finally {
       setCarregandoPacientes(false)
     }
@@ -184,20 +149,20 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
 
   const handleArquivoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    setErro("")
+    setErroModal("")
     setSucesso("")
 
     if (file) {
       // Verificar se é PDF
       if (file.type !== 'application/pdf') {
-        setErro('Apenas arquivos PDF são permitidos')
+        setErroModal('Apenas arquivos PDF são permitidos')
         setArquivo(null)
         return
       }
 
       // Verificar tamanho (máximo 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        setErro('O arquivo deve ter no máximo 10MB')
+        setErroModal('O arquivo deve ter no máximo 10MB')
         setArquivo(null)
         return
       }
@@ -208,18 +173,18 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
 
   const handleSubmitProntuario = async () => {
     if (!pacienteSelecionado) {
-      setErro('Selecione um paciente')
+      setErroModal('Selecione um paciente')
       return
     }
 
     if (!arquivo) {
-      setErro('Selecione um arquivo PDF')
+      setErroModal('Selecione um arquivo PDF')
       return
     }
 
     try {
       setEnviando(true)
-      setErro("")
+      setErroModal("")
       setSucesso("")
 
       const formData = new FormData()
@@ -239,15 +204,16 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
 
       setSucesso('Prontuário criado com sucesso!')
       
-      // Fechar modal após 2 segundos
+      // Recarregar lista de prontuários e fechar modal após 2 segundos
       setTimeout(() => {
         setMostrarNovoProntuario(false)
         resetarFormulario()
+        buscarProntuarios() // Recarregar a lista
       }, 2000)
 
     } catch (error) {
       console.error('Erro ao criar prontuário:', error)
-      setErro(error instanceof Error ? error.message : 'Erro ao criar prontuário')
+      setErroModal(error instanceof Error ? error.message : 'Erro ao criar prontuário')
     } finally {
       setEnviando(false)
     }
@@ -256,22 +222,35 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
   const resetarFormulario = () => {
     setPacienteSelecionado("")
     setArquivo(null)
-    setErro("")
+    setErroModal("")
     setSucesso("")
     setPacientesAtendidos([])
   }
 
   const estatisticas = useMemo(() => {
     return {
-      total: prontuariosProfissional.length,
-      ativos: prontuariosProfissional.filter(p => p.status === "ativo").length,
-      emAndamento: prontuariosProfissional.filter(p => p.status === "em_andamento").length,
-      arquivados: prontuariosProfissional.filter(p => p.status === "arquivado").length
+      total: prontuariosFiltrados.length,
+      comProntuario: prontuariosFiltrados.filter(p => p.prontuario).length,
+      semProntuario: prontuariosFiltrados.filter(p => !p.prontuario).length,
+      recentes: prontuariosFiltrados.filter(p => {
+        const dataConsulta = new Date(p.data_hora)
+        const agora = new Date()
+        const diasAtras = (agora.getTime() - dataConsulta.getTime()) / (1000 * 60 * 60 * 24)
+        return diasAtras <= 30
+      }).length
     }
-  }, [prontuariosProfissional])
+  }, [prontuariosFiltrados])
 
   return (
     <div className="space-y-6">
+      {/* Mensagem de Erro Global */}
+      {erro && (
+        <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-md">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <span className="text-red-700">{erro}</span>
+        </div>
+      )}
+
       {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -291,8 +270,8 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
             <div className="flex items-center space-x-2">
               <Stethoscope className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-sm text-gray-600">Ativos</p>
-                <p className="text-2xl font-bold">{estatisticas.ativos}</p>
+                <p className="text-sm text-gray-600">Com Prontuário</p>
+                <p className="text-2xl font-bold">{estatisticas.comProntuario}</p>
               </div>
             </div>
           </CardContent>
@@ -301,10 +280,10 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Edit className="h-5 w-5 text-blue-600" />
+              <Edit className="h-5 w-5 text-orange-600" />
               <div>
-                <p className="text-sm text-gray-600">Em Andamento</p>
-                <p className="text-2xl font-bold">{estatisticas.emAndamento}</p>
+                <p className="text-sm text-gray-600">Sem Prontuário</p>
+                <p className="text-2xl font-bold">{estatisticas.semProntuario}</p>
               </div>
             </div>
           </CardContent>
@@ -313,10 +292,10 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-gray-600" />
+              <Calendar className="h-5 w-5 text-purple-600" />
               <div>
-                <p className="text-sm text-gray-600">Arquivados</p>
-                <p className="text-2xl font-bold">{estatisticas.arquivados}</p>
+                <p className="text-sm text-gray-600">Recentes (30d)</p>
+                <p className="text-2xl font-bold">{estatisticas.recentes}</p>
               </div>
             </div>
           </CardContent>
@@ -438,10 +417,10 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                   )}
 
                   {/* Mensagens de Erro e Sucesso */}
-                  {erro && (
+                  {erroModal && (
                     <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-md">
                       <AlertCircle className="h-4 w-4 text-red-600" />
-                      <span className="text-red-700">{erro}</span>
+                      <span className="text-red-700">{erroModal}</span>
                     </div>
                   )}
 
@@ -489,7 +468,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
               <Label htmlFor="busca">Buscar</Label>
               <Input
                 id="busca"
-                placeholder="Buscar por paciente, diagnóstico..."
+                placeholder="Buscar por paciente, observações..."
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
               />
@@ -503,9 +482,9 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                  <SelectItem value="arquivado">Arquivado</SelectItem>
+                  <SelectItem value="concluido">Concluído</SelectItem>
+                  <SelectItem value="agendado">Agendado</SelectItem>
+                  <SelectItem value="cancelado">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -516,6 +495,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                 onClick={() => {
                   setBusca("")
                   setFiltroStatus("todos")
+                  buscarProntuarios()
                 }}
               >
                 Limpar Filtros
@@ -526,256 +506,432 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
       </Card>
 
       {/* Lista de Prontuários */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {prontuariosProfissional.map((prontuario) => (
-          <Card key={prontuario.id} className="hover:shadow-md transition-shadow flex flex-col h-full">
-            <CardHeader className="pb-3 flex-shrink-0">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg leading-tight break-words truncate pr-2">{prontuario.pacienteNome}</CardTitle>
-                    <CardDescription className="mt-1 break-words truncate">{prontuario.tipoConsulta}</CardDescription>
-                  </div>
-                  <div className="flex-shrink-0 mt-1">
-                    <StatusBadge status={prontuario.status} />
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col space-y-3">
-              <div className="flex items-center space-x-2 text-sm text-gray-600 flex-shrink-0">
-                <Calendar className="h-4 w-4 flex-shrink-0" />
-                <span className="break-words">{formatarData(prontuario.dataConsulta)}</span>
-              </div>
-
-              {prontuario.diagnostico && (
-                <div className="p-2 bg-blue-50 rounded text-sm flex-shrink-0">
-                  <p className="font-medium text-blue-800">Diagnóstico:</p>
-                  <p className="text-blue-700 break-words">{prontuario.diagnostico}</p>
-                </div>
-              )}
-
-              <div className="text-sm text-gray-600 flex-1 min-h-0 overflow-hidden">
-                <p className="break-words line-clamp-3 overflow-hidden break-all">{prontuario.observacoes.substring(0, 150)}...</p>
-              </div>
-
-              {/* Botão sempre na base */}
-              <div className="mt-auto pt-3 border-t flex-shrink-0">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      onClick={() => {
-                        setProntuarioSelecionado(prontuario)
-                        setModoEdicao(false)
-                      }}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Ver/Editar
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <DialogTitle className="text-azul-escuro">Prontuário Médico</DialogTitle>
-                          <DialogDescription className="text-gray-700">
-                            {prontuarioSelecionado?.pacienteNome} - {prontuarioSelecionado?.tipoConsulta}
-                          </DialogDescription>
-                        </div>
-                        <div className="flex space-x-2">
-                          {!modoEdicao ? (
-                            <Button onClick={() => iniciarEdicao(prontuario)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Editar
-                            </Button>
-                          ) : (
-                            <>
-                              <Button variant="outline" onClick={() => setModoEdicao(false)}>
-                                Cancelar
-                              </Button>
-                              <Button onClick={salvarEdicao}>
-                                <Save className="h-4 w-4 mr-2" />
-                                Salvar
-                              </Button>
-                            </>
-                          )}
-                        </div>
+      {carregandoProntuarios ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando prontuários...</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {prontuariosFiltrados.map((consulta) => (
+              <Card key={consulta.id} className="hover:shadow-md transition-shadow flex flex-col h-full">
+                <CardHeader className="pb-3 flex-shrink-0">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg leading-tight break-words truncate pr-2">
+                          {consulta.paciente?.nome || 'Paciente não identificado'}
+                        </CardTitle>
+                        <CardDescription className="mt-1 break-words truncate">
+                          Consulta - {consulta.modalidade}
+                        </CardDescription>
                       </div>
-                    </DialogHeader>
-                    
-                    {prontuarioSelecionado && (
-                      <div className="space-y-6">
-                        {/* Informações Básicas */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-gray-800 font-medium">Paciente</Label>
-                            <p className="font-medium text-gray-900">{prontuarioSelecionado.pacienteNome}</p>
-                          </div>
-                          <div>
-                            <Label className="text-gray-800 font-medium">Data da Consulta</Label>
-                            <p className="font-medium text-gray-900">{formatarData(prontuarioSelecionado.dataConsulta)}</p>
-                          </div>
-                        </div>
+                      <div className="flex-shrink-0 mt-1">
+                        {consulta.prontuario ? (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Com PDF
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            Sem PDF
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col space-y-3">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600 flex-shrink-0">
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <span className="break-words">{formatarData(consulta.data_hora)}</span>
+                  </div>
 
-                        {/* Campos Editáveis */}
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="tipoConsultaEdit" className="text-gray-800 font-medium">Tipo de Consulta</Label>
-                            {modoEdicao ? (
-                              <Input
-                                id="tipoConsultaEdit"
-                                value={dadosEdicao.tipoConsulta || ""}
-                                onChange={(e) => setDadosEdicao({...dadosEdicao, tipoConsulta: e.target.value})}
-                              />
-                            ) : (
-                              <p className="p-2 bg-gray-50 rounded text-gray-900">{prontuarioSelecionado.tipoConsulta}</p>
-                            )}
-                          </div>
+                  {consulta.observacoes && (
+                    <div className="p-2 bg-blue-50 rounded text-sm flex-shrink-0">
+                      <p className="font-medium text-blue-800">Observações:</p>
+                      <p className="text-blue-700 break-words">{consulta.observacoes.substring(0, 100)}...</p>
+                    </div>
+                  )}
 
-                          <div>
-                            <Label htmlFor="diagnosticoEdit" className="text-gray-800 font-medium">Diagnóstico</Label>
-                            {modoEdicao ? (
-                              <Input
-                                id="diagnosticoEdit"
-                                value={dadosEdicao.diagnostico || ""}
-                                onChange={(e) => setDadosEdicao({...dadosEdicao, diagnostico: e.target.value})}
-                                placeholder="Diagnóstico médico"
-                              />
-                            ) : (
-                              <p className="p-2 bg-gray-50 rounded text-gray-900">{prontuarioSelecionado.diagnostico || "Não informado"}</p>
-                            )}
-                          </div>
+                  <div className="text-sm text-gray-600 flex-1 min-h-0 overflow-hidden">
+                    <p className="break-words">
+                      Status: <span className="font-medium">{consulta.status_consulta}</span>
+                    </p>
+                    <p className="break-words">
+                      Modalidade: <span className="font-medium">{consulta.modalidade}</span>
+                    </p>
+                  </div>
 
-                          <div>
-                            <Label htmlFor="observacoesEdit" className="text-gray-800 font-medium">Observações</Label>
-                            {modoEdicao ? (
-                              <Textarea
-                                id="observacoesEdit"
-                                value={dadosEdicao.observacoes || ""}
-                                onChange={(e) => setDadosEdicao({...dadosEdicao, observacoes: e.target.value})}
-                                rows={4}
-                              />
-                            ) : (
-                              <p className="p-2 bg-gray-50 rounded whitespace-pre-wrap text-gray-900">{prontuarioSelecionado.observacoes}</p>
-                            )}
-                          </div>
-
-                          {/* Prescrições */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <Label className="text-gray-800 font-medium">Prescrições</Label>
-                              {modoEdicao && (
-                                <Button size="sm" variant="outline" onClick={adicionarPrescricao}>
-                                  <Plus className="h-4 w-4 mr-1" />
-                                  Adicionar
+                  {/* Botão sempre na base */}
+                  <div className="mt-auto pt-3 border-t flex-shrink-0">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          onClick={() => {
+                            setProntuarioSelecionado(consulta)
+                            setModoEdicao(false)
+                          }}
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Ver Detalhes
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <DialogTitle className="text-blue-900">Consulta Médica</DialogTitle>
+                              <DialogDescription className="text-gray-700">
+                                {prontuarioSelecionado?.paciente?.nome} - {formatarData(prontuarioSelecionado?.data_hora || '')}
+                              </DialogDescription>
+                            </div>
+                            <div className="flex space-x-2">
+                              {!modoEdicao ? (
+                                <Button onClick={() => iniciarEdicao(consulta)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
                                 </Button>
+                              ) : (
+                                <>
+                                  <Button variant="outline" onClick={() => setModoEdicao(false)}>
+                                    Cancelar
+                                  </Button>
+                                  <Button onClick={salvarEdicao}>
+                                    <Save className="h-4 w-4 mr-2" />
+                                    Salvar
+                                  </Button>
+                                </>
                               )}
                             </div>
-                            {modoEdicao ? (
-                              <div className="space-y-2">
-                                {(dadosEdicao.prescricoes || []).map((prescricao, index) => (
-                                  <div key={index} className="flex items-center space-x-2">
-                                    <Input
-                                      value={prescricao}
-                                      onChange={(e) => atualizarPrescricao(index, e.target.value)}
-                                      placeholder="Digite a prescrição"
-                                    />
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => removerPrescricao(index)}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ))}
+                          </div>
+                        </DialogHeader>
+                        
+                        {prontuarioSelecionado && (
+                          <div className="space-y-6">
+                            {/* Informações Básicas */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-gray-800 font-medium">Paciente</Label>
+                                <p className="font-medium text-gray-900">{prontuarioSelecionado.paciente?.nome}</p>
                               </div>
-                            ) : (
-                              <div className="p-2 bg-gray-50 rounded">
-                                {prontuarioSelecionado.prescricoes && prontuarioSelecionado.prescricoes.length > 0 ? (
-                                  <ul className="list-disc list-inside space-y-1">
-                                    {prontuarioSelecionado.prescricoes.map((prescricao, index) => (
-                                      <li key={index} className="text-gray-900">{prescricao}</li>
-                                    ))}
-                                  </ul>
+                              <div>
+                                <Label className="text-gray-800 font-medium">Data da Consulta</Label>
+                                <p className="font-medium text-gray-900">{formatarData(prontuarioSelecionado.data_hora)}</p>
+                              </div>
+                            </div>
+
+                            {/* Campos Editáveis */}
+                            <div className="space-y-4">
+                              <div>
+                                <Label htmlFor="modalidadeEdit" className="text-gray-800 font-medium">Modalidade</Label>
+                                {modoEdicao ? (
+                                  <Select
+                                    value={dadosEdicao.modalidade || ""}
+                                    onValueChange={(value) => setDadosEdicao({...dadosEdicao, modalidade: value})}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecione a modalidade" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="presencial">Presencial</SelectItem>
+                                      <SelectItem value="online">Online</SelectItem>
+                                      <SelectItem value="domicilio">Domicílio</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 ) : (
-                                  <p className="text-gray-600">Nenhuma prescrição registrada</p>
+                                  <p className="p-2 bg-gray-50 rounded text-gray-900">{prontuarioSelecionado.modalidade}</p>
                                 )}
                               </div>
-                            )}
-                          </div>
 
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="proximaConsultaEdit" className="text-gray-800 font-medium">Próxima Consulta</Label>
-                              {modoEdicao ? (
-                                <Input
-                                  id="proximaConsultaEdit"
-                                  type="date"
-                                  value={dadosEdicao.proximaConsulta ? dadosEdicao.proximaConsulta.split('T')[0] : ""}
-                                  onChange={(e) => setDadosEdicao({...dadosEdicao, proximaConsulta: e.target.value ? new Date(e.target.value).toISOString() : ""})}
-                                />
-                              ) : (
-                                <p className="p-2 bg-gray-50 rounded text-gray-900">
-                                  {prontuarioSelecionado.proximaConsulta ? formatarData(prontuarioSelecionado.proximaConsulta) : "Não agendada"}
-                                </p>
-                              )}
+                              <div>
+                                <Label htmlFor="localEdit" className="text-gray-800 font-medium">Local</Label>
+                                {modoEdicao ? (
+                                  <Input
+                                    id="localEdit"
+                                    value={dadosEdicao.local || ""}
+                                    onChange={(e) => setDadosEdicao({...dadosEdicao, local: e.target.value})}
+                                    placeholder="Local da consulta"
+                                  />
+                                ) : (
+                                  <p className="p-2 bg-gray-50 rounded text-gray-900">{prontuarioSelecionado.local || "Não informado"}</p>
+                                )}
+                              </div>
+
+                              <div>
+                                <Label htmlFor="observacoesEdit" className="text-gray-800 font-medium">Observações</Label>
+                                {modoEdicao ? (
+                                  <Textarea
+                                    id="observacoesEdit"
+                                    value={dadosEdicao.observacoes || ""}
+                                    onChange={(e) => setDadosEdicao({...dadosEdicao, observacoes: e.target.value})}
+                                    rows={4}
+                                    placeholder="Observações da consulta"
+                                  />
+                                ) : (
+                                  <p className="p-2 bg-gray-50 rounded whitespace-pre-wrap text-gray-900">{prontuarioSelecionado.observacoes || "Nenhuma observação"}</p>
+                                )}
+                              </div>
+
+                              <div>
+                                <Label htmlFor="statusEdit" className="text-gray-800 font-medium">Status</Label>
+                                {modoEdicao ? (
+                                  <Select
+                                    value={dadosEdicao.status_consulta || ""}
+                                    onValueChange={(value) => setDadosEdicao({...dadosEdicao, status_consulta: value})}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecione o status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="agendado">Agendado</SelectItem>
+                                      <SelectItem value="concluido">Concluído</SelectItem>
+                                      <SelectItem value="cancelado">Cancelado</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <div className="p-2">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                      {prontuarioSelecionado.status_consulta}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
 
-                            <div>
-                              <Label htmlFor="statusEdit" className="text-gray-800 font-medium">Status</Label>
-                              {modoEdicao ? (
-                                <Select
-                                  value={dadosEdicao.status || ""}
-                                  onValueChange={(value) => setDadosEdicao({...dadosEdicao, status: value as "ativo" | "arquivado" | "em_andamento"})}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione o status" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="ativo">Ativo</SelectItem>
-                                    <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                                    <SelectItem value="arquivado">Arquivado</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                            {/* Prontuário PDF */}
+                            <div className="pt-4 border-t border-gray-200">
+                              <Label className="text-gray-800 font-medium">Prontuário PDF</Label>
+                              {prontuarioSelecionado.prontuario ? (
+                                <div className="mt-2 space-y-3">
+                                  <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center space-x-2">
+                                        <FileText className="h-4 w-4 text-green-600" />
+                                        <span className="text-green-700 font-medium">Prontuário disponível</span>
+                                      </div>
+                                      <div className="flex space-x-2">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            // Abrir PDF em nova aba
+                                            const pdfWindow = window.open()
+                                            if (pdfWindow) {
+                                              pdfWindow.document.write(`
+                                                <iframe width='100%' height='100%' src='${prontuarioSelecionado.prontuario}'></iframe>
+                                              `)
+                                            }
+                                          }}
+                                        >
+                                          <FileText className="h-3 w-3 mr-1" />
+                                          Ver PDF
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    <p className="text-sm text-green-600 mt-1">
+                                      Arquivo PDF anexado a esta consulta.
+                                    </p>
+                                  </div>
+
+                                  {/* Ações do PDF */}
+                                  {modoEdicao && (
+                                    <div className="space-y-3">
+                                      <div className="flex space-x-2">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            // Implementar substituição de PDF
+                                            const input = document.createElement('input')
+                                            input.type = 'file'
+                                            input.accept = '.pdf'
+                                            input.onchange = async (e) => {
+                                              const file = (e.target as HTMLInputElement).files?.[0]
+                                              if (file) {
+                                                if (file.type !== 'application/pdf') {
+                                                  alert('Apenas arquivos PDF são permitidos')
+                                                  return
+                                                }
+                                                if (file.size > 10 * 1024 * 1024) {
+                                                  alert('O arquivo deve ter no máximo 10MB')
+                                                  return
+                                                }
+                                                
+                                                try {
+                                                  const formData = new FormData()
+                                                  formData.append('consultaId', prontuarioSelecionado.id)
+                                                  formData.append('arquivo', file)
+                                                  
+                                                  const response = await fetch('/api/consultas/prontuarios/substituir', {
+                                                    method: 'PUT',
+                                                    body: formData,
+                                                  })
+                                                  
+                                                  if (response.ok) {
+                                                    alert('PDF substituído com sucesso!')
+                                                    buscarProntuarios() // Recarregar dados
+                                                  } else {
+                                                    alert('Erro ao substituir PDF')
+                                                  }
+                                                } catch (error) {
+                                                  console.error('Erro:', error)
+                                                  alert('Erro ao substituir PDF')
+                                                }
+                                              }
+                                            }
+                                            input.click()
+                                          }}
+                                        >
+                                          <Upload className="h-3 w-3 mr-1" />
+                                          Substituir PDF
+                                        </Button>
+                                        
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          onClick={async () => {
+                                            if (confirm('Tem certeza que deseja remover o prontuário PDF? Esta ação não pode ser desfeita.')) {
+                                              try {
+                                                const response = await fetch('/api/consultas/prontuarios/remover', {
+                                                  method: 'DELETE',
+                                                  headers: {
+                                                    'Content-Type': 'application/json',
+                                                  },
+                                                  body: JSON.stringify({ consultaId: prontuarioSelecionado.id }),
+                                                })
+                                                
+                                                if (response.ok) {
+                                                  alert('PDF removido com sucesso!')
+                                                  buscarProntuarios() // Recarregar dados
+                                                } else {
+                                                  alert('Erro ao remover PDF')
+                                                }
+                                              } catch (error) {
+                                                console.error('Erro:', error)
+                                                alert('Erro ao remover PDF')
+                                              }
+                                            }
+                                          }}
+                                        >
+                                          <X className="h-3 w-3 mr-1" />
+                                          Remover PDF
+                                        </Button>
+                                      </div>
+                                      <p className="text-xs text-gray-500">
+                                        Você pode substituir o arquivo atual ou removê-lo completamente.
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
                               ) : (
-                                <div className="p-2">
-                                  <StatusBadge status={prontuarioSelecionado.status} />
+                                <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-md">
+                                  <div className="flex items-center space-x-2">
+                                    <AlertCircle className="h-4 w-4 text-orange-600" />
+                                    <span className="text-orange-700 font-medium">Nenhum prontuário PDF</span>
+                                  </div>
+                                  <p className="text-sm text-orange-600 mt-1">
+                                    Nenhum arquivo PDF foi anexado a esta consulta ainda.
+                                  </p>
+                                  
+                                  {/* Opção para adicionar PDF quando não existe */}
+                                  {modoEdicao && (
+                                    <div className="mt-3">
+                                      <Button
+                                        size="sm"
+                                        onClick={() => {
+                                          const input = document.createElement('input')
+                                          input.type = 'file'
+                                          input.accept = '.pdf'
+                                          input.onchange = async (e) => {
+                                            const file = (e.target as HTMLInputElement).files?.[0]
+                                            if (file) {
+                                              if (file.type !== 'application/pdf') {
+                                                alert('Apenas arquivos PDF são permitidos')
+                                                return
+                                              }
+                                              if (file.size > 10 * 1024 * 1024) {
+                                                alert('O arquivo deve ter no máximo 10MB')
+                                                return
+                                              }
+                                              
+                                              try {
+                                                const formData = new FormData()
+                                                formData.append('consultaId', prontuarioSelecionado.id)
+                                                formData.append('arquivo', file)
+                                                
+                                                const response = await fetch('/api/consultas/prontuarios/adicionar', {
+                                                  method: 'POST',
+                                                  body: formData,
+                                                })
+                                                
+                                                if (response.ok) {
+                                                  alert('PDF adicionado com sucesso!')
+                                                  buscarProntuarios() // Recarregar dados
+                                                } else {
+                                                  alert('Erro ao adicionar PDF')
+                                                }
+                                              } catch (error) {
+                                                console.error('Erro:', error)
+                                                alert('Erro ao adicionar PDF')
+                                              }
+                                            }
+                                          }
+                                          input.click()
+                                        }}
+                                      >
+                                        <Upload className="h-3 w-3 mr-1" />
+                                        Adicionar PDF
+                                      </Button>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
+
+                            {/* Informações de Auditoria */}
+                            <div className="pt-4 border-t border-gray-200 text-sm text-gray-600">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <p className="text-gray-700">ID da Consulta: {prontuarioSelecionado.id}</p>
+                                  <p className="text-gray-700">Status: {prontuarioSelecionado.status}</p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-700">Modalidade: {prontuarioSelecionado.modalidade}</p>
+                                  {prontuarioSelecionado.local && (
+                                    <p className="text-gray-700">Local: {prontuarioSelecionado.local}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        )}
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-                        {/* Informações de Auditoria */}
-                        <div className="pt-4 border-t border-gray-200 text-sm text-gray-600">
-                          <p className="text-gray-700">Criado em: {formatarData(prontuarioSelecionado.criadoEm)}</p>
-                          <p className="text-gray-700">Última atualização: {formatarData(prontuarioSelecionado.atualizadoEm)}</p>
-                        </div>
-                      </div>
-                    )}
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {prontuariosProfissional.length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum prontuário encontrado</h3>
-            <p className="text-gray-600">
-              {busca || filtroStatus !== "todos" 
-                ? "Não há prontuários que correspondam aos filtros selecionados." 
-                : "Você ainda não tem prontuários cadastrados."}
-            </p>
-          </CardContent>
-        </Card>
+          {prontuariosFiltrados.length === 0 && (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum prontuário encontrado</h3>
+                <p className="text-gray-600">
+                  {busca || filtroStatus !== "todos" 
+                    ? "Não há prontuários que correspondam aos filtros selecionados." 
+                    : "Você ainda não tem prontuários cadastrados."}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
     </div>
   )
