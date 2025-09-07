@@ -6,27 +6,17 @@ export type Modalidade = 'presencial' | 'online';
 
 export interface Agendamento {
   id: string;
-  paciente_id: string;   // igual ao banco
+  paciente_id: string;
   profissional_id: string;
-  data_consulta: string; // igual ao banco
+  data_consulta: string;
   modalidade: Modalidade;
   status: StatusAgendamento;
-  // local: string;
   notas?: string;
   created_at?: string;
   updated_at?: string;
   paciente?: { nome: string; email: string; telefone?: string };
-
-  // Campos relacionados (joins)
-  usuario?: {
-    nome: string;
-    email: string;
-    telefone?: string;
-  };
-  profissional?: {
-    nome: string;
-    especialidade?: string;
-  };
+  usuario?: { nome: string; email: string; telefone?: string };
+  profissional?: { nome: string; especialidade?: string };
 }
 
 export interface CreateAgendamentoDTO {
@@ -34,21 +24,20 @@ export interface CreateAgendamentoDTO {
   profissional_id: string;
   modalidade: Modalidade;
   data_consulta: string;
-  // local: string;
   notas?: string;
 }
 
 export class AgendamentosService {
-  /**
-   * Criar novo agendamento
-   */
+  // ======================================
+  // Criar novo agendamento
+  // ======================================
   static async createAgendamento(data: CreateAgendamentoDTO) {
     const supabase = await createClient();
 
     try {
       console.log('Criando agendamento:', data);
 
-      // Criar agendamento 
+      // 1️⃣ Criar agendamento
       const { data: agendamento, error: agendamentoError } = await supabase
         .from('agendamentos')
         .insert({
@@ -56,16 +45,15 @@ export class AgendamentosService {
           profissional_id: data.profissional_id,
           data_consulta: data.data_consulta,
           status: 'confirmado',
-          // local: data.local,
-          modalidade: data.modalidade, // <-- adiciona aqui
+          modalidade: data.modalidade,
           notas: data.notas,
         })
-        .select(`
-        *,
-        paciente:usuarios!agendamentos_paciente_id_fkey(nome, email),
-        profissional:usuarios!agendamentos_profissional_id_fkey(nome)
-      `)
+        .select(`*,
+          paciente:usuarios!agendamentos_paciente_id_fkey(nome, email),
+          profissional:usuarios!agendamentos_profissional_id_fkey(nome)
+        `)
         .single();
+
       if (agendamentoError) {
         console.error('Erro ao criar agendamento:', agendamentoError);
         throw agendamentoError;
@@ -73,27 +61,61 @@ export class AgendamentosService {
 
       console.log('Agendamento criado com sucesso:', agendamento.id);
 
-      // Mapear para o formato esperado
+      // 2️⃣ Atualizar slots no agenda_profissional
+      const { data: agendaProfissional } = await supabase
+        .from('agenda_profissional')
+        .select('id, slots')
+        .eq('profissional_id', data.profissional_id)
+        .single();
+
+      if (!agendaProfissional) throw new Error('Agenda do profissional não encontrada');
+
+      const dataObj = new Date(data.data_consulta);
+      const diaSemana = dataObj.getDay();
+      const hora = dataObj.toISOString().split('T')[1].substring(0, 5);
+
+      const novosSlots = agendaProfissional.slots.map((slot: any) => {
+        if (slot.diaSemana === diaSemana && slot.horaInicio === hora) {
+          return {
+            ...slot,
+            disponivel: false,
+            agendamento_id: agendamento.id,
+          };
+        }
+        return slot;
+      });
+
+      const { error: slotsError } = await supabase
+        .from('agenda_profissional')
+        .update({ slots: novosSlots })
+        .eq('id', agendaProfissional.id);
+
+      if (slotsError) throw slotsError;
+
+      console.log('Slot atualizado com sucesso!');
+
+      // 3️⃣ Retornar agendamento formatado
       return {
         id: agendamento.id,
-        paciente_id: agendamento.paciente_id,       // banco → frontend
+        paciente_id: agendamento.paciente_id,
         profissional_id: agendamento.profissional_id,
-        data_consulta: agendamento.data_consulta,      // banco → frontend
+        data_consulta: agendamento.data_consulta,
         status: agendamento.status,
-        // local: agendamento.local ?? data.local,    // pega do banco, fallback pro DTO
-        notas: agendamento.notas ?? data.notas,    // pega do banco, fallback pro DTO
+        modalidade: agendamento.modalidade,
+        notas: agendamento.notas,
         usuario: agendamento.paciente,
         profissional: agendamento.profissional,
       } satisfies Agendamento;
+
     } catch (error) {
       console.error('Erro no createAgendamento:', error);
       throw error;
     }
   }
 
-  /**
-   * Buscar agendamento por ID
-   */
+  // ======================================
+  // Buscar agendamento por ID
+  // ======================================
   static async getAgendamentoById(id: string) {
     const supabase = await createClient();
 
@@ -115,9 +137,9 @@ export class AgendamentosService {
     return data as Agendamento;
   }
 
-  /**
-   * Listar agendamentos com filtros
-   */
+  // ======================================
+  // Listar agendamentos com filtros
+  // ======================================
   static async listAgendamentos(filters?: {
     usuario_id?: string;
     profissional_id?: string;
@@ -135,25 +157,11 @@ export class AgendamentosService {
         profissional:usuarios!agendamentos_profissional_id_fkey(nome)
       `);
 
-    if (filters?.usuario_id) {
-      query = query.eq('paciente_id', filters.usuario_id);
-    }
-
-    if (filters?.profissional_id) {
-      query = query.eq('profissional_id', filters.profissional_id);
-    }
-
-    if (filters?.status) {
-      query = query.eq('status', filters.status);
-    }
-
-    if (filters?.data_inicio) {
-      query = query.gte('data_consulta', filters.data_inicio);
-    }
-
-    if (filters?.data_fim) {
-      query = query.lte('data_consulta', filters.data_fim);
-    }
+    if (filters?.usuario_id) query = query.eq('paciente_id', filters.usuario_id);
+    if (filters?.profissional_id) query = query.eq('profissional_id', filters.profissional_id);
+    if (filters?.status) query = query.eq('status', filters.status);
+    if (filters?.data_inicio) query = query.gte('data_consulta', filters.data_inicio);
+    if (filters?.data_fim) query = query.lte('data_consulta', filters.data_fim);
 
     const { data, error } = await query.order('data_consulta', { ascending: true });
 
@@ -165,9 +173,9 @@ export class AgendamentosService {
     return data as Agendamento[];
   }
 
-  /**
-   * Verificar disponibilidade de horário baseado nas configurações
-   */
+  // ======================================
+  // Verificar disponibilidade
+  // ======================================
   static async checkAvailability(
     profissional_id: string,
     data_hora: string
@@ -178,17 +186,7 @@ export class AgendamentosService {
       console.log('=== VERIFICANDO DISPONIBILIDADE ===');
       console.log('Input recebido:', { profissional_id, data_hora });
 
-      // Extrair data e hora do datetime
-      let dataObj;
-
-      if (data_hora.includes('Z')) {
-        dataObj = new Date(data_hora);
-      } else if (data_hora.includes('T')) {
-        dataObj = new Date(data_hora + (data_hora.includes('.') ? '' : '.000Z'));
-      } else {
-        dataObj = new Date(data_hora);
-      }
-
+      const dataObj = new Date(data_hora);
       if (isNaN(dataObj.getTime())) {
         console.error('Data inválida:', data_hora);
         return false;
@@ -200,39 +198,44 @@ export class AgendamentosService {
 
       console.log('Data/hora processadas:', { data, hora, diaSemana });
 
-      // 1. Verificar se o profissional atende neste dia da semana
-      const { data: configuracao, error: configError } = await supabase
+      // 1. Buscar configuração JSON
+      // 1. Buscar configuração JSON
+      const { data: configData, error: configError } = await supabase
         .from('agenda_profissional')
-        .select('hora_inicio, hora_fim, intervalo_minutos')
+        .select('configuracao')
         .eq('profissional_id', profissional_id)
-        .eq('dia_semana', diaSemana)
         .single();
 
-      if (configError || !configuracao) {
-        console.log('Profissional não atende neste dia da semana:', { diaSemana, configError });
+      if (configError || !configData) {
+        console.log('Profissional não atende neste dia:', { diaSemana, configError });
         return false;
       }
 
-      console.log('Configuração encontrada:', configuracao);
+      // NÃO USAR JSON.parse
+      const configObj = configData.configuracao;
+      const diaConfig = configObj.dias.find((d: any) => d.diaSemana === diaSemana);
 
-      // 2. Verificar se o horário está dentro do expediente
+      if (!diaConfig) {
+        console.log('Profissional não atende neste dia da semana:', diaSemana);
+        return false;
+      }
+
+      const horaInicio = diaConfig.horaInicio;
+      const horaFim = diaConfig.horaFim;
+      const intervaloMinutos = configObj.intervalo_minutos;
+
+
+      // 2. Verificar se está dentro do expediente
       const horaMinutos = parseInt(hora.split(':')[0]) * 60 + parseInt(hora.split(':')[1]);
-      const inicioMinutos = parseInt(configuracao.hora_inicio.split(':')[0]) * 60 + parseInt(configuracao.hora_inicio.split(':')[1]);
-      const fimMinutos = parseInt(configuracao.hora_fim.split(':')[0]) * 60 + parseInt(configuracao.hora_fim.split(':')[1]);
+      const inicioMinutos = parseInt(horaInicio.split(':')[0]) * 60 + parseInt(horaInicio.split(':')[1]);
+      const fimMinutos = parseInt(horaFim.split(':')[0]) * 60 + parseInt(horaFim.split(':')[1]);
 
-      if (horaMinutos < inicioMinutos || horaMinutos >= fimMinutos) {
-        console.log('Horário fora do expediente:', { horaMinutos, inicioMinutos, fimMinutos });
-        return false;
-      }
+      if (horaMinutos < inicioMinutos || horaMinutos >= fimMinutos) return false;
 
-      // 3. Verificar se o horário está em um intervalo válido
-      const intervaloMinutos = (horaMinutos - inicioMinutos) % configuracao.intervalo_minutos;
-      if (intervaloMinutos !== 0) {
-        console.log('Horário não está em um intervalo válido:', { intervaloMinutos });
-        return false;
-      }
+      // 3. Verificar se está no intervalo correto
+      if ((horaMinutos - inicioMinutos) % intervaloMinutos !== 0) return false;
 
-      // 4. Verificar se não há exceção para esta data
+      // 4. Verificar exceções
       const { data: excecao } = await supabase
         .from('agenda_excecoes')
         .select('id')
@@ -240,12 +243,9 @@ export class AgendamentosService {
         .eq('data', data)
         .single();
 
-      if (excecao) {
-        console.log('Data bloqueada por exceção:', excecao);
-        return false;
-      }
+      if (excecao) return false;
 
-      // 5. Verificar se já existe agendamento neste horário
+      // 5. Verificar agendamentos existentes
       const { data: agendamentoExistente } = await supabase
         .from('agendamentos')
         .select('id')
@@ -254,12 +254,8 @@ export class AgendamentosService {
         .neq('status', 'cancelado')
         .single();
 
-      if (agendamentoExistente) {
-        console.log('Já existe agendamento neste horário:', agendamentoExistente);
-        return false;
-      }
+      if (agendamentoExistente) return false;
 
-      console.log('Horário disponível!');
       return true;
     } catch (error) {
       console.error('Erro ao verificar disponibilidade:', error);
@@ -267,9 +263,9 @@ export class AgendamentosService {
     }
   }
 
-  /**
-   * Atualizar status do agendamento
-   */
+  // ======================================
+  // Atualizar status do agendamento
+  // ======================================
   static async updateAgendamentoStatus(
     id: string,
     updates: Partial<{ status: StatusAgendamento; notas: string }>
@@ -295,26 +291,18 @@ export class AgendamentosService {
     return data as Agendamento;
   }
 
-
-  /**
-   * Cancelar agendamento
-   */
   static async cancelAgendamento(id: string, motivo: string) {
     return this.updateAgendamentoStatus(id, { status: "cancelado", notas: motivo });
   }
 }
 
-
-// Versão para uso no cliente (browser)
+// ======================================
+// Versão para uso no browser
+// ======================================
 export class AgendamentosServiceClient {
-  /**
-   * Buscar agendamentos do usuário atual
-   */
   static async getMyAgendamentos() {
     const supabase = createClientBrowser();
-
     const { data: { user } } = await supabase.auth.getUser();
-
     if (!user) throw new Error('Usuário não autenticado');
 
     const { data, error } = await supabase
@@ -326,12 +314,8 @@ export class AgendamentosServiceClient {
       .eq('paciente_id', user.id)
       .order('data_consulta', { ascending: true });
 
-    if (error) {
-      console.error('Erro ao buscar meus agendamentos:', error);
-      throw error;
-    }
+    if (error) throw error;
 
-    // Mapear para o formato esperado pelo frontend
     return data.map(ag => ({
       id: ag.id,
       usuarioId: ag.paciente_id,
@@ -339,7 +323,6 @@ export class AgendamentosServiceClient {
       profissionalNome: ag.profissional?.nome || 'Profissional',
       especialidade: ag.profissional?.especialidade || '',
       dataISO: ag.data_consulta,
-      // local: 'Clínica Resilience',
       status: ag.status,
       notas: ag.notas,
     }));
