@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { generateMockProntuarios, type ProntuarioMedico } from "@/lib/mocks/medical-records"
 import { generateMockPacientes } from "@/lib/mocks/patients"
-import { FileText, Edit, Save, Plus, Search, Calendar, User, Stethoscope, X } from "lucide-react"
+import { FileText, Edit, Save, Plus, Search, Calendar, User, Stethoscope, X, Upload, AlertCircle, CheckCircle } from "lucide-react"
+import { PacienteAtendido } from "@/services/database/consultas.service"
 
 interface ProfessionalProntuariosClientProps {
   profissionalNome: string
@@ -28,6 +29,15 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
 
   // Estados para edição
   const [dadosEdicao, setDadosEdicao] = useState<Partial<ProntuarioMedico>>({})
+
+  // Estados para criação de prontuário PDF
+  const [pacientesAtendidos, setPacientesAtendidos] = useState<PacienteAtendido[]>([])
+  const [pacienteSelecionado, setPacienteSelecionado] = useState<string>("")
+  const [arquivo, setArquivo] = useState<File | null>(null)
+  const [carregandoPacientes, setCarregandoPacientes] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+  const [erro, setErro] = useState<string>("")
+  const [sucesso, setSucesso] = useState<string>("")
 
   // Gerar dados mock
   const prontuariosMock = useMemo(() => generateMockProntuarios(), [])
@@ -150,6 +160,107 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
     })
   }
 
+  // Funções para criação de prontuário PDF
+  const buscarPacientesAtendidos = async () => {
+    try {
+      setCarregandoPacientes(true)
+      const response = await fetch('/api/consultas/pacientes-atendidos')
+      const data = await response.json()
+
+      console.log("data pacientes atendidos", data)
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao buscar pacientes')
+      }
+
+      setPacientesAtendidos(data.data || [])
+    } catch (error) {
+      console.error('Erro ao buscar pacientes atendidos:', error)
+      setErro('Erro ao carregar lista de pacientes atendidos')
+    } finally {
+      setCarregandoPacientes(false)
+    }
+  }
+
+  const handleArquivoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    setErro("")
+    setSucesso("")
+
+    if (file) {
+      // Verificar se é PDF
+      if (file.type !== 'application/pdf') {
+        setErro('Apenas arquivos PDF são permitidos')
+        setArquivo(null)
+        return
+      }
+
+      // Verificar tamanho (máximo 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setErro('O arquivo deve ter no máximo 10MB')
+        setArquivo(null)
+        return
+      }
+
+      setArquivo(file)
+    }
+  }
+
+  const handleSubmitProntuario = async () => {
+    if (!pacienteSelecionado) {
+      setErro('Selecione um paciente')
+      return
+    }
+
+    if (!arquivo) {
+      setErro('Selecione um arquivo PDF')
+      return
+    }
+
+    try {
+      setEnviando(true)
+      setErro("")
+      setSucesso("")
+
+      const formData = new FormData()
+      formData.append('pacienteId', pacienteSelecionado)
+      formData.append('arquivo', arquivo)
+
+      const response = await fetch('/api/consultas/prontuarios', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao criar prontuário')
+      }
+
+      setSucesso('Prontuário criado com sucesso!')
+      
+      // Fechar modal após 2 segundos
+      setTimeout(() => {
+        setMostrarNovoProntuario(false)
+        resetarFormulario()
+      }, 2000)
+
+    } catch (error) {
+      console.error('Erro ao criar prontuário:', error)
+      setErro(error instanceof Error ? error.message : 'Erro ao criar prontuário')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  const resetarFormulario = () => {
+    setPacienteSelecionado("")
+    setArquivo(null)
+    setErro("")
+    setSucesso("")
+    setPacientesAtendidos([])
+  }
+
   const estatisticas = useMemo(() => {
     return {
       total: prontuariosProfissional.length,
@@ -219,7 +330,10 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
             <CardTitle>Filtros</CardTitle>
             <Dialog open={mostrarNovoProntuario} onOpenChange={setMostrarNovoProntuario}>
               <DialogTrigger asChild>
-                <Button>
+                <Button onClick={() => {
+                  setMostrarNovoProntuario(true)
+                  buscarPacientesAtendidos()
+                }}>
                   <Plus className="h-4 w-4 mr-2" />
                   Novo Prontuário
                 </Button>
@@ -228,59 +342,140 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                 <DialogHeader>
                   <DialogTitle>Criar Novo Prontuário</DialogTitle>
                   <DialogDescription>
-                    Preencha as informações para criar um novo prontuário médico
+                    Selecione um paciente atendido e faça upload do prontuário em PDF
                   </DialogDescription>
                 </DialogHeader>
                 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="pacienteNome">Nome do Paciente</Label>
+                  {/* Seleção de Paciente */}
+                  <div>
+                    <Label htmlFor="paciente">Paciente *</Label>
+                    {carregandoPacientes ? (
+                      <div className="p-3 text-center text-gray-500">
+                        Carregando pacientes...
+                      </div>
+                    ) : pacientesAtendidos.length === 0 ? (
+                      <div className="p-3 text-center text-gray-500 bg-gray-50 rounded-md">
+                        Nenhum paciente atendido encontrado.
+                        <br />
+                        <span className="text-sm">Apenas pacientes com consultas concluídas podem ter prontuários.</span>
+                      </div>
+                    ) : (
+                      <Select value={pacienteSelecionado} onValueChange={setPacienteSelecionado}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um paciente atendido" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pacientesAtendidos.map((paciente) => (
+                            <SelectItem key={paciente.id} value={paciente.id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{paciente.nome}</span>
+                                <span className="text-sm text-gray-500">
+                                  Última consulta: {formatarData(paciente.ultimaConsulta)} • 
+                                  {paciente.totalConsultas} consulta{paciente.totalConsultas > 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {/* Informações do Paciente Selecionado */}
+                  {pacienteSelecionado && (() => {
+                    const pacienteInfo = pacientesAtendidos.find(p => p.id === pacienteSelecionado)
+                    return pacienteInfo ? (
+                      <Card className="bg-blue-50 border-blue-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <User className="h-4 w-4 text-blue-600" />
+                            <span className="font-medium text-blue-900">Paciente Selecionado</span>
+                          </div>
+                          <div className="space-y-1 text-sm">
+                            <p><strong>Nome:</strong> {pacienteInfo.nome}</p>
+                            <p><strong>Email:</strong> {pacienteInfo.email}</p>
+                            <p><strong>Última consulta:</strong> {formatarData(pacienteInfo.ultimaConsulta)}</p>
+                            <p><strong>Total de consultas:</strong> {pacienteInfo.totalConsultas}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ) : null
+                  })()}
+
+                  {/* Upload de Arquivo */}
+                  <div>
+                    <Label htmlFor="arquivo">Arquivo PDF do Prontuário *</Label>
+                    <div className="mt-1">
                       <Input
-                        id="pacienteNome"
-                        value={dadosEdicao.pacienteNome || ""}
-                        onChange={(e) => setDadosEdicao({...dadosEdicao, pacienteNome: e.target.value})}
-                        placeholder="Nome completo do paciente"
+                        id="arquivo"
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleArquivoChange}
+                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="tipoConsulta">Tipo de Consulta</Label>
-                      <Input
-                        id="tipoConsulta"
-                        value={dadosEdicao.tipoConsulta || ""}
-                        onChange={(e) => setDadosEdicao({...dadosEdicao, tipoConsulta: e.target.value})}
-                        placeholder="Ex: Consulta inicial, Retorno"
-                      />
+                    <p className="mt-1 text-sm text-gray-500">
+                      Apenas arquivos PDF são aceitos. Tamanho máximo: 10MB
+                    </p>
+                  </div>
+
+                  {/* Informações do Arquivo */}
+                  {arquivo && (
+                    <Card className="bg-green-50 border-green-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <FileText className="h-4 w-4 text-green-600" />
+                          <span className="font-medium text-green-900">Arquivo Selecionado</span>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <p><strong>Nome:</strong> {arquivo.name}</p>
+                          <p><strong>Tamanho:</strong> {(arquivo.size / 1024 / 1024).toFixed(2)} MB</p>
+                          <p><strong>Tipo:</strong> {arquivo.type}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Mensagens de Erro e Sucesso */}
+                  {erro && (
+                    <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                      <span className="text-red-700">{erro}</span>
                     </div>
-                  </div>
+                  )}
 
-                  <div>
-                    <Label htmlFor="diagnostico">Diagnóstico</Label>
-                    <Input
-                      id="diagnostico"
-                      value={dadosEdicao.diagnostico || ""}
-                      onChange={(e) => setDadosEdicao({...dadosEdicao, diagnostico: e.target.value})}
-                      placeholder="Diagnóstico médico"
-                    />
-                  </div>
+                  {sucesso && (
+                    <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="text-green-700">{sucesso}</span>
+                    </div>
+                  )}
 
-                  <div>
-                    <Label htmlFor="observacoes">Observações</Label>
-                    <Textarea
-                      id="observacoes"
-                      value={dadosEdicao.observacoes || ""}
-                      onChange={(e) => setDadosEdicao({...dadosEdicao, observacoes: e.target.value})}
-                      placeholder="Observações detalhadas sobre a consulta"
-                      rows={4}
-                    />
-                  </div>
-
+                  {/* Botões */}
                   <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setMostrarNovoProntuario(false)}>
+                    <Button variant="outline" onClick={() => {
+                      setMostrarNovoProntuario(false)
+                      resetarFormulario()
+                    }}>
                       Cancelar
                     </Button>
-                    <Button onClick={criarNovoProntuario}>
-                      Criar Prontuário
+                    <Button
+                      onClick={handleSubmitProntuario}
+                      disabled={!pacienteSelecionado || !arquivo || enviando || pacientesAtendidos.length === 0}
+                      className="flex items-center space-x-2"
+                    >
+                      {enviando ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Enviando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4" />
+                          <span>Criar Prontuário</span>
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>

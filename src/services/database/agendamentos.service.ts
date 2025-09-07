@@ -365,6 +365,49 @@ export class AgendamentosService {
       throw error;
     }
   }
+
+  // ======================================
+  // Completar agendamento (marcar consulta como concluída)
+  // ======================================
+  static async completeAgendamento(id: string, notas?: string) {
+    const supabase = await createClient();
+
+    try {
+      // 1️⃣ Atualizar o status do agendamento para concluído
+      const updatedAgendamento = await this.updateAgendamentoStatus(id, { 
+        status: "concluido", 
+        notas: notas 
+      });
+
+      // 2️⃣ Atualizar o status_consulta na tabela consultas
+      const { error: consultaError } = await supabase
+        .from('consultas')
+        .update({ 
+          status_consulta: 'concluido',
+          updated_at: new Date().toISOString()
+        })
+        .eq('agendamento_id', id);
+
+      if (consultaError) {
+        console.error('Erro ao atualizar status_consulta:', consultaError);
+        // Não vamos fazer throw aqui para não quebrar o fluxo, mas vamos logar
+      }
+
+      console.log('Agendamento e consulta marcados como concluídos');
+      return updatedAgendamento;
+
+    } catch (error) {
+      console.error('Erro ao completar agendamento:', error);
+      throw error;
+    }
+  }
+
+  // ======================================
+  // Confirmar agendamento
+  // ======================================
+  static async confirmAgendamento(id: string) {
+    return this.updateAgendamentoStatus(id, { status: "confirmado" });
+  }
 }
 
 // ======================================
