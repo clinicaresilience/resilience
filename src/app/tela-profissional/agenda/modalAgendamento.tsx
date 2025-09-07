@@ -1,12 +1,11 @@
 "use client";
-
-import { useState } from "react";
-import { createClient } from "@/lib/client"; // Cliente do Supabase
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+// mesma lista de dias
 const diasSemana = [
   { nome: "Domingo", valor: 0 },
   { nome: "Segunda-feira", valor: 1 },
@@ -17,37 +16,104 @@ const diasSemana = [
   { nome: "Sábado", valor: 6 },
 ];
 
+// Função de geração de slots
+function generateSlots(dias: any[], intervaloMinutos: number) {
+  const slots: any[] = [];
+  dias.forEach((dia) => {
+    const { diaSemana, horaInicio, horaFim } = dia;
+    const [hStart, mStart] = horaInicio.split(":").map(Number);
+    const [hEnd, mEnd] = horaFim.split(":").map(Number);
+    const startMinutes = hStart * 60 + mStart;
+    const endMinutes = hEnd * 60 + mEnd;
+
+    for (
+      let t = startMinutes;
+      t + intervaloMinutos <= endMinutes;
+      t += intervaloMinutos
+    ) {
+      const slotH = Math.floor(t / 60)
+        .toString()
+        .padStart(2, "0");
+      const slotM = (t % 60).toString().padStart(2, "0");
+
+      slots.push({
+        diaSemana,
+        horaInicio: `${slotH}:${slotM}`,
+        disponivel: true,
+        agendamento_id: null,
+      });
+    }
+  });
+  return slots;
+}
+
 interface AgendaModalProps {
   profissionalId: string;
 }
 
 export function AgendaModal({ profissionalId }: AgendaModalProps) {
-  const [diasSelecionados, setDiasSelecionados] = useState<number[]>([]);
+  const [diasSelecionados, setDiasSelecionados] = useState<any[]>([]);
   const [horaInicio, setHoraInicio] = useState("08:00");
   const [horaFim, setHoraFim] = useState("17:00");
   const [intervalo, setIntervalo] = useState(60);
 
+  // Carrega agenda existente
+  useEffect(() => {
+    fetch(`/api/profissionais/agenda?profissionalId=${profissionalId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.length > 0) {
+          // pega os dias existentes do slots
+          const dias = data.map((s: any) => ({
+            diaSemana: s.diaSemana,
+            horaInicio: s.horaInicio,
+            horaFim: s.horaFim,
+          }));
+          setDiasSelecionados(dias);
+        }
+      });
+  }, [profissionalId]);
+
   const toggleDia = (valor: number) => {
-    setDiasSelecionados((prev) =>
-      prev.includes(valor) ? prev.filter((d) => d !== valor) : [...prev, valor]
-    );
+    setDiasSelecionados((prev) => {
+      const existe = prev.find((d) => d.diaSemana === valor);
+      if (existe) return prev.filter((d) => d.diaSemana !== valor);
+      return [...prev, { diaSemana: valor, horaInicio, horaFim }];
+    });
   };
 
   const salvarAgenda = async () => {
-    const supabase = createClient();
+    if (diasSelecionados.length === 0) {
+      alert("Selecione ao menos um dia da semana");
+      return;
+    }
+
+    const diasAtualizados = diasSelecionados.map((d) => ({
+      ...d,
+      horaInicio,
+      horaFim,
+    }));
+
     try {
-      for (const dia of diasSelecionados) {
-        const { error } = await supabase.from("agenda_configuracoes").upsert({
+      const res = await fetch("/api/profissionais/agenda", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           profissional_id: profissionalId,
-          dia_semana: dia,
-          hora_inicio: horaInicio,
-          hora_fim: horaFim,
+          dias: diasAtualizados,
           intervalo_minutos: intervalo,
-          ativo: true,
-        });
-        if (error) console.error("Erro ao salvar configuração:", error);
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        console.log("Agenda salva:", data);
+        alert("Agenda salva com sucesso!");
+      } else {
+        console.error("Erro ao salvar agenda:", data);
+        alert(data.error || "Erro ao salvar agenda");
       }
-      alert("Agenda salva com sucesso!");
     } catch (err) {
       console.error(err);
       alert("Erro ao salvar agenda");
@@ -62,7 +128,9 @@ export function AgendaModal({ profissionalId }: AgendaModalProps) {
           {diasSemana.map((d) => (
             <div key={d.valor} className="flex items-center gap-1">
               <Checkbox
-                checked={diasSelecionados.includes(d.valor)}
+                checked={diasSelecionados.some(
+                  (ds) => ds.diaSemana === d.valor
+                )}
                 onCheckedChange={() => toggleDia(d.valor)}
               />
               <span>{d.nome}</span>

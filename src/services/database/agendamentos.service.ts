@@ -202,7 +202,7 @@ export class AgendamentosService {
 
       // 1. Verificar se o profissional atende neste dia da semana
       const { data: configuracao, error: configError } = await supabase
-        .from('agenda_configuracoes')
+        .from('agenda_profissional')
         .select('hora_inicio, hora_fim, intervalo_minutos')
         .eq('profissional_id', profissional_id)
         .eq('dia_semana', diaSemana)

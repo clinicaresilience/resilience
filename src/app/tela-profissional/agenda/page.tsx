@@ -40,7 +40,7 @@ export default async function AgendaPage() {
   const { data: agendamentos, error: agendamentosError } = await supabase
     .from("agendamentos")
     .select(
-      `*, paciente:usuarios!agendamentos_paciente_id_fkey(nome, email, telefone),
+      `*, paciente:usuarios!agendamentos_paciente_id_fkey(nome, email),
         profissional:usuarios!agendamentos_profissional_id_fkey(nome)`
     )
     .eq("profissional_id", user.id)

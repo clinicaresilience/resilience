@@ -17,7 +17,7 @@ export async function GET(
 
     // Buscar configurações da agenda do profissional
     const { data: configuracoes, error: configError } = await supabase
-      .from("agenda_configuracoes")
+      .from("agenda_profissional")
       .select("dia_semana, hora_inicio, hora_fim, intervalo_minutos")
       .eq("profissional_id", profissionalId);
 
