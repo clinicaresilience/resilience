@@ -244,7 +244,16 @@ export function UsersManagement() {
         <TabsContent value="profissionais" className="space-y-6">
           {/* Botão de cadastro */}
           <div className="flex justify-end">
-            <CadastrarProfissionalDialog />
+            <CadastrarProfissionalDialog
+              onSuccess={() => {
+                fetchUsers();
+                setSuccess("Profissional cadastrado com sucesso!");
+                setTimeout(() => setSuccess(null), 5000);
+              }}
+              onError={(error: string) => {
+                setError(error);
+              }}
+            />
           </div>
 
           {/* Campo de busca para profissionais */}

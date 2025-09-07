@@ -8,6 +8,8 @@ export async function criarProfissional(data: {
     senha: string;
     area?: string;
     especialidade?: string;
+    crp?: string;
+    descricao?: string;
 }) {
     const supabase = createAdminClient();
 
@@ -38,8 +40,14 @@ export async function criarProfissional(data: {
         const { error: updateError } = await supabase.from("usuarios").update({
             tipo_usuario: "profissional",
             nome: data.nome,
-            informacoes_adicionais: { area: data.area, especialidade: data.especialidade },
+            informacoes_adicionais: {
+                area: data.area,
+                especialidade: data.especialidade,
+                crp: data.crp,
+                descricao: data.descricao
+            },
             ativo: true,
+            primeiro_acesso: true,
         }).eq("id", userId);
 
         if (updateError) throw new Error(updateError.message);
@@ -52,12 +60,18 @@ export async function criarProfissional(data: {
                 email: data.email,
                 tipo_usuario: "profissional",
                 ativo: true,
-                informacoes_adicionais: { area: data.area, especialidade: data.especialidade },
+                primeiro_acesso: true,
+                informacoes_adicionais: {
+                    area: data.area,
+                    especialidade: data.especialidade,
+                    crp: data.crp,
+                    descricao: data.descricao
+                },
             },
         ]);
 
         if (insertError) throw new Error(insertError.message);
     }
 
-    return { success: true, id: userId };
+    return { success: true, id: userId, senha: data.senha };
 }
