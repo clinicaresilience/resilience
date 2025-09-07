@@ -42,49 +42,71 @@ export default function AuthenticatedHeader() {
           {/* Navegação Central - Profissional */}
           {isProfessional && isProfessionalPanel && (
             <nav className="hidden md:flex items-center space-x-6">
-              <Link 
+              <Link
                 href="/tela-profissional"
                 className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname === "/tela-profissional" 
-                    ? "bg-azul-escuro text-white" 
+                  pathname === "/tela-profissional"
+                    ? "bg-azul-escuro text-white"
                     : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
                 }`}
               >
                 <Home className="w-4 h-4" />
                 <span>Início</span>
               </Link>
-              <Link 
+              <Link
+                href="/tela-profissional/agenda"
+                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname.startsWith("/tela-profissional/agenda")
+                    ? "bg-azul-escuro text-white"
+                    : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
+                }`}
+              >
+                <Clock className="w-4 h-4" />
+                <span>Agenda</span>
+              </Link>
+              <Link
                 href="/tela-profissional/consultas"
                 className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname.startsWith("/tela-profissional/consultas") 
-                    ? "bg-azul-escuro text-white" 
+                  pathname.startsWith("/tela-profissional/consultas")
+                    ? "bg-azul-escuro text-white"
                     : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
                 }`}
               >
                 <Calendar className="w-4 h-4" />
                 <span>Consultas</span>
               </Link>
-              <Link 
+              <Link
                 href="/tela-profissional/pacientes"
                 className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname.startsWith("/tela-profissional/pacientes") 
-                    ? "bg-azul-escuro text-white" 
+                  pathname.startsWith("/tela-profissional/pacientes")
+                    ? "bg-azul-escuro text-white"
                     : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
                 }`}
               >
                 <Users className="w-4 h-4" />
                 <span>Pacientes</span>
               </Link>
-              <Link 
+              <Link
                 href="/tela-profissional/prontuarios"
                 className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname.startsWith("/tela-profissional/prontuarios") 
-                    ? "bg-azul-escuro text-white" 
+                  pathname.startsWith("/tela-profissional/prontuarios")
+                    ? "bg-azul-escuro text-white"
                     : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
                 }`}
               >
                 <FileText className="w-4 h-4" />
                 <span>Prontuários</span>
+              </Link>
+              <Link
+                href="/tela-profissional/estatisticas"
+                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname.startsWith("/tela-profissional/estatisticas")
+                    ? "bg-azul-escuro text-white"
+                    : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Estatísticas</span>
               </Link>
             </nav>
           )}
@@ -164,49 +186,71 @@ export default function AuthenticatedHeader() {
           {/* Professional Mobile */}
           {isProfessional && isProfessionalPanel && (
             <div className="flex space-x-4 overflow-x-auto">
-              <Link 
+              <Link
                 href="/tela-profissional"
                 className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
-                  pathname === "/tela-profissional" 
-                    ? "bg-azul-escuro text-white" 
+                  pathname === "/tela-profissional"
+                    ? "bg-azul-escuro text-white"
                     : "text-gray-600"
                 }`}
               >
                 <Home className="w-4 h-4" />
                 <span>Início</span>
               </Link>
-              <Link 
+              <Link
+                href="/tela-profissional/agenda"
+                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
+                  pathname.startsWith("/tela-profissional/agenda")
+                    ? "bg-azul-escuro text-white"
+                    : "text-gray-600"
+                }`}
+              >
+                <Clock className="w-4 h-4" />
+                <span>Agenda</span>
+              </Link>
+              <Link
                 href="/tela-profissional/consultas"
                 className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
-                  pathname.startsWith("/tela-profissional/consultas") 
-                    ? "bg-azul-escuro text-white" 
+                  pathname.startsWith("/tela-profissional/consultas")
+                    ? "bg-azul-escuro text-white"
                     : "text-gray-600"
                 }`}
               >
                 <Calendar className="w-4 h-4" />
                 <span>Consultas</span>
               </Link>
-              <Link 
+              <Link
                 href="/tela-profissional/pacientes"
                 className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
-                  pathname.startsWith("/tela-profissional/pacientes") 
-                    ? "bg-azul-escuro text-white" 
+                  pathname.startsWith("/tela-profissional/pacientes")
+                    ? "bg-azul-escuro text-white"
                     : "text-gray-600"
                 }`}
               >
                 <Users className="w-4 h-4" />
                 <span>Pacientes</span>
               </Link>
-              <Link 
+              <Link
                 href="/tela-profissional/prontuarios"
                 className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
-                  pathname.startsWith("/tela-profissional/prontuarios") 
-                    ? "bg-azul-escuro text-white" 
+                  pathname.startsWith("/tela-profissional/prontuarios")
+                    ? "bg-azul-escuro text-white"
                     : "text-gray-600"
                 }`}
               >
                 <FileText className="w-4 h-4" />
                 <span>Prontuários</span>
+              </Link>
+              <Link
+                href="/tela-profissional/estatisticas"
+                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
+                  pathname.startsWith("/tela-profissional/estatisticas")
+                    ? "bg-azul-escuro text-white"
+                    : "text-gray-600"
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Estatísticas</span>
               </Link>
             </div>
           )}

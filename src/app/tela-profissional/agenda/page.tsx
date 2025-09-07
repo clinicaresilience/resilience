@@ -4,7 +4,16 @@ import { BackButton } from "@/components/ui/back-button";
 import { AgendaCalendar } from "@/components/professional/agenda-calendar";
 import AgendamentosList from "@/components/agendamentos-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, List } from "lucide-react";
+import { Calendar, List, Clock } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AgendaModal } from "./modalAgendamento";
 
 export default async function AgendaPage() {
   const supabase = await createClient();
@@ -14,61 +23,70 @@ export default async function AgendaPage() {
 
   if (!user) redirect("/auth/login");
 
-  // buscar dados do usuário
   const { data: usuario, error } = await supabase
     .from("usuarios")
     .select("tipo_usuario, nome")
     .eq("id", user.id)
     .single();
 
-  if (error || !usuario) {
-    redirect("/auth/login");
-  }
+  if (error || !usuario) redirect("/auth/login");
 
-  // Verificar se é profissional
   if (usuario.tipo_usuario !== "profissional") {
-    if (usuario.tipo_usuario === "administrador") {
+    if (usuario.tipo_usuario === "administrador")
       redirect("/painel-administrativo");
-    } else {
-      redirect("/tela-usuario");
-    }
+    else redirect("/tela-usuario");
   }
 
-  // Buscar agendamentos do profissional
   const { data: agendamentos, error: agendamentosError } = await supabase
     .from("agendamentos")
-    .select(`
-      *,
-      paciente:usuarios!agendamentos_paciente_id_fkey(nome, email, telefone),
-      profissional:usuarios!agendamentos_profissional_id_fkey(nome)
-    `)
+    .select(
+      `*, paciente:usuarios!agendamentos_paciente_id_fkey(nome, email, telefone),
+        profissional:usuarios!agendamentos_profissional_id_fkey(nome)`
+    )
     .eq("profissional_id", user.id)
     .order("data_consulta", { ascending: true });
 
-  if (agendamentosError) {
+  if (agendamentosError)
     console.error("Erro ao buscar agendamentos:", agendamentosError);
-  }
 
-  // Formatar agendamentos para o componente
-  const formattedAgendamentos = agendamentos?.map((ag) => ({
-    id: ag.id,
-    usuarioId: ag.paciente_id,
-    profissionalId: ag.profissional_id,
-    profissionalNome: ag.profissional?.nome || "Profissional",
-    especialidade: ag.profissional?.especialidade || "",
-    dataISO: ag.data_consulta,
-    local: "Clínica Resilience",
-    status: ag.status,
-    notas: ag.notas,
-    pacienteNome: ag.paciente?.nome || "Paciente",
-    pacienteEmail: ag.paciente?.email || "",
-    pacienteTelefone: ag.paciente?.telefone || "",
-  })) || [];
+  const formattedAgendamentos =
+    agendamentos?.map((ag) => ({
+      id: ag.id,
+      usuarioId: ag.paciente_id,
+      profissionalId: ag.profissional_id,
+      profissionalNome: ag.profissional?.nome || "Profissional",
+      especialidade: ag.profissional?.especialidade || "",
+      dataISO: ag.data_consulta,
+      local: "Clínica Resilience",
+      status: ag.status,
+      notas: ag.notas,
+      pacienteNome: ag.paciente?.nome || "Paciente",
+      pacienteEmail: ag.paciente?.email || "",
+      pacienteTelefone: ag.paciente?.telefone || "",
+    })) || [];
 
   return (
     <>
-      <div className="mb-4">
-        <BackButton href="/tela-profissional" texto="Voltar para Área do Profissional" />
+      <div className="mb-4 flex items-center justify-between">
+        <BackButton
+          href="/tela-profissional"
+          texto="Voltar para Área do Profissional"
+        />
+
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Montar Horários
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Definir Dias e Horários</DialogTitle>
+            </DialogHeader>
+            <AgendaModal profissionalId={user.id} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="mb-6">
