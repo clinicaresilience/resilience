@@ -33,7 +33,7 @@ export interface CreateAgendamentoDTO {
   usuario_id: string;
   profissional_id: string;
   modalidade: Modalidade;
-  data_hora: string;
+  data_consulta: string;
   // local: string;
   notas?: string;
 }
@@ -54,7 +54,7 @@ export class AgendamentosService {
         .insert({
           paciente_id: data.usuario_id,
           profissional_id: data.profissional_id,
-          data_consulta: data.data_hora,
+          data_consulta: data.data_consulta,
           status: 'confirmado',
           // local: data.local,
           modalidade: data.modalidade, // <-- adiciona aqui

@@ -228,6 +228,7 @@ export function CalendarBooking({
                     variant="outline"
                     className="h-12 text-sm hover:bg-green-50 hover:border-green-500"
                     onClick={() => handleSlotSelect(slot)}
+                    disabled={!slot.disponivel}
                   >
                     {slot.hora.slice(0, 5)}
                   </Button>

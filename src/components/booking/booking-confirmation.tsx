@@ -78,7 +78,7 @@ export function BookingConfirmation({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profissional_id: profissionalId,
-          data_hora: dataHora,
+          data_consulta: dataHora,
           local: "Clínica Resilience",
           notas: notas.trim() || undefined,
           modalidade,

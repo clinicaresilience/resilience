@@ -106,7 +106,7 @@ export async function GET() {
       local: "Clínica Resilience",
       status: ag.status,
       notas: ag.notas,
-      modalidade:ag.modalidade,
+      modalidade: ag.modalidade,
       // Dados do paciente para o profissional
       pacienteNome: ag.paciente?.nome || "Paciente",
       pacienteEmail: ag.paciente?.email || "",
@@ -144,14 +144,14 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { profissional_id, data_hora, local, notas, modalidade } = body || {};
+    const { profissional_id, data_consulta, local, notas, modalidade } = body || {};
 
     // Validar dados obrigatórios
-    if (!profissional_id || !data_hora || !local || !modalidade) {
+    if (!profissional_id || !data_consulta || !local || !modalidade) {
       return NextResponse.json(
         {
           error: "Campos obrigatórios ausentes",
-          required: ["profissional_id", "data_hora", "local", "modalidade"],
+          required: ["profissional_id", "data_consulta", "local", "modalidade"],
         },
         { status: 400 }
       );
@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
     // Verificar disponibilidade
     const isAvailable = await AgendamentosService.checkAvailability(
       profissional_id,
-      data_hora
+      data_consulta
     );
 
     if (!isAvailable) {
@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
     const agendamento = await AgendamentosService.createAgendamento({
       usuario_id: user.id,
       profissional_id,
-      data_hora,
+      data_consulta,
       modalidade,
       local,
       notas,
@@ -200,6 +200,7 @@ export async function POST(req: NextRequest) {
       status: agendamento.status,
       notas: agendamento.notas,
       modalidade: agendamento.modalidade,
+
     };
 
     return NextResponse.json(
