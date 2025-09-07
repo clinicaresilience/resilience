@@ -1,8 +1,15 @@
 import { createClient } from '@/lib/server';
 import { createClient as createClientBrowser } from '@/lib/client';
 
-export type StatusAgendamento = 'confirmado' | 'cancelado';
+export type StatusAgendamento = 'confirmado' | 'cancelado' | 'pendente' | 'concluido';
 export type Modalidade = 'presencial' | 'online';
+
+interface SlotData {
+  diaSemana: number;
+  horaInicio: string;
+  disponivel: boolean;
+  agendamento_id: string | null;
+}
 
 export interface Agendamento {
   id: string;
@@ -74,7 +81,7 @@ export class AgendamentosService {
       const diaSemana = dataObj.getDay();
       const hora = dataObj.toISOString().split('T')[1].substring(0, 5);
 
-      const novosSlots = agendaProfissional.slots.map((slot: any) => {
+      const novosSlots = agendaProfissional.slots.map((slot: SlotData) => {
         if (slot.diaSemana === diaSemana && slot.horaInicio === hora) {
           return {
             ...slot,
@@ -213,7 +220,7 @@ export class AgendamentosService {
 
       // NÃO USAR JSON.parse
       const configObj = configData.configuracao;
-      const diaConfig = configObj.dias.find((d: any) => d.diaSemana === diaSemana);
+      const diaConfig = configObj.dias.find((d: { diaSemana: number }) => d.diaSemana === diaSemana);
 
       if (!diaConfig) {
         console.log('Profissional não atende neste dia da semana:', diaSemana);
@@ -292,7 +299,71 @@ export class AgendamentosService {
   }
 
   static async cancelAgendamento(id: string, motivo: string) {
-    return this.updateAgendamentoStatus(id, { status: "cancelado", notas: motivo });
+    const supabase = await createClient();
+
+    try {
+      // 1️⃣ Buscar o agendamento para obter dados necessários
+      const agendamento = await this.getAgendamentoById(id);
+      if (!agendamento) {
+        throw new Error('Agendamento não encontrado');
+      }
+
+      // 2️⃣ Calcular dia da semana e hora do agendamento
+      const dataObj = new Date(agendamento.data_consulta);
+      const diaSemana = dataObj.getDay();
+      const hora = dataObj.toISOString().split('T')[1].substring(0, 5);
+
+      console.log('Cancelando agendamento:', { id, diaSemana, hora, profissional_id: agendamento.profissional_id });
+
+      // 3️⃣ Buscar a agenda do profissional
+      const { data: agendaProfissional } = await supabase
+        .from('agenda_profissional')
+        .select('id, slots')
+        .eq('profissional_id', agendamento.profissional_id)
+        .single();
+
+      if (!agendaProfissional) {
+        console.warn('Agenda do profissional não encontrada, continuando com cancelamento do agendamento');
+      } else {
+        // 4️⃣ Encontrar e atualizar o slot correspondente
+        const novosSlots = agendaProfissional.slots.map((slot: SlotData) => {
+          if (slot.diaSemana === diaSemana && slot.horaInicio === hora && slot.agendamento_id === id) {
+            console.log('Slot encontrado e será liberado:', slot);
+            return {
+              ...slot,
+              disponivel: true,
+              agendamento_id: null,
+            };
+          }
+          return slot;
+        });
+
+        // 5️⃣ Atualizar os slots na agenda do profissional
+        const { error: slotsError } = await supabase
+          .from('agenda_profissional')
+          .update({ slots: novosSlots })
+          .eq('id', agendaProfissional.id);
+
+        if (slotsError) {
+          console.error('Erro ao atualizar slots:', slotsError);
+          throw slotsError;
+        }
+
+        console.log('Slot liberado com sucesso!');
+      }
+
+      // 6️⃣ Atualizar o status do agendamento para cancelado
+      const updatedAgendamento = await this.updateAgendamentoStatus(id, { 
+        status: "cancelado", 
+        notas: motivo 
+      });
+
+      return updatedAgendamento;
+
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error);
+      throw error;
+    }
   }
 }
 
