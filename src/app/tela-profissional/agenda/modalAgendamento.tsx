@@ -1,11 +1,11 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// mesma lista de dias
 const diasSemana = [
   { nome: "Domingo", valor: 0 },
   { nome: "Segunda-feira", valor: 1 },
@@ -16,37 +16,6 @@ const diasSemana = [
   { nome: "Sábado", valor: 6 },
 ];
 
-// Função de geração de slots
-function generateSlots(dias: any[], intervaloMinutos: number) {
-  const slots: any[] = [];
-  dias.forEach((dia) => {
-    const { diaSemana, horaInicio, horaFim } = dia;
-    const [hStart, mStart] = horaInicio.split(":").map(Number);
-    const [hEnd, mEnd] = horaFim.split(":").map(Number);
-    const startMinutes = hStart * 60 + mStart;
-    const endMinutes = hEnd * 60 + mEnd;
-
-    for (
-      let t = startMinutes;
-      t + intervaloMinutos <= endMinutes;
-      t += intervaloMinutos
-    ) {
-      const slotH = Math.floor(t / 60)
-        .toString()
-        .padStart(2, "0");
-      const slotM = (t % 60).toString().padStart(2, "0");
-
-      slots.push({
-        diaSemana,
-        horaInicio: `${slotH}:${slotM}`,
-        disponivel: true,
-        agendamento_id: null,
-      });
-    }
-  });
-  return slots;
-}
-
 interface AgendaModalProps {
   profissionalId: string;
 }
@@ -56,22 +25,22 @@ export function AgendaModal({ profissionalId }: AgendaModalProps) {
   const [horaInicio, setHoraInicio] = useState("08:00");
   const [horaFim, setHoraFim] = useState("17:00");
   const [intervalo, setIntervalo] = useState(60);
+  const [agendaExistente, setAgendaExistente] = useState(false);
 
-  // Carrega agenda existente
+  // 🔹 Carrega cronograma existente ao abrir modal
   useEffect(() => {
     fetch(`/api/profissionais/agenda?profissionalId=${profissionalId}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data?.length > 0) {
-          // pega os dias existentes do slots
-          const dias = data.map((s: any) => ({
-            diaSemana: s.diaSemana,
-            horaInicio: s.horaInicio,
-            horaFim: s.horaFim,
-          }));
-          setDiasSelecionados(dias);
+        if (data?.configuracao) {
+          setDiasSelecionados(data.configuracao.dias || []);
+          setHoraInicio(data.configuracao.horaInicio || "08:00");
+          setHoraFim(data.configuracao.horaFim || "17:00");
+          setIntervalo(data.configuracao.intervalo_minutos || 60);
+          setAgendaExistente(true);
         }
-      });
+      })
+      .catch((err) => console.error("Erro ao carregar agenda:", err));
   }, [profissionalId]);
 
   const toggleDia = (valor: number) => {
@@ -88,11 +57,14 @@ export function AgendaModal({ profissionalId }: AgendaModalProps) {
       return;
     }
 
-    const diasAtualizados = diasSelecionados.map((d) => ({
-      ...d,
-      horaInicio,
-      horaFim,
-    }));
+    const configuracao = {
+      dias: diasSelecionados.map((d) => ({
+        diaSemana: d.diaSemana,
+        horaInicio,
+        horaFim,
+      })),
+      intervalo_minutos: intervalo,
+    };
 
     try {
       const res = await fetch("/api/profissionais/agenda", {
@@ -100,18 +72,15 @@ export function AgendaModal({ profissionalId }: AgendaModalProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profissional_id: profissionalId,
-          dias: diasAtualizados,
-          intervalo_minutos: intervalo,
+          configuracao,
         }),
       });
 
       const data = await res.json();
-
       if (res.ok) {
-        console.log("Agenda salva:", data);
+        setAgendaExistente(true);
         alert("Agenda salva com sucesso!");
       } else {
-        console.error("Erro ao salvar agenda:", data);
         alert(data.error || "Erro ao salvar agenda");
       }
     } catch (err) {
@@ -166,7 +135,9 @@ export function AgendaModal({ profissionalId }: AgendaModalProps) {
         />
       </div>
 
-      <Button onClick={salvarAgenda}>Salvar</Button>
+      <Button onClick={salvarAgenda}>
+        {agendaExistente ? "Atualizar Cronograma" : "Salvar Cronograma"}
+      </Button>
     </div>
   );
 }

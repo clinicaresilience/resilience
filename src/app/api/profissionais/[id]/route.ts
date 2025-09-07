@@ -17,21 +17,78 @@ export async function GET(
     .single();
 
   if (profError || !profissional) {
-    return NextResponse.json({ error: "Profissional não encontrado" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Profissional não encontrado" },
+      { status: 404 }
+    );
   }
 
-  // Buscar agenda (slots futuros)
-  const { data: agendas, error: agendaError } = await supabase
-    .from("agenda_slots")
-    .select("id, data, hora, disponivel")
+  // Buscar agenda do profissional
+  const { data: agenda, error: agendaError } = await supabase
+
+    .from("agenda_profissional")
+    .select("id, configuracao, slots") // apenas colunas reais
     .eq("profissional_id", id)
-    .gte("data", new Date().toISOString().split("T")[0]) // só datas de hoje em diante
-    .order("data", { ascending: true })
-    .order("hora", { ascending: true });
+    .single();
 
   if (agendaError) {
-    return NextResponse.json({ error: agendaError.message }, { status: 500 });
+    return NextResponse.json(
+      { error: agendaError.message },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json({ profissional, agendas });
+  const hoje = new Date();
+
+  // 🔹 Filtrar apenas slots futuros (inclui hoje)
+  const slotsFuturos = (agenda?.slots || []).filter((slot: any) => {
+    if (!slot.diaSemana || !slot.horaInicio) return false;
+
+    const now = new Date();
+    const diaSemanaAtual = now.getDay();
+
+    let diff = slot.diaSemana - diaSemanaAtual;
+    if (diff < 0) diff += 7;
+
+    const dataSlot = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + diff
+    );
+
+    const [h, m] = slot.horaInicio.split(":").map(Number);
+    dataSlot.setHours(h, m, 0, 0);
+
+    return dataSlot >= hoje;
+  });
+
+  // 🔹 Converter para o formato esperado pelo frontend (Agenda[])
+  const agendas = (slotsFuturos || []).map((slot: any, index: number) => {
+    const now = new Date();
+    const diaSemanaAtual = now.getDay();
+
+    let diff = slot.diaSemana - diaSemanaAtual;
+    if (diff < 0) diff += 7;
+
+    const dataSlot = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + diff
+    );
+
+    const [h, m] = slot.horaInicio.split(":").map(Number);
+    dataSlot.setHours(h, m, 0, 0);
+
+    return {
+      id: `${slot.diaSemana}-${slot.horaInicio}-${index}`, // id único
+      data: dataSlot.toISOString().split("T")[0],          // "2025-09-07"
+      hora: slot.horaInicio,                               // "08:00"
+      disponivel: slot.disponivel,
+    };
+  });
+
+  return NextResponse.json({
+    profissional,
+    agendas,
+  });
 }

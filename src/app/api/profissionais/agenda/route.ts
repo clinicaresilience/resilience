@@ -29,35 +29,38 @@ function generateSlots(dias: any[], intervaloMinutos: number) {
 }
 
 // POST - criar ou atualizar agenda do profissional
+// POST - criar ou atualizar agenda do profissional
 export async function POST(req: Request) {
   const supabase = await createClient();
   const body = await req.json();
-  const { profissional_id, dias, intervalo_minutos } = body;
+  const { profissional_id, configuracao } = body;
 
-  if (!profissional_id || !dias || !intervalo_minutos) {
+  if (!profissional_id || !configuracao) {
     return NextResponse.json({ error: "Dados incompletos." }, { status: 400 });
   }
 
-  // monta slots a partir da config
-  const slots = generateSlots(dias, intervalo_minutos);
+  // gera os slots no backend também
+  const slots = generateSlots(configuracao.dias, configuracao.intervalo_minutos);
 
-  // salva config e slots
   const { data, error } = await supabase
     .from("agenda_profissional")
     .upsert(
       {
         profissional_id,
-        configuracao: { dias, intervalo_minutos }, // agora salvando config
+        configuracao,
         slots,
         atualizado_em: new Date().toISOString(),
       },
       { onConflict: ["profissional_id"] }
-    );
+    )
+    .select()
+    .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json(data);
+  return NextResponse.json({ success: true, agenda: data });
 }
+
 
 // GET - buscar agenda do profissional
 export async function GET(req: Request) {
