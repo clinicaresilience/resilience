@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CadastrarProfissionalDialog } from "@/components/admin/cadastrar-profissional-dialog";
-import { Users, UserCheck, ChevronDown, ChevronUp } from "lucide-react";
+import { Users, UserCheck } from "lucide-react";
+import { ExpandableUserTable } from "./expandable-user-table";
+import { UserMobileCards } from "./user-mobile-cards";
 
 type Usuario = {
   id: string;
@@ -22,7 +24,7 @@ type Usuario = {
   informacoes_adicionais: {
     area?: string;
     especialidade?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 };
 
@@ -282,155 +284,21 @@ export function UsersManagement() {
                 </div>
               ) : (
                 <>
-                  {/* Desktop Table */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-sm min-w-[600px]">
-                      <thead>
-                        <tr className="text-left border-b border-gray-200">
-                          <th className="pb-3 font-semibold text-gray-900 w-8"></th>
-                          <th className="pb-3 font-semibold text-gray-900 w-40">Nome</th>
-                          <th className="pb-3 font-semibold text-gray-900 w-56">Email</th>
-                          <th className="pb-3 font-semibold text-gray-900 w-20">Acesso</th>
-                          <th className="pb-3 font-semibold text-gray-900 w-28">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {filteredProfissionais.map((u) => {
-                          const isExpanded = expandedRows.has(u.id);
-                          return (
-                            <>
-                              <tr key={u.id} className="hover:bg-gray-50">
-                                <td className="py-3 pr-2">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => toggleRowExpansion(u.id)}
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    {isExpanded ? (
-                                      <ChevronUp className="h-4 w-4" />
-                                    ) : (
-                                      <ChevronDown className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                </td>
-                                <td className="py-3 pr-4">
-                                  <div className="font-medium text-gray-900">{u.nome}</div>
-                                </td>
-                                <td className="py-3 pr-4">
-                                  <div className="text-gray-600">{u.email}</div>
-                                </td>
-                                <td className="py-3 pr-4">
-                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                    u.ativo
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-red-100 text-red-800"
-                                  }`}>
-                                    {u.ativo ? "Ativo" : "Inativo"}
-                                  </span>
-                                </td>
-                                <td className="py-3">
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => onToggleActive(u)}
-                                      className="text-xs"
-                                    >
-                                      {u.ativo ? "Desativar" : "Ativar"}
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="secondary"
-                                      onClick={() => onResetPassword(u)}
-                                      className="text-xs"
-                                    >
-                                      Resetar
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                              {isExpanded && (
-                                <tr key={`${u.id}-expanded`} className="bg-gray-50">
-                                  <td colSpan={5} className="px-4 py-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                      <div>
-                                        <span className="font-medium text-gray-700">Área:</span>
-                                        <p className="text-gray-600 mt-1">{u.informacoes_adicionais?.area || "-"}</p>
-                                      </div>
-                                      <div>
-                                        <span className="font-medium text-gray-700">Especialidade:</span>
-                                        <p className="text-gray-600 mt-1">{u.informacoes_adicionais?.especialidade || "-"}</p>
-                                      </div>
-                                      <div>
-                                        <span className="font-medium text-gray-700">Criado em:</span>
-                                        <p className="text-gray-600 mt-1">{new Date(u.criado_em).toLocaleDateString("pt-BR")}</p>
-                                      </div>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                  <ExpandableUserTable
+                    users={filteredProfissionais}
+                    expandedRows={expandedRows}
+                    onToggleExpansion={toggleRowExpansion}
+                    onToggleActive={onToggleActive}
+                    onResetPassword={onResetPassword}
+                    userType="profissional"
+                  />
 
-                  {/* Mobile Cards */}
-                  <div className="md:hidden space-y-4">
-                    {filteredProfissionais.map((u) => (
-                      <div key={u.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 truncate">{u.nome}</h3>
-                            <p className="text-sm text-gray-600 truncate">{u.email}</p>
-                          </div>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ml-2 ${
-                            u.ativo
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}>
-                            {u.ativo ? "Ativo" : "Inativo"}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                          <div>
-                            <span className="font-medium text-gray-700">Área:</span>
-                            <p className="text-gray-600 truncate">{u.informacoes_adicionais?.area || "-"}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Especialidade:</span>
-                            <p className="text-gray-600 truncate">{u.informacoes_adicionais?.especialidade || "-"}</p>
-                          </div>
-                        </div>
-
-                        <div className="text-xs text-gray-500 mb-3">
-                          Criado em: {new Date(u.criado_em).toLocaleDateString("pt-BR")}
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onToggleActive(u)}
-                            className="flex-1 text-xs"
-                          >
-                            {u.ativo ? "Desativar" : "Ativar"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => onResetPassword(u)}
-                            className="flex-1 text-xs"
-                          >
-                            Resetar
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <UserMobileCards
+                    users={filteredProfissionais}
+                    onToggleActive={onToggleActive}
+                    onResetPassword={onResetPassword}
+                    userType="profissional"
+                  />
                 </>
               )}
             </CardContent>
@@ -475,140 +343,21 @@ export function UsersManagement() {
                 </div>
               ) : (
                 <>
-                  {/* Desktop Table */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-sm min-w-[700px]">
-                      <thead>
-                        <tr className="text-left border-b border-gray-200">
-                          <th className="pb-3 font-semibold text-gray-900 w-8"></th>
-                          <th className="pb-3 font-semibold text-gray-900 w-40">Nome</th>
-                          <th className="pb-3 font-semibold text-gray-900 w-56">Email</th>
-                          <th className="pb-3 font-semibold text-gray-900 w-20">Acesso</th>
-                          <th className="pb-3 font-semibold text-gray-900 w-28">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {filteredPacientes.map((u) => {
-                          const isExpanded = expandedRows.has(u.id);
-                          return (
-                            <>
-                              <tr key={u.id} className="hover:bg-gray-50">
-                                <td className="py-3 pr-2">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => toggleRowExpansion(u.id)}
-                                    className="h-6 w-6 p-0"
-                                  >
-                                    {isExpanded ? (
-                                      <ChevronUp className="h-4 w-4" />
-                                    ) : (
-                                      <ChevronDown className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                </td>
-                                <td className="py-3 pr-4">
-                                  <div className="font-medium text-gray-900">{u.nome}</div>
-                                </td>
-                                <td className="py-3 pr-4">
-                                  <div className="text-gray-600">{u.email}</div>
-                                </td>
-                                <td className="py-3 pr-4">
-                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                    u.ativo
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-red-100 text-red-800"
-                                  }`}>
-                                    {u.ativo ? "Ativo" : "Inativo"}
-                                  </span>
-                                </td>
-                                <td className="py-3">
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => onToggleActive(u)}
-                                      className="text-xs"
-                                    >
-                                      {u.ativo ? "Desativar" : "Ativar"}
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="secondary"
-                                      onClick={() => onResetPassword(u)}
-                                      className="text-xs"
-                                    >
-                                      Resetar
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                              {isExpanded && (
-                                <tr key={`${u.id}-expanded`} className="bg-gray-50">
-                                  <td colSpan={5} className="px-4 py-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                      <div>
-                                        <span className="font-medium text-gray-700">Criado em:</span>
-                                        <p className="text-gray-600 mt-1">{new Date(u.criado_em).toLocaleDateString("pt-BR")}</p>
-                                      </div>
-                                      <div>
-                                        <span className="font-medium text-gray-700">Última atualização:</span>
-                                        <p className="text-gray-600 mt-1">{new Date(u.atualizado_em).toLocaleDateString("pt-BR")}</p>
-                                      </div>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                  <ExpandableUserTable
+                    users={filteredPacientes}
+                    expandedRows={expandedRows}
+                    onToggleExpansion={toggleRowExpansion}
+                    onToggleActive={onToggleActive}
+                    onResetPassword={onResetPassword}
+                    userType="paciente"
+                  />
 
-                  {/* Mobile Cards */}
-                  <div className="md:hidden space-y-4">
-                    {filteredPacientes.map((u) => (
-                      <div key={u.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 truncate">{u.nome}</h3>
-                            <p className="text-sm text-gray-600 truncate">{u.email}</p>
-                          </div>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ml-2 ${
-                            u.ativo
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}>
-                            {u.ativo ? "Ativo" : "Inativo"}
-                          </span>
-                        </div>
-
-                        <div className="text-xs text-gray-500 mb-3">
-                          Criado em: {new Date(u.criado_em).toLocaleDateString("pt-BR")}
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onToggleActive(u)}
-                            className="flex-1 text-xs"
-                          >
-                            {u.ativo ? "Desativar" : "Ativar"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => onResetPassword(u)}
-                            className="flex-1 text-xs"
-                          >
-                            Resetar
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <UserMobileCards
+                    users={filteredPacientes}
+                    onToggleActive={onToggleActive}
+                    onResetPassword={onResetPassword}
+                    userType="paciente"
+                  />
                 </>
               )}
             </CardContent>
