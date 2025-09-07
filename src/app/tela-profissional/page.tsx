@@ -5,16 +5,13 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import {
   Calendar,
   Users,
-  FileText,
   Clock,
-  TrendingUp,
   AlertCircle,
 } from "lucide-react";
 import PrimeiroAcessoModal from "./primeiro-acesso";
