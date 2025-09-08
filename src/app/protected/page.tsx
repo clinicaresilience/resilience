@@ -18,7 +18,7 @@ export default async function ProtectedPage() {
   }
 
   return (
-    <div className="flex h-svh w-full items-center justify-center gap-2">
+    <div className="flex  h-svh w-full items-center justify-center gap-2">
       <p>
         Bem vindo <span>{user.email}</span> (Administrador)
       </p>

@@ -2,20 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { User, ChevronLeft, ChevronRight } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
-import { useTabStore, TabType } from "../../app/store/useTabStore";
-import {
-  BarChart3,
-  FileText,
-  Calendar,
-  TrendingUp,
-  Users,
-  Home,
-  Building2,
-} from "lucide-react";
+import { useTabStore } from "../../app/store/useTabStore";
+import Link from "next/link";
 
 interface SidebarProps {
   userType: "administrador" | "profissional" | "comum";
@@ -31,8 +24,6 @@ export function Sidebar({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const { activeTab, setActiveTab } = useTabStore();
-
   // Call callback when collapse state changes
   useEffect(() => {
     if (onCollapseChange) {
@@ -40,45 +31,20 @@ export function Sidebar({
     }
   }, [isCollapsed, onCollapseChange]);
 
-  const tabs = [
-    {
-      id: "dashboard" as TabType,
-      label: "Dashboard",
-      icon: Home,
-      description: "Visão geral e métricas principais",
-    },
-    {
-      id: "prontuarios" as TabType,
-      label: "Prontuários",
-      icon: FileText,
-      description: "Acesso a todos os prontuários médicos",
-    },
-    {
-      id: "agendas" as TabType,
-      label: "Agendas",
-      icon: Calendar,
-      description: "Calendário e horários dos profissionais",
-    },
-    {
-      id: "analytics" as TabType,
-      label: "Análises",
-      icon: TrendingUp,
-      description: "Análises detalhadas por profissional",
-    },
+  const pathname = usePathname();
+  const { activeTab, setActiveTab, getTabsByUserType, syncTabFromPath } = useTabStore();
+  const tabs = getTabsByUserType(userType);
 
-    {
-      id: "usuarios" as TabType,
-      label: "Usuários",
-      icon: Users,
-      description: "Gerenciar usuários do sistema",
-    },
-    {
-      id: "empresas" as TabType,
-      label: "Empresas",
-      icon: Building2,
-      description: "Empresas parceiras e códigos",
-    },
-  ];
+  // Sincroniza a aba ativa com o pathname atual na inicialização e mudanças de rota
+  useEffect(() => {
+    console.log("Sidebar: syncing tab for pathname:", pathname, "userType:", userType);
+    syncTabFromPath(pathname, userType);
+  }, [pathname, userType, syncTabFromPath]);
+
+  // Log para debug do activeTab
+  useEffect(() => {
+    console.log("Sidebar: activeTab changed to:", activeTab);
+  }, [activeTab]);
 
   const getUserTypeLabel = () => {
     switch (userType) {
@@ -176,37 +142,21 @@ export function Sidebar({
 
           {/* Navigation */}
           <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-            {tabs.map((tab) => {
-              const isActive = activeTab === tab.id;
-
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    setIsMobileOpen(false);
-                  }}
-                  className={cn(
-                    "flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                    isActive
-                      ? "bg-azul-escuro text-white"
-                      : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
-                  )}
-                >
-                  <tab.icon
-                    className={cn(
-                      "flex-shrink-0",
-                      isCollapsed ? "h-5 w-5" : "h-4 w-4 mr-3"
-                    )}
-                  />
-                  {!isCollapsed && (
-                    <div className="flex gap-1 min-w-0">
-                      <div className="truncate">{tab.label}</div>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+            {tabs.map((tab) => (
+              <Link
+                key={tab.id}
+                href={tab.path!}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-azul-escuro text-white"
+                    : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </Link>
+            ))}
           </nav>
 
           {/* Footer */}

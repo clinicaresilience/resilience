@@ -3,7 +3,6 @@
 import React from "react";
 import { useTabStore, TabType } from "../../app/store/useTabStore";
 import { useSidebar } from "@/components/layout/authenticated-layout";
-import { CadastrarProfissionalDialog } from "@/components/admin/cadastrar-profissional-dialog";
 
 import { AdminDashboard } from "@/components/admin/dashboard";
 import { MedicalRecordsSection } from "@/components/admin/medical-records-section";
@@ -12,7 +11,6 @@ import { ProfessionalAnalytics } from "@/components/admin/professional-analytics
 import { UsersManagement } from "@/components/admin/users-management";
 import { CompaniesManagement } from "@/components/admin/companies-management";
 import {
-  BarChart3,
   FileText,
   Calendar,
   TrendingUp,
@@ -177,7 +175,8 @@ export function PainelAdministrativoClient({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-gray-600">
-                Bem-vindo, <span className="font-semibold">{usuario.nome}</span> ({userEmail})
+                Bem-vindo, <span className="font-semibold">{usuario.nome}</span>{" "}
+                ({userEmail})
               </p>
             </div>
           </div>
