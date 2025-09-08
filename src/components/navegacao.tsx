@@ -17,8 +17,6 @@ export default function Navegacao() {
   const eAPaginaDeLogin = pathname === "/auth/login";
   const [menuAberto, setMenuAberto] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
 
   // Fecha o menu quando a tela fica >= 768px
   useEffect(() => {
@@ -36,32 +34,21 @@ export default function Navegacao() {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
-      // Detecta se está scrolled
       setIsScrolled(currentScrollY > 50);
-
-      // Detecta direção do scroll para mostrar/ocultar navbar
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsVisible(false); // Scroll para baixo - esconder
-      } else {
-        setIsVisible(true); // Scroll para cima - mostrar
-      }
-
-      setLastScrollY(currentScrollY);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
   const estiloBotao =
-    "relative w-20 sm:w-24 h-8 sm:h-9 flex items-center justify-center rounded-full cursor-pointer transition-all duration-500 ease-in-out text-sm sm:text-base font-medium overflow-hidden group";
+    "px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ease-in-out backdrop-blur-sm";
 
   const estiloBotaoAtivo =
-    "bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white shadow-lg shadow-[#02b1aa]/25";
+    "bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] text-white shadow-lg shadow-[#02b1aa]/25 border border-white/20";
 
   const estiloBotaoInativo =
-    "text-gray-600 hover:text-[#02b1aa] hover:bg-gradient-to-r hover:from-[#edfffe] hover:to-blue-50";
+    "text-gray-700 hover:text-[#02b1aa] hover:bg-gradient-to-r hover:from-[#edfffe] hover:to-blue-50/80 hover:shadow-md hover:border hover:border-[#02b1aa]/20";
 
   const botoesNavegacao = [
     { rotulo: "Home", link: "/", ativo: pathname === "/" },
@@ -95,41 +82,40 @@ export default function Navegacao() {
   return (
     <Cabecalho
       className={`
-        fixed top-0 left-0 right-0 w-full h-24 items-center flex justify-center py-3 px-4 sm:px-8 lg:px-20 z-[100]
-        transition-all duration-700 ease-out
+        fixed top-0 left-0 right-0 w-full h-20 items-center flex justify-center py-4 px-4 sm:px-8 lg:px-20 z-[100]
+        transition-all duration-500 ease-out
         ${isScrolled
-          ? 'bg-white/95 backdrop-blur-2xl shadow-2xl shadow-[#02b1aa]/15 border-b border-[#edfffe]/60'
-          : 'bg-white/90 backdrop-blur-xl shadow-xl shadow-[#02b1aa]/8 border-b border-[#edfffe]/40'
+          ? 'bg-white/98 backdrop-blur-xl shadow-xl shadow-[#02b1aa]/10 border-b border-[#02b1aa]/20'
+          : 'bg-gradient-to-r from-white/95 via-[#edfffe]/80 to-white/95 backdrop-blur-md shadow-lg shadow-[#02b1aa]/5 border-b border-[#02b1aa]/10'
         }
-        ${isVisible
-          ? 'transform translate-y-0'
-          : 'transform -translate-y-full'
-        }
-        before:absolute before:inset-0 before:bg-gradient-to-r before:from-[#02b1aa]/3 before:via-transparent before:to-[#029fdf]/3 before:pointer-events-none
-        after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-[#02b1aa]/20 after:to-transparent
+        before:absolute before:inset-0 before:bg-gradient-to-r before:from-[#02b1aa]/5 before:via-transparent before:to-[#029fdf]/5 before:pointer-events-none
       `}
     >
       <nav className="flex items-center justify-between w-full max-w-7xl">
-        {/* Logo e Título */}
-        <div className="flex items-center gap-3 sm:gap-6">
-          <div className="relative group">
-            <Image
-              className="transition-transform duration-300 group-hover:scale-105"
-              src={IconeLogo}
-              alt="Logo Clínica Resilience"
-              width={55}
-              height={55}
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#02b1aa]/20 to-[#029fdf]/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl"></div>
-          </div>
-
-          <h1
-            className={`hidden min-[1100px]:block ${
-              eAPaginaDeLogin ? "invisible" : "visible"
-            } text-2xl lg:text-3xl font-black bg-gradient-to-r from-[#02b1aa] to-[#029fdf] bg-clip-text text-transparent hover:from-[#029fdf] hover:to-[#01c2e3] transition-all duration-500`}
-          >
-            Clínica Resilience
-          </h1>
+        {/* Logo */}
+        <div className="flex items-center">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+              <div className="relative bg-white/90 backdrop-blur-sm rounded-xl p-2 border border-white/30 shadow-lg">
+                <Image
+                  src={IconeLogo}
+                  alt="Logo Clínica Resilience"
+                  width={42}
+                  height={42}
+                  className="rounded-lg transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
+            </div>
+            <div className="hidden lg:flex flex-col">
+              <span className="text-lg font-bold bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent tracking-tight">
+                Clínica Resilience
+              </span>
+              <span className="text-xs text-[#02b1aa] font-medium tracking-wide">
+                Saúde Mental Corporativa
+              </span>
+            </div>
+          </Link>
         </div>
 
         {/* Navegação Desktop/Tablet (>=768px) */}
@@ -146,11 +132,9 @@ export default function Navegacao() {
                   ativo ? estiloBotaoAtivo : estiloBotaoInativo
                 }`}
               >
-                <Link href={link} className="relative z-10">
+                <Link href={link}>
                   {rotulo}
                 </Link>
-                {/* Efeito de brilho no hover */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#02b1aa]/20 to-[#029fdf]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
               </li>
             ))}
           </ul>
@@ -163,35 +147,31 @@ export default function Navegacao() {
                   // Usuário logado - mostrar painel e logout
                   <>
                     <div className={`${estiloBotao} ${estiloBotaoAtivo} px-3`}>
-                      <Link href={getPainelLink()} className="relative z-10 flex items-center gap-2 text-xs sm:text-sm">
+                      <Link href={getPainelLink()} className="flex items-center gap-2 text-xs sm:text-sm">
                         <User size={14} />
                         Meu Painel
                       </Link>
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#029fdf]/20 to-[#01c2e3]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
                     </div>
-                    <div className={`${estiloBotao} bg-gradient-to-r from-red-500 to-red-600 text-white flex items-center gap-2 px-3 hover:from-red-600 hover:to-red-700 shadow-lg shadow-red-500/25`}>
-                      <button onClick={handleLogout} className="relative z-10 flex items-center gap-2 text-xs sm:text-sm">
+                    <div className={`${estiloBotao} bg-red-500 text-white flex items-center gap-2 px-3 hover:bg-red-600`}>
+                      <button onClick={handleLogout} className="flex items-center gap-2 text-xs sm:text-sm">
                         <LogOut size={14} />
                         Sair
                       </button>
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
                     </div>
                   </>
                 ) : (
                   // Usuário não logado - mostrar login e agendamento
                   <>
                     <div className={`${estiloBotao} ${estiloBotaoAtivo} px-3 ${eAPaginaDeLogin ? "invisible" : "visible"}`}>
-                      <Link href="/auth/login" className="relative z-10 text-xs sm:text-sm">
+                      <Link href="/auth/login" className="text-xs sm:text-sm">
                         Login
                       </Link>
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#029fdf]/20 to-[#01c2e3]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
                     </div>
-                    <div className="hidden sm:block w-px h-7 bg-gradient-to-b from-[#02b1aa] to-[#029fdf]"></div>
-                    <div className={`${estiloBotao} !w-auto px-4 border-2 border-[#02b1aa] text-[#02b1aa] hover:bg-gradient-to-r hover:from-[#02b1aa] hover:to-[#029fdf] hover:text-white hover:border-transparent transition-all duration-500`}>
-                      <Link href="/portal-publico" className="relative z-10 text-xs sm:text-sm whitespace-nowrap">
+                    <div className="hidden sm:block w-px h-7 bg-gray-300"></div>
+                    <div className={`${estiloBotao} !w-auto px-4 border-2 border-[#02b1aa] text-[#02b1aa] hover:bg-[#02b1aa] hover:text-white hover:border-[#02b1aa] transition-all duration-300`}>
+                      <Link href="/portal-publico" className="text-xs sm:text-sm whitespace-nowrap">
                         Agendamento
                       </Link>
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#02b1aa]/10 to-[#029fdf]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full"></div>
                     </div>
                   </>
                 )}
@@ -201,33 +181,26 @@ export default function Navegacao() {
         </div>
 
         {/* Menu Hamburguer - Mobile (<768px) */}
-        <div className="md:hidden flex items-center relative">
+        <div className="md:hidden flex items-center">
           <button
             onClick={() => setMenuAberto(!menuAberto)}
-            className="relative p-3 rounded-2xl border-2 border-[#02b1aa]/30 hover:border-[#02b1aa] bg-gradient-to-r from-white to-[#edfffe] hover:from-[#edfffe] hover:to-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl"
+            className="p-3 rounded-xl border-2 border-[#02b1aa]/30 hover:border-[#02b1aa] bg-gradient-to-r from-white to-[#edfffe] hover:from-[#edfffe] hover:to-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl"
           >
             <div className="relative z-10">
               {menuAberto ? <X size={20} className="text-[#02b1aa]" /> : <Menu size={20} className="text-[#02b1aa]" />}
             </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-[#02b1aa]/10 to-[#029fdf]/10 opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#02b1aa]/10 to-[#029fdf]/10 opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
           </button>
 
           {/* Dropdown mobile */}
-          <div
-            className={`absolute top-full right-0 mt-3 w-56 bg-white/95 backdrop-blur-xl shadow-2xl rounded-2xl border border-[#edfffe] flex flex-col transform transition-all duration-500 ease-out ${
-              menuAberto
-                ? "opacity-100 translate-y-0 scale-100"
-                : "opacity-0 -translate-y-4 scale-95 pointer-events-none"
-            }`}
-          >
-            {/* Navegação */}
-            <div className="p-2">
+          {menuAberto && (
+            <div className="absolute top-full right-0 mt-3 w-56 bg-white/95 backdrop-blur-xl shadow-2xl rounded-2xl border border-[#02b1aa]/20 py-3">
               {botoesNavegacao.map(({ rotulo, link, ativo }) => (
                 <Link
                   key={rotulo}
                   href={link}
                   onClick={() => setMenuAberto(false)}
-                  className={`block px-4 py-3 mb-1 rounded-xl transition-all duration-300 ${
+                  className={`block px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium transition-all duration-300 ${
                     ativo
                       ? "bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white shadow-lg"
                       : "text-gray-700 hover:bg-gradient-to-r hover:from-[#edfffe] hover:to-blue-50 hover:text-[#02b1aa]"
@@ -236,48 +209,42 @@ export default function Navegacao() {
                   {rotulo}
                 </Link>
               ))}
-            </div>
 
-            {/* Separator */}
-            <div className="h-px bg-gradient-to-r from-transparent via-[#02b1aa]/30 to-transparent mx-4 my-2"></div>
+              <div className="h-px bg-gradient-to-r from-transparent via-[#02b1aa]/30 to-transparent mx-4 my-3"></div>
 
-            {/* Opções baseadas no estado de autenticação - Mobile */}
-            <div className="p-2">
               {!loading && (
                 <>
                   {user ? (
-                    // Usuário logado - mostrar painel e logout
                     <>
                       <Link
                         href={getPainelLink()}
                         onClick={() => setMenuAberto(false)}
-                        className="flex items-center gap-3 px-4 py-3 mb-1 rounded-xl text-gray-700 hover:bg-gradient-to-r hover:from-[#edfffe] hover:to-blue-50 hover:text-[#02b1aa] transition-all duration-300"
+                        className="flex items-center gap-3 px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-[#edfffe] hover:to-blue-50 hover:text-[#02b1aa] transition-all duration-300"
                       >
-                        <User size={18} />
+                        <User size={16} />
                         Meu Painel
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3 px-4 py-3 w-full text-left rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-lg"
+                        className="flex items-center gap-3 px-5 py-3 mx-2 w-full text-left rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-lg"
                       >
-                        <LogOut size={18} />
+                        <LogOut size={16} />
                         Sair
                       </button>
                     </>
                   ) : (
-                    // Usuário não logado - mostrar login e agendamento
                     <>
                       <Link
                         href="/auth/login"
                         onClick={() => setMenuAberto(false)}
-                        className="flex items-center gap-3 px-4 py-3 mb-1 rounded-xl bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white hover:from-[#029fdf] hover:to-[#01c2e3] transition-all duration-300 shadow-lg"
+                        className="block px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white hover:from-[#029fdf] hover:to-[#01c2e3] transition-all duration-300 shadow-lg"
                       >
                         Login
                       </Link>
                       <Link
                         href="/portal-publico"
                         onClick={() => setMenuAberto(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-[#02b1aa] text-[#02b1aa] hover:bg-gradient-to-r hover:from-[#02b1aa] hover:to-[#029fdf] hover:text-white hover:border-transparent transition-all duration-300"
+                        className="block px-5 py-3 mx-2 rounded-xl text-sm font-medium border-2 border-[#02b1aa] text-[#02b1aa] hover:bg-[#02b1aa] hover:text-white hover:border-[#02b1aa] transition-all duration-300"
                       >
                         Agendamento
                       </Link>
@@ -286,7 +253,7 @@ export default function Navegacao() {
                 </>
               )}
             </div>
-          </div>
+          )}
         </div>
       </nav>
     </Cabecalho>
