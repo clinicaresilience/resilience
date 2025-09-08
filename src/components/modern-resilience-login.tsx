@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/context/auth-context";
 import { ROUTES } from "@/config/routes";
@@ -21,7 +21,38 @@ export function ModernResilienceLogin({
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { signIn, user, loading: authLoading } = useAuth();
+
+  // Redirecionar usuário já logado para seu painel
+  useEffect(() => {
+    if (!authLoading && user) {
+      const dest =
+        user.tipo_usuario === "administrador"
+          ? ROUTES.admin.root
+          : user.tipo_usuario === "profissional"
+          ? ROUTES.professional.root
+          : ROUTES.user.root;
+      
+      router.push(dest);
+    }
+  }, [user, authLoading, router]);
+
+  // Mostrar loading enquanto verifica autenticação
+  if (authLoading) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-azul-ciano-claro">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 border-2 border-azul-vivido border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-azul-escuro">Verificando autenticação...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Se usuário já está logado, não mostrar o formulário
+  if (user) {
+    return null;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

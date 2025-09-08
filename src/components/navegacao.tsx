@@ -4,12 +4,16 @@ import IconeLogo from "../app/assets/icones/logo.png";
 import Image from "next/image";
 import Cabecalho from "./ui/cabecalho";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "./ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
+import { useAuth } from "@/features/auth/context/auth-context";
+import { ROUTES } from "@/config/routes";
 
 export default function Navegacao() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading, signOut } = useAuth();
   const eAPaginaDeLogin = pathname === "/auth/login";
   const [menuAberto, setMenuAberto] = useState(false);
 
@@ -33,6 +37,29 @@ export default function Navegacao() {
     { rotulo: "Sobre", link: "/portal-publico/sobre/page" },
     { rotulo: "Contato", link: "#" },
   ];
+
+  // Função para obter o link do painel baseado no tipo de usuário
+  const getPainelLink = () => {
+    if (!user) return "/auth/login";
+    
+    switch (user.tipo_usuario) {
+      case "administrador":
+        return ROUTES.admin.root;
+      case "profissional":
+        return ROUTES.professional.root;
+      case "comum":
+        return ROUTES.user.root;
+      default:
+        return "/auth/login";
+    }
+  };
+
+  // Função para fazer logout
+  const handleLogout = async () => {
+    await signOut();
+    setMenuAberto(false);
+    router.push("/");
+  };
 
   return (
     <Cabecalho className="w-full h-24 items-center flex justify-center py-3 px-4 sm:px-8 lg:px-20  drop-shadow-xl z-[99] bg-white shadow">
@@ -77,25 +104,53 @@ export default function Navegacao() {
             ))}
           </ul>
 
-          {/* Ações (Login / Agendamento) */}
+          {/* Ações baseadas no estado de autenticação */}
           <div className="items-center flex gap-2 sm:gap-3">
-            <Button
-              className={`${estiloBotao} ${
-                eAPaginaDeLogin ? "invisible" : "visible"
-              } bg-azul-escuro text-white flex`}
-            >
-              <Link href="/auth/login" className="w-full text-center">
-                Login
-              </Link>
-            </Button>
-            <span className="hidden sm:block w-px h-7 bg-azul-escuro-secundario"></span>
-            <Button
-              className={`${estiloBotao} !w-fit text-azul-escuro-secundario border-azul-escuro-secundario border`}
-            >
-              <Link href="/portal-publico" className="w-full text-center">
-                Agendamento
-              </Link>
-            </Button>
+            {!loading && (
+              <>
+                {user ? (
+                  // Usuário logado - mostrar painel e logout
+                  <>
+                    <Button
+                      className={`${estiloBotao} bg-azul-escuro text-white flex items-center gap-2`}
+                    >
+                      <User size={16} />
+                      <Link href={getPainelLink()} className="w-full text-center">
+                        Meu Painel
+                      </Link>
+                    </Button>
+                    <Button
+                      onClick={handleLogout}
+                      className={`${estiloBotao} bg-red-600 text-white flex items-center gap-2 hover:bg-red-700`}
+                    >
+                      <LogOut size={16} />
+                      Sair
+                    </Button>
+                  </>
+                ) : (
+                  // Usuário não logado - mostrar login e agendamento
+                  <>
+                    <Button
+                      className={`${estiloBotao} ${
+                        eAPaginaDeLogin ? "invisible" : "visible"
+                      } bg-azul-escuro text-white flex`}
+                    >
+                      <Link href="/auth/login" className="w-full text-center">
+                        Login
+                      </Link>
+                    </Button>
+                    <span className="hidden sm:block w-px h-7 bg-azul-escuro-secundario"></span>
+                    <Button
+                      className={`${estiloBotao} !w-fit text-azul-escuro-secundario border-azul-escuro-secundario border`}
+                    >
+                      <Link href="/portal-publico" className="w-full text-center">
+                        Agendamento
+                      </Link>
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -127,22 +182,49 @@ export default function Navegacao() {
               </Link>
             ))}
 
-            <>
-              <Link
-                href="/auth/login"
-                onClick={() => setMenuAberto(false)}
-                className="px-4 py-2 text-gray-700 hover:text-azul-escuro transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                href="/portal-publico"
-                onClick={() => setMenuAberto(false)}
-                className="px-4 py-2 text-gray-700 hover:text-azul-escuro transition-colors"
-              >
-                Agendamento
-              </Link>
-            </>
+            {/* Opções baseadas no estado de autenticação - Mobile */}
+            {!loading && (
+              <>
+                {user ? (
+                  // Usuário logado - mostrar painel e logout
+                  <>
+                    <Link
+                      href={getPainelLink()}
+                      onClick={() => setMenuAberto(false)}
+                      className="px-4 py-2 text-gray-700 hover:text-azul-escuro transition-colors flex items-center gap-2"
+                    >
+                      <User size={16} />
+                      Meu Painel
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="px-4 py-2 text-red-600 hover:text-red-700 transition-colors flex items-center gap-2 text-right w-full"
+                    >
+                      <LogOut size={16} />
+                      Sair
+                    </button>
+                  </>
+                ) : (
+                  // Usuário não logado - mostrar login e agendamento
+                  <>
+                    <Link
+                      href="/auth/login"
+                      onClick={() => setMenuAberto(false)}
+                      className="px-4 py-2 text-gray-700 hover:text-azul-escuro transition-colors"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      href="/portal-publico"
+                      onClick={() => setMenuAberto(false)}
+                      className="px-4 py-2 text-gray-700 hover:text-azul-escuro transition-colors"
+                    >
+                      Agendamento
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       </nav>
