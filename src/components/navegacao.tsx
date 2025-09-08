@@ -112,10 +112,10 @@ export default function Navegacao() {
                   // Usuário logado - mostrar painel e logout
                   <>
                     <Button
-                      className={`${estiloBotao} bg-azul-escuro text-white flex items-center gap-2`}
+                      className={`${estiloBotao} bg-azul-escuro text-white flex items-center gap-1 px-2`}
                     >
-                      <User size={16} />
-                      <Link href={getPainelLink()} className="w-full text-center">
+                      <User size={14} />
+                      <Link href={getPainelLink()} className="text-center text-xs sm:text-sm">
                         Meu Painel
                       </Link>
                     </Button>

@@ -8,6 +8,8 @@ import { BookingConfirmation } from "@/components/booking/booking-confirmation";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { User, Lock } from "lucide-react";
 import Link from "next/link";
+import { PendingBookingManager } from "@/utils/pending-booking";
+import { useRouter } from "next/navigation";
 
 type Profissional = {
   id: string;
@@ -29,9 +31,11 @@ type Agenda = {
 
 type AgendaSlot = {
   id: string;
-  data: string;
-  hora: string;
+  data?: string;
+  hora?: string;
   disponivel: boolean;
+  diaSemana?: number;
+  horaInicio?: string;
 };
 
 export function PerfilProfissionalClient({
@@ -60,13 +64,32 @@ export function PerfilProfissionalClient({
   }, []);
 
   const handleSlotSelect = (slot: AgendaSlot) => {
+    console.log('Slot selecionado:', slot);
+    console.log('Usuário autenticado:', isAuthenticated);
+    
+    setSelectedSlot(slot);
+    
     if (!isAuthenticated) {
-      setSelectedSlot(slot);
+      // Salvar dados no localStorage antes de mostrar o modal de login
+      console.log('Salvando dados no localStorage...');
+      PendingBookingManager.save({
+        profissionalId: profissional.id,
+        profissionalNome: profissional.nome,
+        slot: {
+          id: slot.id,
+          data: slot.data || '',
+          hora: slot.hora || slot.horaInicio || '',
+          disponivel: slot.disponivel,
+        },
+        modalidade: 'presencial', // Valor padrão
+        codigoEmpresa: '', // Será preenchido no modal de confirmação
+        notas: undefined,
+      });
+      
       setShowLoginModal(true);
       return;
     }
     
-    setSelectedSlot(slot);
     setShowConfirmation(true);
   };
 
@@ -184,7 +207,12 @@ export function PerfilProfissionalClient({
           setShowConfirmation(false);
           setSelectedSlot(null);
         }}
-        slot={selectedSlot}
+        slot={selectedSlot ? {
+          id: selectedSlot.id,
+          data: selectedSlot.data || '',
+          hora: selectedSlot.hora || selectedSlot.horaInicio || '',
+          disponivel: selectedSlot.disponivel,
+        } : null}
         profissionalNome={profissional.nome}
         profissionalId={profissional.id}
         onConfirm={handleBookingConfirm}

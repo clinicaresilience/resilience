@@ -19,9 +19,13 @@ import {
   MapPin,
   CheckCircle,
   AlertCircle,
+  LogIn,
 } from "lucide-react";
 import moment from "moment";
 import "moment/locale/pt-br";
+import { useAuth } from "@/features/auth/context/auth-context";
+import { PendingBookingManager } from "@/utils/pending-booking";
+import { useRouter } from "next/navigation";
 
 moment.locale("pt-br");
 
@@ -58,11 +62,17 @@ export function BookingConfirmation({
   profissionalId,
   onConfirm,
 }: BookingConfirmationProps) {
+  const { user } = useAuth();
+  const router = useRouter();
   const [notas, setNotas] = useState("");
   const [modalidade, setModalidade] = useState<Modalidade>("presencial");
+  const [codigoEmpresa, setCodigoEmpresa] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  console.log('BookingConfirmation - Usuário autenticado:', !!user);
+  console.log('BookingConfirmation - Dados do usuário:', user);
 
   const handleConfirm = async () => {
     if (!slot) return;
@@ -73,6 +83,43 @@ export function BookingConfirmation({
 
       const dataHora = `${slot.data}T${slot.hora}:00.000Z`;
 
+      console.log('Tentando criar agendamento:', {
+        profissional_id: profissionalId,
+        data_consulta: dataHora,
+        modalidade,
+        notas: notas.trim(),
+        codigoEmpresa,
+        usuarioAutenticado: !!user
+      });
+
+      // Se o usuário não estiver logado, salvar dados e redirecionar para login
+      if (!user) {
+        console.log('Usuário não autenticado, salvando dados pendentes...');
+
+        PendingBookingManager.save({
+          profissionalId,
+          profissionalNome,
+          slot: {
+            id: slot.id,
+            data: slot.data,
+            hora: slot.hora,
+            disponivel: slot.disponivel,
+          },
+          modalidade,
+          codigoEmpresa,
+          notas: notas.trim() || undefined,
+        });
+
+        console.log('Dados salvos no localStorage, redirecionando para login...');
+        setSuccess(true);
+        setTimeout(() => {
+          router.push('/auth/login');
+        }, 2000);
+
+        return;
+      }
+
+      // Usuário está logado, criar agendamento normalmente
       const response = await fetch("/api/agendamentos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -85,8 +132,11 @@ export function BookingConfirmation({
         }),
       });
 
+      console.log('Resposta da API:', response.status, response.statusText);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('Agendamento criado com sucesso:', data);
         setSuccess(true);
 
         if (onConfirm) onConfirm(data.data);
@@ -94,9 +144,11 @@ export function BookingConfirmation({
         setTimeout(() => handleClose(), 3000);
       } else {
         const errorData = await response.json();
+        console.error('Erro na API:', errorData);
         setError(errorData.error || "Erro ao criar agendamento");
       }
     } catch (err) {
+      console.error('Erro de conexão:', err);
       setError("Erro de conexão. Tente novamente.");
     } finally {
       setLoading(false);
@@ -106,6 +158,7 @@ export function BookingConfirmation({
   const handleClose = () => {
     setNotas("");
     setModalidade("presencial");
+    setCodigoEmpresa("");
     setError("");
     setSuccess(false);
     onClose();
@@ -212,6 +265,29 @@ export function BookingConfirmation({
                     <option value="presencial">Presencial</option>
                     <option value="online">Online</option>
                   </select>
+                </div>
+
+                {/* Código da Empresa */}
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="codigoEmpresa">Código da Empresa *</Label>
+                  <input
+                    id="codigoEmpresa"
+                    type="text"
+                    placeholder="Digite o código da empresa"
+                    value={codigoEmpresa}
+                    onChange={(e) => setCodigoEmpresa(e.target.value)}
+                    className="border rounded px-3 py-2"
+                    maxLength={50}
+                    required
+                  />
+                  <p className="text-xs text-gray-500">
+                    Campo obrigatório para agendamentos corporativos
+                  </p>
+                  {codigoEmpresa.trim().length === 0 && (
+                    <p className="text-xs text-red-600">
+                      O código da empresa é obrigatório
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>

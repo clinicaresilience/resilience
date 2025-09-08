@@ -7,7 +7,7 @@ import "moment/locale/pt-br";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, LogIn } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useAuth } from "@/features/auth/context/auth-context";
+import { PendingBookingManager } from "@/utils/pending-booking";
+import { useRouter } from "next/navigation";
 
 moment.locale("pt-br");
 const localizer = momentLocalizer(moment);
@@ -55,6 +58,8 @@ export function CalendarBooking({
   profissionalNome,
   onBookingSelect,
 }: CalendarBookingProps) {
+  const { user } = useAuth();
+  const router = useRouter();
   const [agendaSlots, setAgendaSlots] = useState<AgendaSlot[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [availableSlots, setAvailableSlots] = useState<AgendaSlot[]>([]);
@@ -69,7 +74,7 @@ export function CalendarBooking({
       );
       if (res.ok) {
         const data = await res.json();
-        const slots: AgendaSlot[] = (data.slots || []).map((slot: any) => {
+        const slots: AgendaSlot[] = (data.slots || []).map((slot: Record<string, unknown>) => {
           // Calcular a próxima data do dia da semana
           const hoje = new Date();
           const diaSemanaAtual = hoje.getDay();

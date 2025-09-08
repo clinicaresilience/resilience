@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/card";
 import { Calendar, User, Clock, FileText, Heart, Phone } from "lucide-react";
 import PendingAppointmentResumer from "@/components/user/pending-appointment-resumer";
+import { PendingBookingModal } from "@/components/user/pending-booking-modal";
+import { PendingBookingManager, PendingBookingData } from "@/utils/pending-booking";
 import { useEffect, useState } from "react";
 
 type Consulta = {
@@ -25,6 +27,7 @@ type Consulta = {
 export default function TelaUsuario() {
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [usuario, setUsuario] = useState("");
+  const [showPendingModal, setShowPendingModal] = useState(false);
 
   useEffect(() => {
     async function fetchConsultas() {
@@ -37,6 +40,61 @@ export default function TelaUsuario() {
     }
     fetchConsultas();
   }, []);
+
+  // Efeito separado para verificar agendamento pendente
+  useEffect(() => {
+    console.log('Componente TelaUsuario montado, verificando agendamento pendente...');
+
+    // Verificar imediatamente se há dados no localStorage
+    const pendingData = PendingBookingManager.get();
+    console.log('Dados do localStorage:', pendingData);
+
+    if (pendingData) {
+      console.log('Agendamento pendente encontrado:', pendingData);
+      setShowPendingModal(true);
+    } else {
+      console.log('Nenhum agendamento pendente encontrado no localStorage');
+    }
+
+    // Também verificar após um pequeno delay para garantir que tudo carregou
+    const timer = setTimeout(() => {
+      const hasPending = PendingBookingManager.hasPending();
+      console.log('Verificação com delay - agendamento pendente:', hasPending);
+      if (hasPending && !showPendingModal) {
+        console.log('Agendamento pendente encontrado no delay, mostrando modal');
+        setShowPendingModal(true);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleConfirmPendingBooking = async (pendingData: PendingBookingData) => {
+    try {
+      const dataHora = `${pendingData.slot.data}T${pendingData.slot.hora}:00.000Z`;
+
+      const response = await fetch("/api/agendamentos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profissional_id: pendingData.profissionalId,
+          data_consulta: dataHora,
+          local: "Clínica Resilience",
+          notas: pendingData.notas || undefined,
+          modalidade: pendingData.modalidade,
+        }),
+      });
+
+      if (response.ok) {
+        // Recarregar a página para mostrar o novo agendamento
+        window.location.reload();
+      } else {
+        console.error("Erro ao confirmar agendamento pendente");
+      }
+    } catch (error) {
+      console.error("Erro ao confirmar agendamento pendente:", error);
+    }
+  };
 
   console.log(usuario);
 
@@ -292,6 +350,13 @@ export default function TelaUsuario() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de Agendamento Pendente */}
+      <PendingBookingModal
+        isOpen={showPendingModal}
+        onClose={() => setShowPendingModal(false)}
+        onConfirm={handleConfirmPendingBooking}
+      />
     </>
   );
 }
