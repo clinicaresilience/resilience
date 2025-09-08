@@ -60,7 +60,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
     return (
       <>
         <ConditionalNavigation />
-        <main className="flex-1  w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <main className="flex-1  w-full  mx-auto  ">
           {children}
         </main>
       </>
@@ -87,7 +87,13 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
     ${sidebarCollapsed ? "md:ml-16" : "md:ml-64"}
   `}
             >
-              <div className={`${pathname.startsWith("/painel-administrativo") ? "p-0 w-full max-w-none" : "px-4 sm:px-6 lg:px-8 pb-6 w-full mx-auto"}`}>
+              <div
+                className={`${
+                  pathname.startsWith("/painel-administrativo")
+                    ? "p-0 w-full max-w-none"
+                    : "px-4 sm:px-6 lg:px-8 pb-6 w-full mx-auto"
+                }`}
+              >
                 {children}
               </div>
             </main>
