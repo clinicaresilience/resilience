@@ -88,24 +88,25 @@ export function ModernResilienceLogin({
   };
 
   return (
-    <div className={cn("w-full min-h-screen relative overflow-hidden", className)} {...props}>
-      {/* Background com gradiente suave */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-azul-ciano-claro">
+    <div className={cn("w-full min-h-screen relative overflow-hidden select-none ", className)} {...props}>
+      {/* Background com gradiente moderno */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-[#edfffe] to-[#f5b26b]/10">
         {/* Logo de fundo transparente */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-50">
+        <div className="absolute inset-0 flex items-center justify-center opacity-30">
           <Image
             src={Resilience}
             alt="Background Logo"
-            width={800}
-            height={800}
-            className=" "
+            width={600}
+            height={600}
+            className="opacity-20"
             priority
           />
         </div>
-        
-        {/* Elementos decorativos sutis */}
-        <div className="absolute top-20 right-20 w-32 h-32 bg-azul-vivido/5 rounded-full blur-2xl"></div>
-        <div className="absolute bottom-32 left-20 w-40 h-40 bg-azul-medio/5 rounded-full blur-2xl"></div>
+
+        {/* Elementos decorativos modernos */}
+        <div className="absolute top-20 right-20 w-40 h-40 bg-gradient-to-r from-[#02b1aa]/10 to-[#029fdf]/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-32 left-20 w-48 h-48 bg-gradient-to-r from-[#7762b6]/8 to-[#f5b26b]/8 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-gradient-to-r from-[#01c2e3]/10 to-[#02b1aa]/10 rounded-full blur-2xl"></div>
       </div>
 
       {/* Container principal */}
@@ -113,11 +114,11 @@ export function ModernResilienceLogin({
         
         {/* Botão Voltar */}
         <div className="absolute top-6 left-6 z-20">
-          <Link 
+          <Link
             href="/"
-            className="inline-flex items-center justify-center px-4 py-2 md:px-6 md:py-3 text-sm font-medium text-azul-escuro bg-white/80 backdrop-blur-sm rounded-full border border-azul-escuro/20 hover:bg-white hover:shadow-lg transition-all duration-300"
+            className="inline-flex items-center justify-center px-5 py-3 md:px-6 md:py-3 text-sm font-semibold text-[#02b1aa] bg-white/90 backdrop-blur-xl rounded-2xl border-2 border-[#02b1aa]/20 hover:bg-white hover:border-[#02b1aa]/40 hover:shadow-lg hover:shadow-[#02b1aa]/10 transition-all duration-300"
           >
-            <span className="mr-2">←</span>
+            <span className="mr-2 text-lg">←</span>
             <span className="hidden md:inline">Voltar</span>
           </Link>
         </div>
@@ -127,7 +128,7 @@ export function ModernResilienceLogin({
           <div className="w-full max-w-sm">
             
             {/* Logo principal */}
-            <div className="text-center mb-12">
+            <div className="text-center mb-12 select-none ">
               <div className="flex justify-center mb-8">
                 <div className="relative">
                   <Image
@@ -143,7 +144,12 @@ export function ModernResilienceLogin({
               
               {/* Título estilizado */}
               <div className="space-y-2">
-              
+                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent tracking-tight">
+                  Clínica Resilience
+                </h1>
+                <p className="text-sm md:text-base text-[#02b1aa] font-medium tracking-wide">
+                  Saúde Mental Corporativa
+                </p>
               </div>
             </div>
 
@@ -198,7 +204,7 @@ export function ModernResilienceLogin({
                 <Button
                   type="submit"
                   disabled={loading || success}
-                  className="w-full h-14 text-white font-semibold text-base rounded-2xl bg-gradient-to-r from-roxo via-azul-escuro to-azul-vivido hover:from-roxo/90 hover:via-azul-escuro/90 hover:to-azul-vivido/90 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] border-0"
+                  className="w-full h-14 text-white font-semibold text-base rounded-2xl bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] hover:from-[#02b1aa]/90 hover:via-[#029fdf]/90 hover:to-[#01c2e3]/90 disabled:opacity-50 transition-all duration-300 shadow-lg shadow-[#02b1aa]/25 hover:shadow-xl hover:shadow-[#02b1aa]/30 border-0"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center space-x-2">
@@ -222,15 +228,15 @@ export function ModernResilienceLogin({
                   <button
                     type="button"
                     onClick={() => router.push(ROUTES.auth.forgot)}
-                    className="text-sm text-roxo hover:text-azul-vivido transition-colors font-medium"
+                    className="text-sm text-[#02b1aa] hover:text-[#029fdf] transition-all duration-300 font-medium"
                     disabled={loading || success}
                   >
                     Esqueci minha senha
                   </button>
-                  
+
                   <Link
                     href="/auth/cadastro"
-                    className="text-sm text-azul-vivido hover:text-azul-ciano transition-colors font-medium"
+                    className="text-sm text-[#02b1aa] hover:text-[#029fdf] transition-all duration-300 font-medium"
                   >
                     Criar conta
                   </Link>

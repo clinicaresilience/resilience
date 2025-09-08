@@ -5,7 +5,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarBooking } from "@/components/booking/calendar-booking";
 import { BookingConfirmation } from "@/components/booking/booking-confirmation";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { User, Lock } from "lucide-react";
 import Link from "next/link";
 import { PendingBookingManager } from "@/utils/pending-booking";
@@ -54,7 +60,7 @@ export function PerfilProfissionalClient({
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/auth/user');
+        const response = await fetch("/api/auth/user");
         setIsAuthenticated(response.ok);
       } catch {
         setIsAuthenticated(false);
@@ -64,41 +70,47 @@ export function PerfilProfissionalClient({
   }, []);
 
   const handleSlotSelect = (slot: AgendaSlot) => {
-    console.log('Slot selecionado:', slot);
-    console.log('Usuário autenticado:', isAuthenticated);
-    
+    console.log("Slot selecionado:", slot);
+    console.log("Usuário autenticado:", isAuthenticated);
+
     setSelectedSlot(slot);
-    
+
     if (!isAuthenticated) {
       // Salvar dados no localStorage antes de mostrar o modal de login
-      console.log('Salvando dados no localStorage...');
+      console.log("Salvando dados no localStorage...");
       PendingBookingManager.save({
         profissionalId: profissional.id,
         profissionalNome: profissional.nome,
         slot: {
           id: slot.id,
-          data: slot.data || '',
-          hora: slot.hora || slot.horaInicio || '',
+          data: slot.data || "",
+          hora: slot.hora || slot.horaInicio || "",
           disponivel: slot.disponivel,
         },
-        modalidade: 'presencial', // Valor padrão
-        codigoEmpresa: '', // Será preenchido no modal de confirmação
+        modalidade: "presencial", // Valor padrão
+        codigoEmpresa: "", // Será preenchido no modal de confirmação
         notas: undefined,
       });
-      
+
       setShowLoginModal(true);
       return;
     }
-    
+
     setShowConfirmation(true);
   };
 
-  const handleBookingConfirm = (agendamento: { id: string; usuarioId: string; profissionalId: string; dataISO: string; status: string }) => {
-    console.log('Agendamento criado:', agendamento);
+  const handleBookingConfirm = (agendamento: {
+    id: string;
+    usuarioId: string;
+    profissionalId: string;
+    dataISO: string;
+    status: string;
+  }) => {
+    console.log("Agendamento criado:", agendamento);
     setShowConfirmation(false);
     setSelectedSlot(null);
     // Redirecionar para página de agendamentos
-    window.location.href = '/tela-usuario/agendamentos';
+    window.location.href = "/tela-usuario/agendamentos";
   };
 
   const handleLoginSuccess = () => {
@@ -110,87 +122,116 @@ export function PerfilProfissionalClient({
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gray-50 p-6 pt-20">
-      <Card className="w-full max-w-5xl bg-white shadow-md rounded-2xl p-8">
+    <div className="flex flex-col items-center min-h-screen bg-gradient-to-br  from-slate-50 via-[#edfffe]/30 to-[#f5b26b]/5 p-6 ">
+      <Card className="w-full mt-24 max-w-5xl bg-white/95 backdrop-blur-xl shadow-xl shadow-[#02b1aa]/10 border border-white/50 rounded-3xl p-8 md:p-10">
         {/* Cabeçalho do Profissional */}
-        <div className="flex flex-col items-center text-center mb-8">
+        <div className="flex flex-col items-center text-center mb-10">
           {/* Foto */}
           {profissional.informacoes_adicionais?.foto && (
-            <div className="w-32 h-32 -mt-12 mb-4 rounded-full overflow-hidden border-4 border-azul-escuro shadow-sm bg-gray-100">
-              <img
-                src={profissional.informacoes_adicionais.foto}
-                alt={`Foto de ${profissional.nome}`}
-                className="object-cover w-full h-full"
-              />
+            <div className="relative -mt-16 mb-6">
+              <div className="absolute -inset-2 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-full blur-lg opacity-50"></div>
+              <div className="relative w-36 h-36 rounded-full overflow-hidden border-4 border-white shadow-xl bg-white/90 backdrop-blur-sm">
+                <img
+                  src={profissional.informacoes_adicionais.foto}
+                  alt={`Foto de ${profissional.nome}`}
+                  className="object-cover w-full h-full"
+                />
+              </div>
             </div>
           )}
 
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent tracking-tight mb-3">
             {profissional.nome}
           </h1>
-          <p className="text-lg text-azul-escuro mb-1">
+          <p className="text-lg md:text-xl text-[#02b1aa] font-semibold mb-2">
             {profissional.informacoes_adicionais?.especialidade}
           </p>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm md:text-base text-[#029fdf] font-medium mb-6 px-4 py-2 bg-gradient-to-r from-[#edfffe] to-blue-50/50 rounded-full border border-[#02b1aa]/20">
             CRP {profissional.informacoes_adicionais?.crp}
           </p>
 
-          <p className="text-gray-600 text-sm leading-relaxed max-w-2xl">
-            {profissional.informacoes_adicionais?.descricao}
-          </p>
+          <div className="max-w-3xl">
+            <p className="text-gray-700 text-base leading-relaxed bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/30 shadow-lg">
+              {profissional.informacoes_adicionais?.descricao}
+            </p>
+          </div>
         </div>
 
         {/* Calendário de Agendamento - Sempre Visível */}
-        <div className="mt-8">
-          <CalendarBooking
-            profissionalId={profissional.id}
-            profissionalNome={profissional.nome}
-            onBookingSelect={handleSlotSelect}
-          />
+        <div className="mt-10">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent tracking-tight mb-2">
+              Agendar Consulta
+            </h2>
+            <p className="text-gray-600 text-base">
+              Escolha uma data e horário disponíveis para sua sessão
+            </p>
+          </div>
+
+          <div className="bg-gradient-to-r from-[#edfffe]/50 to-blue-50/30 rounded-2xl p-6 border border-white/30 shadow-lg backdrop-blur-sm">
+            <CalendarBooking
+              profissionalId={profissional.id}
+              profissionalNome={profissional.nome}
+              onBookingSelect={handleSlotSelect}
+            />
+          </div>
         </div>
       </Card>
 
       {/* Modal de Login/Cadastro */}
       <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-xl border border-white/50 shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5" />
-              Acesso Necessário
+            <DialogTitle className="flex items-center gap-3 text-xl font-bold">
+              <div className="p-2 bg-gradient-to-r from-[#02b1aa]/20 to-[#029fdf]/20 rounded-xl">
+                <Lock className="h-6 w-6 text-[#02b1aa]" />
+              </div>
+              <span className="bg-gradient-to-r from-[#02b1aa] to-[#029fdf] bg-clip-text text-transparent">
+                Acesso Necessário
+              </span>
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-gray-600 text-base">
               Para fazer um agendamento, você precisa estar logado no sistema.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="text-center py-4">
-              <User className="h-16 w-16 mx-auto mb-4 text-azul-escuro" />
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+          <div className="space-y-6">
+            <div className="text-center py-6">
+              <div className="relative inline-block mb-6">
+                <div className="absolute -inset-2 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-full blur-lg opacity-50"></div>
+                <div className="relative p-4 bg-white/90 backdrop-blur-sm rounded-full border border-white/30 shadow-lg">
+                  <User className="h-12 w-12 text-[#02b1aa]" />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-3">
                 Faça login ou crie sua conta
               </h3>
-              <p className="text-sm text-gray-600 mb-6">
-                É rápido e fácil! Após o login, você poderá agendar sua consulta.
+              <p className="text-gray-600 text-base leading-relaxed">
+                É rápido e fácil! Após o login, você poderá agendar sua
+                consulta.
               </p>
             </div>
 
-            <div className="flex flex-col gap-3">
-              <Button asChild className="w-full">
-                <Link href="/auth/login">
-                  Fazer Login
-                </Link>
+            <div className="flex flex-col gap-4">
+              <Button
+                asChild
+                className="w-full h-12 text-white font-semibold text-base rounded-2xl bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] hover:from-[#02b1aa]/90 hover:via-[#029fdf]/90 hover:to-[#01c2e3]/90 shadow-lg shadow-[#02b1aa]/25 hover:shadow-xl border-0"
+              >
+                <Link href="/auth/login">Fazer Login</Link>
               </Button>
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/auth/cadastro">
-                  Criar Conta
-                </Link>
+              <Button
+                asChild
+                variant="outline"
+                className="w-full h-12 text-[#02b1aa] font-semibold text-base rounded-2xl border-2 border-[#02b1aa] hover:bg-[#02b1aa] hover:text-white hover:border-[#02b1aa] transition-all duration-300 shadow-md hover:shadow-lg"
+              >
+                <Link href="/auth/cadastro">Criar Conta</Link>
               </Button>
             </div>
 
-            <div className="pt-4 border-t">
-              <Button 
+            <div className="pt-6 border-t border-gray-200">
+              <Button
                 onClick={() => setShowLoginModal(false)}
-                className="w-full"
+                className="w-full h-10 text-gray-600 hover:text-gray-800 font-medium rounded-xl hover:bg-gray-50 transition-all duration-300"
                 variant="ghost"
               >
                 Cancelar
@@ -207,12 +248,16 @@ export function PerfilProfissionalClient({
           setShowConfirmation(false);
           setSelectedSlot(null);
         }}
-        slot={selectedSlot ? {
-          id: selectedSlot.id,
-          data: selectedSlot.data || '',
-          hora: selectedSlot.hora || selectedSlot.horaInicio || '',
-          disponivel: selectedSlot.disponivel,
-        } : null}
+        slot={
+          selectedSlot
+            ? {
+                id: selectedSlot.id,
+                data: selectedSlot.data || "",
+                hora: selectedSlot.hora || selectedSlot.horaInicio || "",
+                disponivel: selectedSlot.disponivel,
+              }
+            : null
+        }
         profissionalNome={profissional.nome}
         profissionalId={profissional.id}
         onConfirm={handleBookingConfirm}

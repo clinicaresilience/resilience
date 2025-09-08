@@ -5,7 +5,6 @@ import Image from "next/image";
 import Cabecalho from "./ui/cabecalho";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Button } from "./ui/button";
 import { Menu, X, User, LogOut } from "lucide-react";
 import { useAuth } from "@/features/auth/context/auth-context";
 import { ROUTES } from "@/config/routes";
@@ -25,7 +24,6 @@ export default function Navegacao() {
         setMenuAberto(false);
       }
     };
-
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [menuAberto]);
@@ -36,7 +34,6 @@ export default function Navegacao() {
       const currentScrollY = window.scrollY;
       setIsScrolled(currentScrollY > 50);
     };
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -45,21 +42,22 @@ export default function Navegacao() {
     "px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ease-in-out backdrop-blur-sm";
 
   const estiloBotaoAtivo =
-    "bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] text-white shadow-lg shadow-[#02b1aa]/25 border border-white/20";
+    "bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white shadow-lg shadow-[#02b1aa]/25 hover:shadow-xl hover:shadow-[#02b1aa]/30";
 
   const estiloBotaoInativo =
-    "text-gray-700 hover:text-[#02b1aa] hover:bg-gradient-to-r hover:from-[#edfffe] hover:to-blue-50/80 hover:shadow-md hover:border hover:border-[#02b1aa]/20";
+    "text-gray-700 hover:text-[#02b1aa] hover:bg-gradient-to-r hover:from-[#edfffe]/60 hover:to-[#02b1aa]/10 hover:shadow-md";
 
   const botoesNavegacao = [
     { rotulo: "Home", link: "/", ativo: pathname === "/" },
-    { rotulo: "Sobre", link: "/portal-publico/sobre", ativo: pathname === "/portal-publico/sobre" },
-    { rotulo: "Contato", link: "/portal-publico/contato", ativo: pathname === "/portal-publico/contato" },
+    {
+      rotulo: "Sobre",
+      link: "/portal-publico/sobre",
+      ativo: pathname === "/portal-publico/sobre",
+    },
   ];
 
-  // Função para obter o link do painel baseado no tipo de usuário
   const getPainelLink = () => {
     if (!user) return "/auth/login";
-    
     switch (user.tipo_usuario) {
       case "administrador":
         return ROUTES.admin.root;
@@ -72,7 +70,6 @@ export default function Navegacao() {
     }
   };
 
-  // Função para fazer logout
   const handleLogout = async () => {
     await signOut();
     setMenuAberto(false);
@@ -82,11 +79,12 @@ export default function Navegacao() {
   return (
     <Cabecalho
       className={`
-        fixed top-0 left-0 right-0 w-full h-20 items-center flex justify-center py-4 px-4 sm:px-8 lg:px-20 z-[100]
+        fixed top-0 select-none left-0 right-0 w-full h-20 items-center flex justify-center py-4 px-4 sm:px-8 lg:px-20 z-[100]
         transition-all duration-500 ease-out
-        ${isScrolled
-          ? 'bg-white/98 backdrop-blur-xl shadow-xl shadow-[#02b1aa]/10 border-b border-[#02b1aa]/20'
-          : 'bg-gradient-to-r from-white/95 via-[#edfffe]/80 to-white/95 backdrop-blur-md shadow-lg shadow-[#02b1aa]/5 border-b border-[#02b1aa]/10'
+        ${
+          isScrolled
+            ? "bg-white/98 backdrop-blur-xl shadow-xl shadow-[#02b1aa]/10 border-b border-[#02b1aa]/20"
+            : "bg-gradient-to-r from-white/95 via-[#edfffe]/80 to-white/95 backdrop-blur-md shadow-lg shadow-[#02b1aa]/5 border-b border-[#02b1aa]/10"
         }
         before:absolute before:inset-0 before:bg-gradient-to-r before:from-[#02b1aa]/5 before:via-transparent before:to-[#029fdf]/5 before:pointer-events-none
       `}
@@ -103,7 +101,7 @@ export default function Navegacao() {
                   alt="Logo Clínica Resilience"
                   width={42}
                   height={42}
-                  className="rounded-lg transition-transform duration-300 group-hover:scale-105"
+                  className="rounded-lg"
                 />
               </div>
             </div>
@@ -128,48 +126,61 @@ export default function Navegacao() {
             {botoesNavegacao.map(({ rotulo, link, ativo }) => (
               <li
                 key={rotulo}
-                className={`${estiloBotao} ${
+                className={`rounded-xl transition-all duration-300 ${
                   ativo ? estiloBotaoAtivo : estiloBotaoInativo
                 }`}
               >
-                <Link href={link}>
+                <Link
+                  href={link}
+                  className="block w-full h-full px-5 py-2.5 flex items-center justify-center"
+                >
                   {rotulo}
                 </Link>
               </li>
             ))}
           </ul>
 
-          {/* Ações baseadas no estado de autenticação */}
+          {/* Ações de autenticação */}
           <div className="items-center flex gap-2 sm:gap-3">
             {!loading && (
               <>
                 {user ? (
-                  // Usuário logado - mostrar painel e logout
                   <>
                     <div className={`${estiloBotao} ${estiloBotaoAtivo} px-3`}>
-                      <Link href={getPainelLink()} className="flex items-center gap-2 text-xs sm:text-sm">
+                      <Link
+                        href={getPainelLink()}
+                        className="flex items-center gap-2 text-xs sm:text-sm w-full h-full justify-center"
+                      >
                         <User size={14} />
                         Meu Painel
                       </Link>
                     </div>
-                    <div className={`${estiloBotao} bg-red-500 text-white flex items-center gap-2 px-3 hover:bg-red-600`}>
-                      <button onClick={handleLogout} className="flex items-center gap-2 text-xs sm:text-sm">
-                        <LogOut size={14} />
-                        Sair
-                      </button>
-                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className={`${estiloBotao} bg-red-500 text-white flex items-center gap-2 px-3 hover:bg-red-600 w-full h-full justify-center rounded-xl`}
+                    >
+                      <LogOut size={14} />
+                      Sair
+                    </button>
                   </>
                 ) : (
-                  // Usuário não logado - mostrar login e agendamento
                   <>
-                    <div className={`${estiloBotao} ${estiloBotaoAtivo} px-3 ${eAPaginaDeLogin ? "invisible" : "visible"}`}>
-                      <Link href="/auth/login" className="text-xs sm:text-sm">
+                    <div className={`${estiloBotao} ${estiloBotaoAtivo} px-3`}>
+                      <Link
+                        href="/auth/login"
+                        className="text-xs sm:text-sm w-full h-full flex items-center justify-center"
+                      >
                         Login
                       </Link>
                     </div>
                     <div className="hidden sm:block w-px h-7 bg-gray-300"></div>
-                    <div className={`${estiloBotao} !w-auto px-4 border-2 border-[#02b1aa] text-[#02b1aa] hover:bg-[#02b1aa] hover:text-white hover:border-[#02b1aa] transition-all duration-300`}>
-                      <Link href="/portal-publico" className="text-xs sm:text-sm whitespace-nowrap">
+                    <div
+                      className={`${estiloBotao} !w-auto px-4 border-2 border-[#02b1aa] text-[#02b1aa] hover:bg-[#02b1aa] hover:text-white hover:border-[#02b1aa] transition-all duration-300`}
+                    >
+                      <Link
+                        href="/portal-publico"
+                        className="text-xs sm:text-sm whitespace-nowrap w-full h-full flex items-center justify-center"
+                      >
                         Agendamento
                       </Link>
                     </div>
@@ -180,19 +191,19 @@ export default function Navegacao() {
           </div>
         </div>
 
-        {/* Menu Hamburguer - Mobile (<768px) */}
+        {/* Menu Mobile */}
         <div className="md:hidden flex items-center">
           <button
             onClick={() => setMenuAberto(!menuAberto)}
             className="p-3 rounded-xl border-2 border-[#02b1aa]/30 hover:border-[#02b1aa] bg-gradient-to-r from-white to-[#edfffe] hover:from-[#edfffe] hover:to-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl"
           >
-            <div className="relative z-10">
-              {menuAberto ? <X size={20} className="text-[#02b1aa]" /> : <Menu size={20} className="text-[#02b1aa]" />}
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-[#02b1aa]/10 to-[#029fdf]/10 opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
+            {menuAberto ? (
+              <X size={20} className="text-[#02b1aa]" />
+            ) : (
+              <Menu size={20} className="text-[#02b1aa]" />
+            )}
           </button>
 
-          {/* Dropdown mobile */}
           {menuAberto && (
             <div className="absolute top-full right-0 mt-3 w-56 bg-white/95 backdrop-blur-xl shadow-2xl rounded-2xl border border-[#02b1aa]/20 py-3">
               {botoesNavegacao.map(({ rotulo, link, ativo }) => (
@@ -201,9 +212,7 @@ export default function Navegacao() {
                   href={link}
                   onClick={() => setMenuAberto(false)}
                   className={`block px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium transition-all duration-300 ${
-                    ativo
-                      ? "bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white shadow-lg"
-                      : "text-gray-700 hover:bg-gradient-to-r hover:from-[#edfffe] hover:to-blue-50 hover:text-[#02b1aa]"
+                    ativo ? estiloBotaoAtivo : estiloBotaoInativo
                   }`}
                 >
                   {rotulo}
@@ -219,14 +228,14 @@ export default function Navegacao() {
                       <Link
                         href={getPainelLink()}
                         onClick={() => setMenuAberto(false)}
-                        className="flex items-center gap-3 px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-[#edfffe] hover:to-blue-50 hover:text-[#02b1aa] transition-all duration-300"
+                        className="flex items-center gap-3 px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#02b1aa] transition-all duration-300"
                       >
                         <User size={16} />
                         Meu Painel
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3 px-5 py-3 mx-2 w-full text-left rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-lg"
+                        className="flex items-center gap-3 px-5 py-3 mx-2 w-full text-left rounded-xl bg-red-500 text-white hover:bg-red-600 transition-all duration-300 shadow-md"
                       >
                         <LogOut size={16} />
                         Sair
@@ -237,7 +246,7 @@ export default function Navegacao() {
                       <Link
                         href="/auth/login"
                         onClick={() => setMenuAberto(false)}
-                        className="block px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white hover:from-[#029fdf] hover:to-[#01c2e3] transition-all duration-300 shadow-lg"
+                        className="block px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white hover:from-[#029fdf] hover:to-[#01c2e3] transition-all duration-300 shadow-lg shadow-[#02b1aa]/25 hover:shadow-xl hover:shadow-[#02b1aa]/30"
                       >
                         Login
                       </Link>
