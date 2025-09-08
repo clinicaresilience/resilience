@@ -37,14 +37,13 @@ export function Sidebar({
 
   // Sincroniza a aba ativa com o pathname atual na inicialização e mudanças de rota
   useEffect(() => {
-    console.log("Sidebar: syncing tab for pathname:", pathname, "userType:", userType);
     syncTabFromPath(pathname, userType);
   }, [pathname, userType, syncTabFromPath]);
 
-  // Log para debug do activeTab
+  // Força sincronização imediata no mount para casos de relogin
   useEffect(() => {
-    console.log("Sidebar: activeTab changed to:", activeTab);
-  }, [activeTab]);
+    syncTabFromPath(pathname, userType);
+  }, []);
 
   const getUserTypeLabel = () => {
     switch (userType) {

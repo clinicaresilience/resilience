@@ -15,15 +15,9 @@ export default function AuthenticatedHeader() {
   // Sincroniza a aba ativa com o pathname atual na inicialização e mudanças de rota
   useEffect(() => {
     if (usuario?.tipo_usuario) {
-      console.log("AuthenticatedHeader: syncing tab for pathname:", pathname, "userType:", usuario.tipo_usuario);
       syncTabFromPath(pathname, usuario.tipo_usuario as "administrador" | "profissional" | "comum")
     }
   }, [pathname, usuario?.tipo_usuario, syncTabFromPath])
-
-  // Log para debug do activeTab
-  useEffect(() => {
-    console.log("AuthenticatedHeader: activeTab changed to:", activeTab);
-  }, [activeTab])
 
   if (!usuario) return null
 
