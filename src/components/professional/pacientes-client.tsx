@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { createClient } from "@/lib/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,44 +34,25 @@ export function PacientesOverview({ profissionalId }: PacientesOverviewProps) {
   const [busca, setBusca] = useState("");
   const [pacienteSelecionado, setPacienteSelecionado] =
     useState<PacienteInfo | null>(null);
-  const [agendamentos, setAgendamentos] = useState<any[]>([]);
-  const [prontuarios, setProntuarios] = useState<any[]>([]);
-  const [pacientes, setPacientes] = useState<any[]>([]);
+  const [agendamentos, setAgendamentos] = useState<Array<Record<string, unknown>>>([]);
+  const [prontuarios, setProntuarios] = useState<Array<Record<string, unknown>>>([]);
+  const [pacientes, setPacientes] = useState<Array<Record<string, unknown>>>([]);
 
   // Fetch data
   useEffect(() => {
-    const supabase = createClient();
     async function fetchData() {
       try {
-        const { data: agData } = await supabase
-          .from("agendamentos")
-          .select("*")
-          .eq("profissional_id", profissionalId);
-
-        const pacienteIds = Array.from(
-          new Set(agData?.map((a) => a.paciente_id).filter(Boolean))
-        );
-
-        let prData: any[] = [];
-        let pacData: any[] = [];
-
-        if (pacienteIds.length > 0) {
-          const { data: pr } = await supabase
-            .from("prontuarios")
-            .select("*")
-            .in("paciente_id", pacienteIds);
-          prData = pr || [];
-
-          const { data: pac } = await supabase
-            .from("usuarios")
-            .select("id,nome,email,status")
-            .in("id", pacienteIds);
-          pacData = pac || [];
+        const response = await fetch(`/api/profissionais/pacientes?profissional_id=${profissionalId}`);
+        
+        if (!response.ok) {
+          throw new Error('Erro ao buscar dados dos pacientes');
         }
 
-        setAgendamentos(agData || []);
-        setProntuarios(prData);
-        setPacientes(pacData);
+        const data = await response.json();
+        
+        setAgendamentos(data.agendamentos || []);
+        setProntuarios(data.prontuarios || []);
+        setPacientes(data.pacientes || []);
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
       }
@@ -85,37 +65,37 @@ export function PacientesOverview({ profissionalId }: PacientesOverviewProps) {
     const map = new Map<string, PacienteInfo>();
 
     agendamentos.forEach((consulta) => {
-      const pacienteId = consulta.paciente_id;
+      const pacienteId = consulta.paciente_id as string;
       const paciente = pacientes.find((p) => p.id === pacienteId);
 
       if (!map.has(pacienteId)) {
         map.set(pacienteId, {
           id: pacienteId,
-          nome: paciente?.nome || "Paciente",
-          email: paciente?.email || "",
+          nome: (paciente?.nome as string) || "Paciente",
+          email: (paciente?.email as string) || "",
           totalConsultas: 0,
-          ultimaConsulta: consulta.data_consulta,
-          statusAtual: paciente?.status || "ativo",
+          ultimaConsulta: consulta.data_consulta as string,
+          statusAtual: (paciente?.status as "ativo" | "inativo" | "alta") || "ativo",
         });
       }
 
       const info = map.get(pacienteId)!;
       info.totalConsultas += 1;
 
-      const dataConsulta = new Date(consulta.data_consulta);
+      const dataConsulta = new Date(consulta.data_consulta as string);
       const ultima = new Date(info.ultimaConsulta);
-      if (dataConsulta > ultima) info.ultimaConsulta = consulta.data_consulta;
+      if (dataConsulta > ultima) info.ultimaConsulta = consulta.data_consulta as string;
 
       const agora = new Date();
       if (
         dataConsulta > agora &&
-        ["confirmado", "pendente"].includes(consulta.status)
+        ["confirmado", "pendente"].includes(consulta.status as string)
       ) {
         if (
           !info.proximaConsulta ||
           dataConsulta < new Date(info.proximaConsulta)
         ) {
-          info.proximaConsulta = consulta.data_consulta;
+          info.proximaConsulta = consulta.data_consulta as string;
         }
       }
     });
@@ -138,9 +118,13 @@ export function PacientesOverview({ profissionalId }: PacientesOverviewProps) {
     );
   }, [busca, pacientesInfo]);
 
-  // Formatar datas
-  const formatarData = (data: string) =>
-    data ? new Date(data).toLocaleDateString("pt-BR") : "-";
+  // Formatar datas - Fix timezone issue by adding 3 hours for UTC-3
+  const formatarData = (data: string) => {
+    if (!data) return "-";
+    const date = new Date(data);
+    date.setHours(date.getHours() + 3); // Add 3 hours for UTC-3 timezone
+    return date.toLocaleDateString("pt-BR");
+  };
 
   const obterHistoricoPaciente = (pacienteId: string) => ({
     consultas: agendamentos.filter((a) => a.paciente_id === pacienteId),
@@ -283,7 +267,7 @@ function StatCard({
   label,
   value,
 }: {
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: number;
 }) {
@@ -313,7 +297,7 @@ function PacienteCard({
     <Card className="hover:shadow-md transition-shadow flex flex-col">
       <CardHeader className="pb-3 flex items-center justify-between">
         <CardTitle className="text-lg">{paciente.nome}</CardTitle>
-        <StatusBadge status={paciente.statusAtual as any} />
+        <StatusBadge status={paciente.statusAtual as "ativo" | "inativo" | "alta"} />
       </CardHeader>
       <CardContent className="flex flex-col justify-between h-full space-y-3">
         <div className="space-y-3">
@@ -357,7 +341,7 @@ function HistoricoConsultas({
   consultas,
   formatarData,
 }: {
-  consultas: any[];
+  consultas: Array<Record<string, unknown>>;
   formatarData: (data: string) => string;
 }) {
   return (
@@ -366,19 +350,19 @@ function HistoricoConsultas({
       <div className="space-y-2">
         {consultas.map((c) => (
           <div
-            key={c.id}
+            key={c.id as string}
             className="flex items-center justify-between p-3 bg-white border rounded-lg"
           >
             <div>
-              <p className="font-medium">{c.especialidade}</p>
+              <p className="font-medium">{c.especialidade as string}</p>
               <p className="text-sm text-gray-600">
-                {formatarData(c.data_consulta)}
+                {formatarData(c.data_consulta as string)}
               </p>
               {c.notas && (
-                <p className="text-sm text-gray-500 mt-1">{c.notas}</p>
+                <p className="text-sm text-gray-500 mt-1">{c.notas as string}</p>
               )}
             </div>
-            <StatusBadge status={c.status as any} />
+            <StatusBadge status={c.status as string} />
           </div>
         ))}
       </div>
@@ -390,7 +374,7 @@ function HistoricoProntuarios({
   prontuarios,
   formatarData,
 }: {
-  prontuarios: any[];
+  prontuarios: Array<Record<string, unknown>>;
   formatarData: (data: string) => string;
 }) {
   return (
@@ -398,22 +382,22 @@ function HistoricoProntuarios({
       <h3 className="text-lg font-semibold mb-3">Prontuários</h3>
       <div className="space-y-2">
         {prontuarios.map((p) => (
-          <div key={p.id} className="p-3 bg-white border rounded-lg">
+          <div key={p.id as string} className="p-3 bg-white border rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <p className="font-medium">{p.tipoConsulta}</p>
+              <p className="font-medium">{p.tipoConsulta as string}</p>
               <span className="text-sm text-gray-500">
-                {formatarData(p.dataConsulta)}
+                {formatarData(p.dataConsulta as string)}
               </span>
             </div>
             {p.diagnostico && (
               <p className="text-sm text-blue-600 mb-2">
-                <strong>Diagnóstico:</strong> {p.diagnostico}
+                <strong>Diagnóstico:</strong> {p.diagnostico as string}
               </p>
             )}
-            <p className="text-sm text-gray-600">{p.observacoes}</p>
-            {p.prescricoes?.length > 0 && (
+            <p className="text-sm text-gray-600">{p.observacoes as string}</p>
+            {(p.prescricoes as string[])?.length > 0 && (
               <ul className="text-sm text-gray-600 list-disc list-inside mt-2">
-                {p.prescricoes.map((pr, i) => (
+                {(p.prescricoes as string[]).map((pr: string, i: number) => (
                   <li key={i}>{pr}</li>
                 ))}
               </ul>

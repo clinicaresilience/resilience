@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { createClient } from "@/lib/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,7 +88,7 @@ export function ProfessionalConsultasClient({
       resultado = resultado.filter(
         (c) =>
           c.usuario_id.toLowerCase().includes(busca.toLowerCase()) ||
-          (c.obsevacoes?.toLowerCase().includes(busca.toLowerCase()) ?? false)
+          (c.observacoes?.toLowerCase().includes(busca.toLowerCase()) ?? false)
       );
 
     return resultado.sort(
@@ -113,25 +112,29 @@ export function ProfessionalConsultasClient({
     consulta: Consulta,
     acao: "concluir" | "cancelar"
   ) => {
-    const supabase = createClient();
     let statusNovo = consulta.status;
 
     if (acao === "concluir") statusNovo = "concluido";
     if (acao === "cancelar") statusNovo = "cancelado";
 
-    const { error } = await supabase
-      .from("consultas")
-      .update({ status: statusNovo })
-      .eq("id", consulta.id);
+    try {
+      const res = await fetch(`/api/consultas/${consulta.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: statusNovo }),
+      });
 
-    if (error) {
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro ao atualizar status");
+
+      setConsultas((prev) =>
+        prev.map((c) => (c.id === consulta.id ? { ...c, status: statusNovo } : c))
+      );
+
+      console.log("Status atualizado com sucesso!");
+    } catch (error) {
       console.error("Erro ao atualizar status:", error);
-      return;
     }
-
-    setConsultas((prev) =>
-      prev.map((c) => (c.id === consulta.id ? { ...c, status: statusNovo } : c))
-    );
   };
 
   const estatisticas = useMemo(() => {

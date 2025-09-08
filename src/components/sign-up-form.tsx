@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,38 +50,24 @@ export function SignUpForm({
     }
 
     try {
-      const supabase = createClient();
-      
-      // Criar conta no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.senha,
-        options: {
-          emailRedirectTo: `${window.location.origin}/protected`,
-          data: {
-            nome: formData.nome,
-            telefone: formData.telefone,
-          }
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          nome: formData.nome,
+          email: formData.email,
+          telefone: formData.telefone,
+          senha: formData.senha,
+          confirmarSenha: formData.confirmarSenha,
+        }),
       });
 
-      if (authError) throw authError;
+      const data = await response.json();
 
-      // Criar registro na tabela usuarios
-      if (authData.user) {
-        const { error: dbError } = await supabase
-          .from("usuarios")
-          .insert({
-            id: authData.user.id,
-            email: formData.email,
-            nome: formData.nome,
-            telefone: formData.telefone,
-            tipo_usuario: "usuario", // Padrão para novos cadastros
-          });
-
-        if (dbError) {
-          console.error("Erro ao criar perfil do usuário:", dbError);
-        }
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao criar conta');
       }
 
       setSuccess(true);

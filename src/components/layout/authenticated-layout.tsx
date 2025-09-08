@@ -83,11 +83,13 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
             />
             <main
               className={`transition-all duration-500 ease-in-out overflow-y-auto min-h-screen 
-    ${pathname.startsWith("/painel-administrativo") ? "pt-0" : "pt-16"} 
+    ${pathname.startsWith("/painel-administrativo") ? "" : "pt-8"} 
     ${sidebarCollapsed ? "md:ml-16" : "md:ml-64"}
   `}
             >
-              <div className="p-0 w-full max-w-none">{children}</div>
+              <div className={`${pathname.startsWith("/painel-administrativo") ? "p-0 w-full max-w-none" : "px-4 sm:px-6 lg:px-8 pb-6 w-full mx-auto"}`}>
+                {children}
+              </div>
             </main>
           </>
         )}

@@ -66,7 +66,7 @@ export default async function AgendaPage() {
     })) || [];
 
   return (
-    <>
+    <div>
       <div className="mb-4 flex items-center justify-between">
         <BackButton
           href="/tela-profissional"
@@ -116,6 +116,6 @@ export default async function AgendaPage() {
           <AgendamentosList initialAgendamentos={formattedAgendamentos} />
         </TabsContent>
       </Tabs>
-    </>
+    </div>
   );
 }

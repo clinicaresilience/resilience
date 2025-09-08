@@ -32,26 +32,23 @@ export default async function PacientesProfissionalPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 pt-16">
-      <div className="w-full px-4 sm:px-6 lg:px-12 xl:px-16 py-8">
-        <div className="mb-4">
-          <BackButton href="/tela-profissional" texto="Voltar para Área do Profissional" />
-        </div>
-        
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-azul-escuro">
-            Meus Pacientes
-          </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Histórico e informações dos pacientes que você atende
-          </p>
-        </div>
-
-        <PacientesOverview 
-          profissionalNome={`Dr(a). ${usuario.nome}`}
-          profissionalId={user.id}
-        />
+    <div>
+      <div className="mb-4">
+        <BackButton href="/tela-profissional" texto="Voltar para Área do Profissional" />
       </div>
+      
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-azul-escuro">
+          Meus Pacientes
+        </h1>
+        <p className="mt-2 text-lg text-gray-600">
+          Histórico e informações dos pacientes que você atende
+        </p>
+      </div>
+
+      <PacientesOverview 
+        profissionalId={user.id}
+      />
     </div>
   );
 }

@@ -32,7 +32,7 @@ export default async function NovoProntuarioPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 pt-16">
+    <div className="min-h-screen w-full bg-gray-50 py-8">
       <div className="w-full px-4 sm:px-6 lg:px-12 xl:px-16 py-8">
         <div className="mb-4">
           <BackButton href="/tela-profissional/prontuarios" texto="Voltar para Prontuários" />

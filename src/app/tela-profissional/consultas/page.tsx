@@ -32,26 +32,24 @@ export default async function ConsultasProfissionalPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 pt-16">
-      <div className="w-full px-4 sm:px-6 lg:px-12 xl:px-16 py-8">
-        <div className="mb-4">
-          <BackButton href="/tela-profissional" texto="Voltar para Área do Profissional" />
-        </div>
-        
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-azul-escuro">
-            Minhas Consultas
-          </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Gerencie suas consultas agendadas - confirme, cancele ou adicione observações
-          </p>
-        </div>
-
-        <ProfessionalConsultasClient 
-          profissionalNome={`Dr(a). ${usuario.nome}`}
-          profissionalId={user.id}
-        />
+    <div>
+      <div className="mb-4">
+        <BackButton href="/tela-profissional" texto="Voltar para Área do Profissional" />
       </div>
+      
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-azul-escuro">
+          Minhas Consultas
+        </h1>
+        <p className="mt-2 text-lg text-gray-600">
+          Gerencie suas consultas agendadas - confirme, cancele ou adicione observações
+        </p>
+      </div>
+
+      <ProfessionalConsultasClient 
+        profissionalNome={`Dr(a). ${usuario.nome}`}
+        profissionalId={user.id}
+      />
     </div>
   );
 }

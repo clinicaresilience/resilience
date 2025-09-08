@@ -131,7 +131,7 @@ export default async function TelaProfissional() {
   };
 
   return (
-    <>
+    <div>
       <PrimeiroAcessoModal
         primeiroAcesso={usuario.primeiro_acesso}
         userId={user.id}
@@ -232,6 +232,6 @@ export default async function TelaProfissional() {
           </div>
         </CardContent>
       </Card>
-    </>
+    </div>
   );
 }

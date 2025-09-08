@@ -225,7 +225,7 @@ export default function AgendamentosList({
               <CardDescription>
                 Tente mudar os filtros ou{" "}
                 <Link
-                  href="/portal-publico/profissionais"
+                  href="/portal-publico"
                   className="underline text-primary"
                 >
                   agende uma consulta

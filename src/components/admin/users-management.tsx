@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { createClient } from "@/lib/client";
 import { criarProfissional } from "../../app/actions/criar-profissional"; // sua server action
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,8 +34,6 @@ function genPassword(): string {
 }
 
 export function UsersManagement() {
-  const supabase = createClient();
-
   const [profissionais, setProfissionais] = useState<Usuario[]>([]);
   const [pacientes, setPacientes] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,30 +61,26 @@ export function UsersManagement() {
   async function fetchUsers() {
     setLoading(true);
 
-    // Buscar profissionais
-    const { data: profData, error: profError } = await supabase
-      .from("usuarios")
-      .select("*")
-      .eq("tipo_usuario", "profissional")
-      .order("criado_em", { ascending: false });
+    try {
+      // Buscar profissionais
+      const profResponse = await fetch('/api/admin/usuarios?tipo_usuario=profissional');
+      if (profResponse.ok) {
+        const profData = await profResponse.json();
+        setProfissionais(profData.usuarios as Usuario[]);
+      } else {
+        console.error("Erro ao buscar profissionais:", profResponse.statusText);
+      }
 
-    // Buscar pacientes
-    const { data: pacData, error: pacError } = await supabase
-      .from("usuarios")
-      .select("*")
-      .eq("tipo_usuario", "comum")
-      .order("criado_em", { ascending: false });
-
-    if (profError) {
-      console.error("Erro ao buscar profissionais:", profError);
-    } else {
-      setProfissionais(profData as Usuario[]);
-    }
-
-    if (pacError) {
-      console.error("Erro ao buscar pacientes:", pacError);
-    } else {
-      setPacientes(pacData as Usuario[]);
+      // Buscar pacientes
+      const pacResponse = await fetch('/api/admin/usuarios?tipo_usuario=comum');
+      if (pacResponse.ok) {
+        const pacData = await pacResponse.json();
+        setPacientes(pacData.usuarios as Usuario[]);
+      } else {
+        console.error("Erro ao buscar pacientes:", pacResponse.statusText);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar usuários:", error);
     }
 
     setLoading(false);
@@ -171,28 +164,52 @@ export function UsersManagement() {
   }
 
   async function onToggleActive(u: Usuario) {
-    const { error } = await supabase
-      .from("usuarios")
-      .update({ ativo: !u.ativo })
-      .eq("id", u.id);
+    try {
+      const response = await fetch('/api/admin/usuarios', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: u.id,
+          ativo: !u.ativo
+        }),
+      });
 
-    if (!error) fetchUsers();
+      if (response.ok) {
+        fetchUsers();
+      } else {
+        console.error("Erro ao atualizar status do usuário:", response.statusText);
+        setError("Erro ao atualizar status do usuário");
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar status do usuário:", error);
+      setError("Erro ao atualizar status do usuário");
+    }
   }
 
   async function onResetPassword(u: Usuario) {
-    const nova = genPassword();
     try {
-      const { error: authError } = await supabase.auth.admin.updateUserById(
-        u.id,
-        {
-          password: nova,
-        }
-      );
-      if (authError) throw authError;
-      setSuccess(`Senha redefinida: ${nova}`);
-      setTimeout(() => setSuccess(null), 5000);
-    } catch (err: unknown) {
-      console.error("Erro ao resetar senha:", err);
+      const response = await fetch('/api/admin/usuarios/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: u.id
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSuccess(`Senha redefinida: ${data.newPassword}`);
+        setTimeout(() => setSuccess(null), 5000);
+      } else {
+        console.error("Erro ao resetar senha:", response.statusText);
+        setError("Erro ao resetar senha");
+      }
+    } catch (error) {
+      console.error("Erro ao resetar senha:", error);
       setError("Erro ao resetar senha");
     }
   }
