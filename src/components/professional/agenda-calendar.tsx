@@ -62,6 +62,7 @@ export function AgendaCalendar() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [currentDate, setCurrentDate] = useState(new Date())
 
   // Buscar agendamentos do profissional
   const fetchAgendamentos = async () => {
@@ -214,6 +215,9 @@ export function AgendaCalendar() {
               eventPropGetter={eventStyleGetter}
               views={['month', 'week', 'day', 'agenda']}
               defaultView="month"
+              date={currentDate}
+              onNavigate={(date) => setCurrentDate(date)}
+              toolbar={true}
               popup
               popupOffset={{ x: 30, y: 20 }}
               culture="pt-BR"

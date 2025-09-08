@@ -5,6 +5,7 @@ import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "moment/locale/pt-br";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import "@/styles/calendar.css";
 import "@/styles/calendar-mobile.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,7 @@ export function CalendarBooking({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   // Detectar se é mobile
   useEffect(() => {
@@ -282,7 +284,17 @@ export function CalendarBooking({
                 eventPropGetter={eventStyleGetter}
                 views={["month"]}
                 defaultView="month"
+                date={currentDate}
+                onNavigate={(date) => setCurrentDate(date)}
+                toolbar={true}
+                showMultiDayTimes={false}
+                step={60}
+                timeslots={1}
                 className="rbc-calendar-desktop"
+                style={{
+                  height: '100%',
+                  width: '100%'
+                }}
               />
             </div>
           )}

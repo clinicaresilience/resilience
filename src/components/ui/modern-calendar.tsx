@@ -49,6 +49,7 @@ export function ModernCalendar({
 }: ModernCalendarProps) {
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [currentDate, setCurrentDate] = useState(new Date())
 
   // Usar agendamentos externos ou gerar mock
   const allAgendamentos = useMemo(() => 
@@ -207,6 +208,9 @@ export function ModernCalendar({
               eventPropGetter={eventStyleGetter}
               views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
               defaultView={Views.MONTH}
+              date={currentDate}
+              onNavigate={(date) => setCurrentDate(date)}
+              toolbar={true}
               popup
               popupOffset={{ x: 30, y: 20 }}
               culture="pt-BR"
