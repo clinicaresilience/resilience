@@ -199,7 +199,7 @@ export function CalendarBooking({
   // Renderizar calendário mobile ou desktop baseado no tamanho da tela
   if (isMobile) {
     return (
-      <div className="w-full">
+      <div className="w-full font-['Red_Hat_Display']">
         <MobileCalendar
           profissionalNome={profissionalNome}
           agendaSlots={agendaSlots}

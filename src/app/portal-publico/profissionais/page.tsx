@@ -25,7 +25,7 @@ export default function ProfissionaisAgendamentos({
   data: Profissional[];
 }) {
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-12 w-full max-w-7xl">
+    <div className="grid font-['Red_Hat_Display'] sm:grid-cols-2 lg:grid-cols-3 gap-12 w-full max-w-7xl">
       {data.map((prof) => (
         <div key={prof.id} className="group relative">
           <div className="absolute -inset-1 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-3xl blur opacity-20 group-hover:opacity-25 transition duration-1000"></div>

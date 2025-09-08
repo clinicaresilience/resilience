@@ -122,8 +122,8 @@ export function PerfilProfissionalClient({
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gradient-to-br  from-slate-50 via-[#edfffe]/30 to-[#f5b26b]/5 p-6 ">
-      <Card className="w-full mt-24 max-w-5xl bg-white/95 backdrop-blur-xl shadow-xl shadow-[#02b1aa]/10 border border-white/50 rounded-3xl p-8 md:p-10">
+    <div className="flex font-['Red_Hat_Display'] flex-col items-center min-h-screen bg-gradient-to-br  from-slate-50 via-[#edfffe]/30 to-[#f5b26b]/5 p-6 ">
+      <Card className="font-['Red_Hat_Display'] w-full mt-24 max-w-5xl bg-white/95 backdrop-blur-xl shadow-xl shadow-[#02b1aa]/10 border border-white/50 rounded-3xl p-8 md:p-10">
         {/* Cabeçalho do Profissional */}
         <div className="flex flex-col items-center text-center mb-10">
           {/* Foto */}
