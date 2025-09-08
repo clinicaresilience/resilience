@@ -1,0 +1,138 @@
+/* Estilos específicos para calendário mobile */
+@media (max-width: 768px) {
+  .rbc-calendar-mobile {
+    font-size: 12px;
+  }
+
+  .rbc-calendar-mobile .rbc-header {
+    padding: 4px 2px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .rbc-calendar-mobile .rbc-date-cell {
+    padding: 2px;
+    min-height: 40px;
+  }
+
+  .rbc-calendar-mobile .rbc-date-cell > a {
+    font-size: 12px;
+    padding: 2px 4px;
+  }
+
+  .rbc-calendar-mobile .rbc-event {
+    font-size: 9px;
+    padding: 1px 2px;
+    margin: 1px 0;
+    border-radius: 3px;
+  }
+
+  .rbc-calendar-mobile .rbc-toolbar {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .rbc-calendar-mobile .rbc-toolbar-label {
+    font-size: 16px;
+    font-weight: 600;
+    order: -1;
+  }
+
+  .rbc-calendar-mobile .rbc-btn-group {
+    display: flex;
+    justify-content: center;
+  }
+
+  .rbc-calendar-mobile .rbc-btn-group button {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    margin: 0 2px;
+  }
+
+  .rbc-calendar-mobile .rbc-month-view {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .rbc-calendar-mobile .rbc-month-row {
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .rbc-calendar-mobile .rbc-day-bg {
+    border-right: 1px solid #f3f4f6;
+  }
+
+  .rbc-calendar-mobile .rbc-day-bg:last-child {
+    border-right: none;
+  }
+
+  .rbc-calendar-mobile .rbc-off-range-bg {
+    background-color: #f9fafb;
+  }
+
+  .rbc-calendar-mobile .rbc-today {
+    background-color: #eff6ff;
+  }
+
+  /* Melhorar legibilidade dos eventos */
+  .rbc-calendar-mobile .rbc-event-content {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Ajustar altura das células para mobile */
+  .rbc-calendar-mobile .rbc-month-row + .rbc-month-row {
+    border-top: 1px solid #f3f4f6;
+  }
+}
+
+/* Estilos para tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .rbc-calendar-mobile .rbc-header {
+    padding: 6px 4px;
+    font-size: 13px;
+  }
+
+  .rbc-calendar-mobile .rbc-date-cell {
+    min-height: 50px;
+  }
+
+  .rbc-calendar-mobile .rbc-event {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+}
+
+/* Garantir que o calendário não quebre em telas muito pequenas */
+@media (max-width: 480px) {
+  .rbc-calendar-mobile .rbc-header {
+    font-size: 10px;
+    padding: 2px 1px;
+  }
+
+  .rbc-calendar-mobile .rbc-date-cell {
+    min-height: 35px;
+  }
+
+  .rbc-calendar-mobile .rbc-date-cell > a {
+    font-size: 10px;
+  }
+
+  .rbc-calendar-mobile .rbc-event {
+    font-size: 8px;
+    padding: 1px;
+  }
+
+  .rbc-calendar-mobile .rbc-toolbar-label {
+    font-size: 14px;
+  }
+
+  .rbc-calendar-mobile .rbc-btn-group button {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
