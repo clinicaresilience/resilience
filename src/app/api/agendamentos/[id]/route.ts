@@ -25,7 +25,7 @@ export async function PATCH(
     }
 
     const body = await req.json().catch(() => ({}))
-    const { status, justificativa, notas } = body || {}
+    const { status, justificativa, notas, data_consulta } = body || {}
 
     // Verificar se o usuário tem permissão para atualizar este agendamento
     const agendamento = await AgendamentosService.getAgendamentoById(id)
@@ -42,7 +42,6 @@ export async function PATCH(
       .single()
 
     const isOwner = agendamento.paciente_id === user.id
-
     const isProfessional = agendamento.profissional_id === user.id
     const isAdmin = userData?.tipo_usuario === "administrador"
 
@@ -50,7 +49,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Sem permissão para atualizar este agendamento" }, { status: 403 })
     }
 
-    // Atualizar baseado no status fornecido
+    // Atualizar baseado no que foi fornecido
     let updatedAgendamento
 
     if (status === "cancelado" && justificativa) {
@@ -59,21 +58,40 @@ export async function PATCH(
       updatedAgendamento = await AgendamentosService.confirmAgendamento(id)
     } else if (status === "concluido") {
       updatedAgendamento = await AgendamentosService.completeAgendamento(id, notas)
+    } else if (data_consulta) {
+      // Reagendamento - atualizar data/hora
+      const { error: updateError } = await supabase
+        .from("agendamentos")
+        .update({ 
+          data_consulta: data_consulta,
+          notas: notas || agendamento.notas
+        })
+        .eq("id", id)
+
+      if (updateError) {
+        throw updateError
+      }
+
+      updatedAgendamento = await AgendamentosService.getAgendamentoById(id)
     } else if (status) {
       updatedAgendamento = await AgendamentosService.updateAgendamentoStatus(id, { status, notas })
     } else {
-      return NextResponse.json({ error: "Status ou ação não especificada" }, { status: 400 })
+      return NextResponse.json({ error: "Nenhuma atualização especificada" }, { status: 400 })
+    }
+
+    if (!updatedAgendamento) {
+      return NextResponse.json({ error: "Erro ao atualizar agendamento" }, { status: 500 })
     }
 
     // Formatar resposta
     const formattedAgendamento = {
       id: updatedAgendamento.id,
-      usuarioId: updatedAgendamento.usuario_id,
+      usuarioId: updatedAgendamento.paciente_id,
       profissionalId: updatedAgendamento.profissional_id,
       profissionalNome: updatedAgendamento.profissional?.nome || "Profissional",
       especialidade: updatedAgendamento.profissional?.especialidade || "",
-      dataISO: updatedAgendamento.data_hora,
-      local: updatedAgendamento.local,
+      dataISO: updatedAgendamento.data_consulta,
+      local: "Clínica Resilience",
       status: updatedAgendamento.status,
       notas: updatedAgendamento.notas,
     }
@@ -82,10 +100,11 @@ export async function PATCH(
       success: true,
       data: formattedAgendamento,
     }, { status: 200 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erro ao atualizar agendamento:", error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { error: "Erro ao atualizar agendamento", detail: error?.message || String(error) },
+      { error: "Erro ao atualizar agendamento", detail: errorMessage },
       { status: 500 }
     )
   }
@@ -142,10 +161,11 @@ export async function DELETE(
       success: true,
       message: "Agendamento deletado com sucesso",
     }, { status: 200 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erro ao deletar agendamento:", error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { error: "Erro ao deletar agendamento", detail: error?.message || String(error) },
+      { error: "Erro ao deletar agendamento", detail: errorMessage },
       { status: 500 }
     )
   }

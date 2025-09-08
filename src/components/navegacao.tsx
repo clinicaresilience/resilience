@@ -136,7 +136,7 @@ export default function Navegacao() {
                 Login
               </Link>
               <Link
-                href="/portal-publico/profissionais"
+                href="/portal-publico"
                 onClick={() => setMenuAberto(false)}
                 className="px-4 py-2 text-gray-700 hover:text-azul-escuro transition-colors"
               >

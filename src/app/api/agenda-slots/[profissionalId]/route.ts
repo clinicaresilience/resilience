@@ -1,117 +1,91 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/server';
 
 export async function GET(
-  req: Request,
-  context: { params: { profissionalId: string } }
+  request: NextRequest,
+  { params }: { params: { profissionalId: string } }
 ) {
-  const supabase = await createClient();
-  const { profissionalId } = context.params;
-  const { searchParams } = new URL(req.url);
-  const dataEspecifica = searchParams.get('data'); // formato: YYYY-MM-DD
-
   try {
-    console.log('=== BUSCANDO SLOTS ===');
-    console.log('Profissional ID:', profissionalId);
-    console.log('Data específica:', dataEspecifica);
+    const supabase = await createClient();
 
-    // Buscar configurações da agenda do profissional
-    const { data: configuracoes, error: configError } = await supabase
-      .from("agenda_profissional")
-      .select("dia_semana, hora_inicio, hora_fim, intervalo_minutos")
-      .eq("profissional_id", profissionalId);
-
-    if (configError || !configuracoes || configuracoes.length === 0) {
-      console.log('Nenhuma configuração encontrada:', configError);
-      return NextResponse.json({ slots: [] });
+    // Verificar autenticação
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('Configurações encontradas:', configuracoes);
+    const { profissionalId } = params;
 
-    // Buscar exceções (dias bloqueados)
-    const { data: excecoes, error: excecoesError } = await supabase
-      .from("agenda_excecoes")
-      .select("data")
-      .eq("profissional_id", profissionalId);
+    // Verificar se o usuário é o próprio profissional ou admin
+    if (profissionalId !== user.id) {
+      const { data: userData, error: userError } = await supabase
+        .from('usuarios')
+        .select('tipo_usuario')
+        .eq('id', user.id)
+        .single();
 
-    const datasExcecoes = new Set(excecoes?.map(e => e.data) || []);
-    console.log('Exceções (dias bloqueados):', Array.from(datasExcecoes));
-
-    // Buscar agendamentos existentes para verificar slots ocupados
-    const { data: agendamentos, error: agendamentosError } = await supabase
-      .from("agendamentos")
-      .select("data_consulta")
-      .eq("profissional_id", profissionalId)
-      .neq("status", "cancelado");
-
-    const slotsOcupados = new Set(
-      agendamentos?.map(ag => {
-        const date = new Date(ag.data_consulta);
-        const data = date.toISOString().split('T')[0];
-        const hora = date.toISOString().split('T')[1].substring(0, 5);
-        return `${data}_${hora}`;
-      }) || []
-    );
-
-    console.log('Slots ocupados:', Array.from(slotsOcupados));
-
-    // Gerar slots dinamicamente
-    const slots = [];
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0); // Zerar horas para comparação correta
-    
-    const inicioRange = dataEspecifica ? new Date(dataEspecifica) : hoje;
-    const fimRange = dataEspecifica ? new Date(dataEspecifica) : new Date(hoje.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 dias
-
-    for (let d = new Date(inicioRange); d <= fimRange; d.setDate(d.getDate() + 1)) {
-      const dataStr = d.toISOString().split('T')[0];
-      const diaSemana = d.getDay(); // 0=domingo, 1=segunda, etc.
-
-      // Pular se for data passada
-      if (d < hoje) continue;
-
-      // Pular se estiver nas exceções
-      if (datasExcecoes.has(dataStr)) continue;
-
-      // Buscar configuração para este dia da semana
-      const config = configuracoes.find(c => c.dia_semana === diaSemana);
-      if (!config) continue;
-
-      // Gerar horários para este dia
-      const horaInicio = config.hora_inicio.split(':');
-      const horaFim = config.hora_fim.split(':');
-      const intervalo = config.intervalo_minutos;
-
-      const inicioMinutos = parseInt(horaInicio[0]) * 60 + parseInt(horaInicio[1]);
-      const fimMinutos = parseInt(horaFim[0]) * 60 + parseInt(horaFim[1]);
-
-      for (let minutos = inicioMinutos; minutos < fimMinutos; minutos += intervalo) {
-        const horas = Math.floor(minutos / 60);
-        const mins = minutos % 60;
-        const horaStr = `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-        
-        const slotKey = `${dataStr}_${horaStr}`;
-        const disponivel = !slotsOcupados.has(slotKey);
-
-        slots.push({
-          id: `${profissionalId}_${dataStr}_${horaStr}`,
-          data: dataStr,
-          hora: horaStr,
-          disponivel
-        });
+      if (userError || userData?.tipo_usuario !== 'administrador') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
 
-    console.log(`Slots gerados: ${slots.length}`);
-    console.log('Primeiros 5 slots:', slots.slice(0, 5));
+    // Gerar slots para os próximos 30 dias
+    const hoje = new Date();
+    const slots: { data: string; horario: string; disponivel: boolean }[] = [];
+    
+    for (let i = 1; i <= 30; i++) {
+      const data = new Date(hoje);
+      data.setDate(data.getDate() + i);
+      
+      // Pular fins de semana (0 = domingo, 6 = sábado)
+      if (data.getDay() === 0 || data.getDay() === 6) {
+        continue;
+      }
+      
+      const dataStr = data.toISOString().split('T')[0];
+      
+      // Buscar agendamentos existentes para esta data
+      const { data: agendamentosExistentes } = await supabase
+        .from('agendamentos')
+        .select('data_hora')
+        .eq('profissional_id', profissionalId)
+        .gte('data_hora', `${dataStr}T00:00:00Z`)
+        .lt('data_hora', `${dataStr}T23:59:59Z`)
+        .neq('status', 'cancelado');
 
-    // Filtrar apenas disponíveis se não for data específica
-    const slotsDisponiveis = dataEspecifica ? slots : slots.filter(s => s.disponivel);
+      const horariosOcupados = new Set(
+        agendamentosExistentes?.map(a => {
+          const hora = new Date(a.data_hora).toLocaleTimeString('pt-BR', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            timeZone: 'America/Sao_Paulo'
+          });
+          return hora;
+        }) || []
+      );
 
-    return NextResponse.json({ slots: slotsDisponiveis });
+      // Horários padrão de funcionamento (8h às 18h, de hora em hora)
+      const horariosTrabalho = [
+        '08:00', '09:00', '10:00', '11:00', 
+        '14:00', '15:00', '16:00', '17:00'
+      ];
+
+      horariosTrabalho.forEach(horario => {
+        slots.push({
+          data: dataStr,
+          horario: horario,
+          disponivel: !horariosOcupados.has(horario)
+        });
+      });
+    }
+
+    return NextResponse.json(slots);
+
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     console.error('Erro ao buscar slots:', error);
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

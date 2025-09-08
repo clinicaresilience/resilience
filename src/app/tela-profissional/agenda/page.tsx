@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import { BackButton } from "@/components/ui/back-button";
 import { AgendaCalendar } from "@/components/professional/agenda-calendar";
-import AgendamentosList from "@/components/agendamentos-list";
+import AgendamentosProfissional from "@/components/professional/agendamentos-profissional";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, List, Clock } from "lucide-react";
 import {
@@ -113,7 +113,10 @@ export default async function AgendaPage() {
         </TabsContent>
 
         <TabsContent value="lista" className="mt-6">
-          <AgendamentosList initialAgendamentos={formattedAgendamentos} />
+          <AgendamentosProfissional 
+            profissionalId={user.id}
+            initialAgendamentos={formattedAgendamentos} 
+          />
         </TabsContent>
       </Tabs>
     </div>
