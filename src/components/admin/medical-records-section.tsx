@@ -1,15 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  generateMockProntuarios,
-  generateHistoricoPacientes,
-  buscarProntuarios,
-  filtrarProntuariosPorStatus,
-} from "@/lib/mocks/medical-records";
 import { Search, FileText, User, Calendar, Filter, Eye } from "lucide-react";
 import { StatusBadge, type GenericStatus } from "@/components/ui/status-badge";
 import {
@@ -22,25 +16,142 @@ import {
 
 type ViewMode = "prontuarios" | "historico";
 
+type ConsultaComProntuario = {
+  id: string;
+  data_consulta: string;
+  modalidade: string;
+  status: string;
+  notas: string | null;
+  paciente: {
+    id: string;
+    nome: string;
+    email: string;
+  };
+  profissional: {
+    id: string;
+    nome: string;
+    especialidade: string;
+  };
+  prontuario: {
+    id: string;
+    arquivo: string;
+  } | null;
+};
+
 export function MedicalRecordsSection() {
   const [viewMode, setViewMode] = useState<ViewMode>("prontuarios");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [consultas, setConsultas] = useState<ConsultaComProntuario[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Dados mock
-  const allProntuarios = useMemo(() => generateMockProntuarios(), []);
-  const historicoPacientes = useMemo(
-    () => generateHistoricoPacientes(allProntuarios),
-    [allProntuarios]
-  );
+  // Buscar consultas com prontuários do banco
+  useEffect(() => {
+    const fetchConsultas = async () => {
+      try {
+        const response = await fetch('/api/agendamentos/prontuarios');
+        if (response.ok) {
+          const data = await response.json();
+          setConsultas(data.consultas || []);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar consultas:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchConsultas();
+  }, []);
+
+  // Processar dados para formato de prontuários
+  const allProntuarios = useMemo(() => {
+    return consultas
+      .filter(consulta => consulta.prontuario) // Apenas consultas com prontuário
+      .map(consulta => ({
+        id: consulta.prontuario!.id,
+        pacienteId: consulta.paciente.id,
+        pacienteNome: consulta.paciente.nome,
+        profissionalId: consulta.profissional.id,
+        profissionalNome: consulta.profissional.nome,
+        dataConsulta: consulta.data_consulta,
+        tipoConsulta: `${consulta.modalidade} - ${consulta.profissional.especialidade}`,
+        observacoes: consulta.notas || 'Sem observações',
+        status: consulta.status as "ativo" | "arquivado" | "em_andamento",
+        criadoEm: consulta.data_consulta,
+        atualizadoEm: consulta.data_consulta,
+        diagnostico: '', // Campo opcional do mock
+        proximaConsulta: undefined, // Campo opcional do mock
+        prescricoes: [] as string[] // Campo opcional do mock
+      }));
+  }, [consultas]);
+
+  // Histórico por paciente
+  const historicoPacientes = useMemo(() => {
+    const historicoPorPaciente = new Map<string, {
+      pacienteId: string;
+      pacienteNome: string;
+      totalConsultas: number;
+      ultimaConsulta: string;
+      profissionaisAtendentes: string[];
+      statusAtual: "ativo" | "inativo" | "alta";
+    }>();
+    
+    consultas.forEach(consulta => {
+      const pacienteId = consulta.paciente.id;
+      
+      if (!historicoPorPaciente.has(pacienteId)) {
+        historicoPorPaciente.set(pacienteId, {
+          pacienteId,
+          pacienteNome: consulta.paciente.nome,
+          totalConsultas: 0,
+          ultimaConsulta: consulta.data_consulta,
+          profissionaisAtendentes: [],
+          statusAtual: "ativo" as const,
+        });
+      }
+
+      const historico = historicoPorPaciente.get(pacienteId);
+      if (historico) {
+        historico.totalConsultas += 1;
+        
+        if (new Date(consulta.data_consulta) > new Date(historico.ultimaConsulta)) {
+          historico.ultimaConsulta = consulta.data_consulta;
+        }
+
+        if (!historico.profissionaisAtendentes.includes(consulta.profissional.nome)) {
+          historico.profissionaisAtendentes.push(consulta.profissional.nome);
+        }
+      }
+    });
+
+    return Array.from(historicoPorPaciente.values()).sort((a, b) => 
+      new Date(b.ultimaConsulta).getTime() - new Date(a.ultimaConsulta).getTime()
+    );
+  }, [consultas]);
 
   // Filtros aplicados
   const filteredProntuarios = useMemo(() => {
-    let filtered = buscarProntuarios(allProntuarios, searchTerm);
-    filtered = filtrarProntuariosPorStatus(filtered, statusFilter);
+    let filtered = allProntuarios;
+    
+    // Filtro por busca
+    if (searchTerm.trim()) {
+      const termoLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(pront => 
+        pront.pacienteNome.toLowerCase().includes(termoLower) ||
+        pront.profissionalNome.toLowerCase().includes(termoLower) ||
+        pront.tipoConsulta.toLowerCase().includes(termoLower) ||
+        pront.observacoes.toLowerCase().includes(termoLower)
+      );
+    }
+    
+    // Filtro por status
+    if (statusFilter !== "todos") {
+      filtered = filtered.filter(pront => pront.status === statusFilter);
+    }
+    
     return filtered.sort(
-      (a, b) =>
-        new Date(b.dataConsulta).getTime() - new Date(a.dataConsulta).getTime()
+      (a, b) => new Date(b.dataConsulta).getTime() - new Date(a.dataConsulta).getTime()
     );
   }, [allProntuarios, searchTerm, statusFilter]);
 
@@ -50,7 +161,7 @@ export function MedicalRecordsSection() {
     return historicoPacientes.filter(
       (hist) =>
         hist.pacienteNome.toLowerCase().includes(termoLower) ||
-        hist.profissionaisAtendentes.some((prof) =>
+        hist.profissionaisAtendentes.some((prof: string) =>
           prof.toLowerCase().includes(termoLower)
         )
     );
@@ -428,7 +539,7 @@ export function MedicalRecordsSection() {
                       </strong>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {historico.profissionaisAtendentes.map((prof, index) => (
+                      {historico.profissionaisAtendentes.map((prof: string, index: number) => (
                         <span
                           key={index}
                           className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 px-3 py-1 rounded-full text-xs font-medium truncate border border-purple-200"

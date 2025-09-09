@@ -64,6 +64,43 @@ export interface ConsultaComProntuario {
 }
 
 export class ConsultasService {
+  
+  // Buscar TODOS os prontuários (para admin)
+  static async getAllProntuarios() {
+    const supabase = await createClient();
+    
+    const { data: consultas, error } = await supabase
+      .from('agendamentos')
+      .select(`
+        id,
+        data_consulta,
+        modalidade,
+        status,
+        notas,
+        paciente:paciente_id(
+          id,
+          nome,
+          email
+        ),
+        profissional:profissional_id(
+          id,
+          nome,
+          especialidade
+        ),
+        prontuario:prontuarios(
+          id,
+          arquivo
+        )
+      `)
+      .order('data_consulta', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar todos os prontuários:', error);
+      throw error;
+    }
+
+    return consultas || [];
+  }
   // ======================================
   // Buscar pacientes atendidos por um profissional
   // ======================================

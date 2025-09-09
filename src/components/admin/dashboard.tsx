@@ -87,31 +87,24 @@ export function AdminDashboard() {
         setAgendamentosNorm(agNormalized);
 
         // 2) Buscar consultas (fonte de "concluidas", "pendentes", "canceladas", etc)
-        const resCons = await fetch("/api/consultas");
+        const resCons = await fetch("/api/agendamentos/prontuarios");
         const jsonCons = await resCons.json().catch(() => null);
-        const consArray = getArray(jsonCons);
+        const consArray = getArray(jsonCons?.consultas || jsonCons);
 
         const consNormalized: ConsultaNorm[] = consArray.map((c: any) => ({
           id: c.id,
           profissional_id:
-            c.profissionalId ||
-            c.profissional_id ||
             c.profissional?.id ||
-            c.profissionais?.id ||
+            c.profissional_id ||
             null,
           profissional_nome:
-            c.profissionalNome ||
             c.profissional?.nome ||
-            c.profissionais?.nome ||
             c.profissional_nome ||
-            (typeof c.profissional === "string" ? c.profissional : null) ||
             "Sem Profissional",
           data_consulta:
-            c.dataISO || c.data_consulta || c.data_consulta || c.data || null,
+            c.data_consulta || c.dataISO || c.data || null,
           status_consulta: (
-            c.status_consulta ||
             c.status ||
-            c.statusConsulta ||
             c.status_consulta ||
             ""
           )

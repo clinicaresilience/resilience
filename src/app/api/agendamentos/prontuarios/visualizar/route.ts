@@ -15,15 +15,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // Verificar se o usuário é um profissional
+    // Verificar se o usuário é um profissional ou admin
     const { data: userData } = await supabase
       .from("usuarios")
       .select("tipo_usuario")
       .eq("id", user.id)
       .single();
 
-    if (!userData || userData.tipo_usuario !== "profissional") {
-      return NextResponse.json({ error: "Acesso restrito a profissionais" }, { status: 403 });
+    if (!userData || (userData.tipo_usuario !== "profissional" && userData.tipo_usuario !== "admin" && userData.tipo_usuario !== "administrador")) {
+      return NextResponse.json({ error: "Acesso restrito a profissionais e administradores" }, { status: 403 });
     }
 
     const url = new URL(req.url);
@@ -36,24 +36,48 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Buscar o prontuário com verificação de propriedade usando query mais simples
-    const { data: ownershipCheck, error: ownershipError } = await supabase
-      .from("prontuarios")
-      .select(`
-        id,
-        arquivo,
-        agendamentos!inner(
-          profissional_id
-        )
-      `)
-      .eq("id", prontuarioId)
-      .eq("agendamentos.profissional_id", user.id)
-      .single();
+    // Buscar o prontuário com verificação de acesso
+    let ownershipCheck, ownershipError;
+
+    if (userData.tipo_usuario === "admin" || userData.tipo_usuario === "administrador") {
+      // Admin pode ver qualquer prontuário
+      const result = await supabase
+        .from("prontuarios")
+        .select(`
+          id,
+          arquivo,
+          agendamentos!inner(
+            profissional_id
+          )
+        `)
+        .eq("id", prontuarioId)
+        .single();
+      
+      ownershipCheck = result.data;
+      ownershipError = result.error;
+    } else {
+      // Profissional só pode ver seus próprios prontuários
+      const result = await supabase
+        .from("prontuarios")
+        .select(`
+          id,
+          arquivo,
+          agendamentos!inner(
+            profissional_id
+          )
+        `)
+        .eq("id", prontuarioId)
+        .eq("agendamentos.profissional_id", user.id)
+        .single();
+      
+      ownershipCheck = result.data;
+      ownershipError = result.error;
+    }
 
     if (ownershipError || !ownershipCheck) {
-      console.log("PDF viewing ownership check failed:", ownershipError);
+      console.log("PDF viewing access check failed:", ownershipError);
       return NextResponse.json(
-        { error: "Acesso negado: prontuário não pertence ao profissional ou não encontrado" },
+        { error: "Acesso negado: prontuário não encontrado ou sem permissão" },
         { status: 403 }
       );
     }

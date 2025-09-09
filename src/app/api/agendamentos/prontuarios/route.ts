@@ -12,26 +12,49 @@ export async function GET(req: NextRequest) {
       error: userError,
     } = await supabase.auth.getUser()
 
+    console.log("User auth check:", { user: user?.id, error: userError })
+
     if (userError || !user) {
+      console.log("Authentication failed:", userError)
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
-    // Verificar se o usuário é um profissional
-    const { data: userData } = await supabase
+    // Verificar se o usuário é um profissional ou admin
+    const { data: userData, error: userDataError } = await supabase
       .from("usuarios")
       .select("tipo_usuario")
       .eq("id", user.id)
       .single()
 
-    if (!userData || userData.tipo_usuario !== "profissional") {
-      return NextResponse.json({ error: "Acesso restrito a profissionais" }, { status: 403 })
+    console.log("User data check:", { userData, userDataError })
+
+    if (userDataError || !userData) {
+      console.log("User data fetch failed:", userDataError)
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 403 })
     }
 
-    const prontuarios = await ConsultasService.getProntuarios(user.id)
+    console.log("User type:", userData.tipo_usuario)
+
+    let prontuarios
+
+    if (userData.tipo_usuario === "profissional") {
+      // Se for profissional, buscar apenas seus prontuários
+      console.log("Fetching prontuarios for professional:", user.id)
+      prontuarios = await ConsultasService.getProntuarios(user.id)
+    } else if (userData.tipo_usuario === "admin" || userData.tipo_usuario === "administrador") {
+      // Se for admin, buscar todos os prontuários
+      console.log("Fetching all prontuarios for admin")
+      prontuarios = await ConsultasService.getAllProntuarios()
+    } else {
+      console.log("Access denied for user type:", userData.tipo_usuario)
+      return NextResponse.json({ error: "Acesso restrito" }, { status: 403 })
+    }
+
+    console.log("Prontuarios fetched:", prontuarios?.length || 0)
 
     return NextResponse.json({
       success: true,
-      data: prontuarios,
+      consultas: prontuarios,
     }, { status: 200 })
 
   } catch (error: unknown) {
