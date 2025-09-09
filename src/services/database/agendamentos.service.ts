@@ -42,17 +42,23 @@ export class AgendamentosService {
       const dataSlot = dataObj.toISOString().split('T')[0]; // YYYY-MM-DD
       const horarioSlot = dataObj.toISOString().split('T')[1].substring(0, 5); // HH:mm
 
-      // 1️⃣ Verificar se existe slot disponível na nova tabela agendamento_slot
+      // 1️⃣ Verificar se existe slot disponível usando novo schema (data_hora_inicio)
+      const dataConsultaISO = new Date(data.data_consulta).toISOString();
       const { data: slot, error: slotError } = await supabase
         .from('agendamento_slot')
         .select('*')
         .eq('profissional_id', data.profissional_id)
-        .eq('data', dataSlot)
-        .eq('hora_inicio', horarioSlot)
+        .eq('data_hora_inicio', dataConsultaISO)
         .eq('status', 'livre')
         .single();
 
       if (slotError || !slot) {
+        console.error('Erro ao buscar slot:', slotError);
+        console.error('Buscando por:', {
+          profissional_id: data.profissional_id,
+          data_hora_inicio: dataConsultaISO,
+          status: 'livre'
+        });
         throw new Error('Slot não disponível para este horário');
       }
 
@@ -177,22 +183,22 @@ export class AgendamentosService {
   }
 
   // ======================================
-  // Verificar disponibilidade
+  // Verificar disponibilidade de slot por ID
   // ======================================
-  static async checkAvailability(
-    profissional_id: string,
-    slot_id: string
+  static async checkSlotAvailability(
+    slot_id: string,
+    profissional_id: string
   ): Promise<boolean> {
     const supabase = await createClient();
 
     try {
-      console.log('=== VERIFICANDO DISPONIBILIDADE ===');
+      console.log('=== VERIFICANDO DISPONIBILIDADE DE SLOT ===');
       console.log('Input recebido:', { profissional_id, slot_id });
 
-      // Buscar o slot pelo ID
+      // Buscar o slot pelo ID usando novo schema
       const { data: slot, error: slotError } = await supabase
         .from('agendamento_slot')
-        .select('id, status, data, hora_inicio, hora_fim')
+        .select('id, status, data_hora_inicio, data_hora_fim')
         .eq('id', slot_id)
         .eq('profissional_id', profissional_id)
         .single();
@@ -211,6 +217,32 @@ export class AgendamentosService {
       return true;
     } catch (error) {
       console.error('Erro ao verificar disponibilidade:', error);
+      return false;
+    }
+  }
+
+  // ======================================
+  // Verificar disponibilidade por data/hora
+  // ======================================
+  static async checkAvailability(
+    profissional_id: string,
+    data_consulta: string
+  ): Promise<boolean> {
+    const supabase = await createClient();
+
+    try {
+      const dataConsultaISO = new Date(data_consulta).toISOString();
+
+      const { data: slot, error: slotError } = await supabase
+        .from('agendamento_slot')
+        .select('id, status')
+        .eq('profissional_id', profissional_id)
+        .eq('data_hora_inicio', dataConsultaISO)
+        .single();
+
+      if (slotError || !slot) return false;
+      return slot.status === 'livre';
+    } catch {
       return false;
     }
   }

@@ -1,197 +1,142 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/server";
+// app/api/profissionais/agenda/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/server';
+import moment from 'moment';
 
-// Interface para o slot no novo sistema
-interface AgendamentoSlot {
-  id?: string;
-  profissional_id: string;
-  data: string;
-  hora_inicio: string;
-  hora_fim: string;
-  status: 'livre' | 'ocupado' | 'cancelado';
-  paciente_id?: string;
-  criado_em?: string;
-  atualizado_em?: string;
-}
-
-// Interface para configuração do dia da semana
-interface DiaConfig {
-  diaSemana: number;
-  horaInicio: string;
-  horaFim: string;
-}
-
-// Interface para configuração completa
-interface ConfiguracaoAgenda {
-  dias: DiaConfig[];
-  intervalo_minutos: number;
-}
-
-/**
- * Gera slots individuais de agendamento para cada data específica
- * com base na configuração do profissional
- */
-function generateAgendamentoSlots(
-  profissional_id: string,
-  dias: DiaConfig[],
-  intervaloMinutos: number,
-  dataInicio: string,
-  dataFim: string
-): AgendamentoSlot[] {
-  const slots: AgendamentoSlot[] = [];
-  const inicio = new Date(dataInicio);
-  const fim = new Date(dataFim);
-
-  // Iterar através de cada data no período
-  for (let data = new Date(inicio); data <= fim; data.setDate(data.getDate() + 1)) {
-    const diaSemana = data.getDay(); // 0=domingo, 1=segunda, etc.
-    
-    // Encontrar configuração para este dia da semana
-    const diaConfig = dias.find(d => d.diaSemana === diaSemana);
-    if (!diaConfig) continue; // Profissional não atende neste dia
-
-    const { horaInicio, horaFim } = diaConfig;
-    const [hStart, mStart] = horaInicio.split(":").map(Number);
-    const [hEnd, mEnd] = horaFim.split(":").map(Number);
-    const startMinutes = hStart * 60 + mStart;
-    const endMinutes = hEnd * 60 + mEnd;
-
-    // Gerar slots para este dia específico
-    for (let t = startMinutes; t + intervaloMinutos <= endMinutes; t += intervaloMinutos) {
-      const slotHInicio = Math.floor(t / 60).toString().padStart(2, "0");
-      const slotMInicio = (t % 60).toString().padStart(2, "0");
-      const horaInicioSlot = `${slotHInicio}:${slotMInicio}`;
-      
-      const tFim = t + intervaloMinutos;
-      const slotHFim = Math.floor(tFim / 60).toString().padStart(2, "0");
-      const slotMFim = (tFim % 60).toString().padStart(2, "0");
-      const horaFimSlot = `${slotHFim}:${slotMFim}`;
-
-      slots.push({
-        profissional_id,
-        data: data.toISOString().split('T')[0], // YYYY-MM-DD
-        hora_inicio: horaInicioSlot,
-        hora_fim: horaFimSlot,
-        status: 'livre'
-      });
-    }
-  }
-  
-  return slots;
-}
-
-// POST - criar slots de agenda do profissional
-export async function POST(req: Request) {
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
-  const body = await req.json();
-  const { profissional_id, configuracao, periodo } = body;
+  const { searchParams } = new URL(request.url);
+  const profissionalId = searchParams.get('profissionalId');
+  if (!profissionalId) return NextResponse.json({ error: 'profissionalId é obrigatório' }, { status: 400 });
+
+  const dataInicio = searchParams.get('dataInicio') || new Date().toISOString();
+  const dataFim = searchParams.get('dataFim') || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Buscar slots existentes
+  const { data: slots, error } = await supabase
+    .from('agendamento_slot')
+    .select('*')
+    .eq('profissional_id', profissionalId)
+    .gte('data_hora_inicio', dataInicio)
+    .lte('data_hora_inicio', dataFim)
+    .order('data_hora_inicio');
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Formatar slots para compatibilidade com frontend
+  const formattedSlots = slots?.map(slot => ({
+    id: slot.id,
+    profissional_id: slot.profissional_id,
+    data: moment(slot.data_hora_inicio).format('YYYY-MM-DD'),
+    horaInicio: moment(slot.data_hora_inicio).format('HH:mm'),
+    horaFim: moment(slot.data_hora_fim).format('HH:mm'),
+    status: slot.status,
+    data_hora_inicio: slot.data_hora_inicio,
+    data_hora_fim: slot.data_hora_fim,
+  })) || [];
+
+  return NextResponse.json({ slots: formattedSlots });
+}
+
+// POST: Criar cronograma de agenda
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const body = await request.json();
+  const { profissional_id, configuracao } = body;
 
   if (!profissional_id || !configuracao) {
-    return NextResponse.json({ error: "Dados incompletos." }, { status: 400 });
+    return NextResponse.json({ error: 'profissional_id e configuracao são obrigatórios' }, { status: 400 });
   }
 
   try {
-    // Definir período padrão se não fornecido (próximos 30 dias)
-    const dataInicio = periodo?.inicio || new Date().toISOString().split('T')[0];
-    const dataFim = periodo?.fim || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    console.log('Criando cronograma para profissional:', profissional_id);
+    console.log('Configuração recebida:', configuracao);
 
-    // Gerar slots com datas específicas
-    const slots = generateAgendamentoSlots(
-      profissional_id,
-      configuracao.dias,
-      configuracao.intervalo_minutos,
-      dataInicio,
-      dataFim
-    );
-
-    // Primeiro, remover slots existentes para o período (para evitar duplicatas)
-    const { error: deleteError } = await supabase
-      .from("agendamento_slot")
+    // Limpar slots antigos (opcional - pode querer manter histórico)
+    await supabase
+      .from('agendamento_slot')
       .delete()
-      .eq("profissional_id", profissional_id)
-      .gte("data", dataInicio)
-      .lte("data", dataFim)
-      .eq("status", "livre"); // Só remove slots livres
+      .eq('profissional_id', profissional_id)
+      .eq('status', 'livre');
 
-    if (deleteError) {
-      console.error("Erro ao limpar slots antigos:", deleteError);
-    }
+    const slotsParaCriar = [];
+    const diasConfig = configuracao.dias || [];
+    const intervaloMinutos = configuracao.intervalo_minutos || 60;
 
-    // Inserir novos slots
-    const { data, error } = await supabase
-      .from("agendamento_slot")
-      .insert(slots)
-      .select();
+    // Gerar slots para os próximos 30 dias
+    const hoje = moment().startOf('day');
+    const dataLimite = moment().add(30, 'days').endOf('day');
 
-    if (error) {
-      console.error("Erro ao criar slots:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    for (let data = hoje.clone(); data.isSameOrBefore(dataLimite); data.add(1, 'day')) {
+      const diaSemana = data.day(); // 0 = domingo, 1 = segunda, etc.
+      
+      // Verificar se este dia da semana está configurado
+      const configDia = diasConfig.find((d: any) => d.diaSemana === diaSemana);
+      if (!configDia) continue;
 
-    console.log(`Criados ${data.length} slots para o profissional ${profissional_id}`);
+      const horaInicio = moment(data).hour(parseInt(configDia.horaInicio.split(':')[0])).minute(parseInt(configDia.horaInicio.split(':')[1]));
+      const horaFim = moment(data).hour(parseInt(configDia.horaFim.split(':')[0])).minute(parseInt(configDia.horaFim.split(':')[1]));
 
-    return NextResponse.json({ 
-      success: true, 
-      slots_criados: data.length,
-      periodo: { inicio: dataInicio, fim: dataFim }
-    });
-
-  } catch (error) {
-    console.error("Erro no POST /api/profissionais/agenda:", error);
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
-  }
-}
-
-// GET - buscar slots do profissional
-export async function GET(req: Request) {
-  const supabase = await createClient();
-  const { searchParams } = new URL(req.url);
-  const profissionalId = searchParams.get("profissionalId");
-  const dataInicio = searchParams.get("dataInicio");
-  const dataFim = searchParams.get("dataFim");
-
-  if (!profissionalId) {
-    return NextResponse.json({ error: "profissionalId é obrigatório" }, { status: 400 });
-  }
-
-  try {
-    let query = supabase
-      .from("agendamento_slot")
-      .select("*")
-      .eq("profissional_id", profissionalId);
-
-    // Filtrar por período se fornecido
-    if (dataInicio) {
-      query = query.gte("data", dataInicio);
-    }
-    if (dataFim) {
-      query = query.lte("data", dataFim);
-    }
-
-    const { data, error } = await query.order("data").order("hora_inicio");
-
-    if (error) {
-      console.error("Erro ao buscar slots:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    // Agrupar slots por data para facilitar o uso no frontend
-    const slotsPorData = data.reduce((acc: Record<string, AgendamentoSlot[]>, slot) => {
-      if (!acc[slot.data]) {
-        acc[slot.data] = [];
+      // Gerar slots no intervalo especificado
+      for (let slot = horaInicio.clone(); slot.isBefore(horaFim); slot.add(intervaloMinutos, 'minutes')) {
+        const slotFim = slot.clone().add(intervaloMinutos, 'minutes');
+        
+        slotsParaCriar.push({
+          profissional_id,
+          data_hora_inicio: slot.toISOString(),
+          data_hora_fim: slotFim.toISOString(),
+          status: 'livre',
+        });
       }
-      acc[slot.data].push(slot);
-      return acc;
-    }, {});
+    }
 
-    return NextResponse.json({
-      slots: data,
-      slots_por_data: slotsPorData,
-      total: data.length
-    });
+    console.log(`Criando ${slotsParaCriar.length} slots`);
+
+    // Inserir slots em batches
+    if (slotsParaCriar.length > 0) {
+      const { data: novoSlots, error: insertError } = await supabase
+        .from('agendamento_slot')
+        .insert(slotsParaCriar)
+        .select();
+
+      if (insertError) {
+        console.error('Erro ao inserir slots:', insertError);
+        return NextResponse.json({ error: insertError.message }, { status: 500 });
+      }
+
+      // Formatar slots para resposta
+      const formattedSlots = novoSlots.map(slot => ({
+        id: slot.id,
+        profissional_id: slot.profissional_id,
+        data: moment(slot.data_hora_inicio).format('YYYY-MM-DD'),
+        horaInicio: moment(slot.data_hora_inicio).format('HH:mm'),
+        horaFim: moment(slot.data_hora_fim).format('HH:mm'),
+        status: slot.status,
+        data_hora_inicio: slot.data_hora_inicio,
+        data_hora_fim: slot.data_hora_fim,
+      }));
+
+      return NextResponse.json({
+        success: true,
+        message: `Cronograma criado com sucesso! ${slotsParaCriar.length} horários gerados.`,
+        agenda: {
+          configuracao,
+          slots: formattedSlots
+        }
+      });
+    } else {
+      return NextResponse.json({
+        success: true,
+        message: 'Nenhum slot foi gerado. Verifique a configuração.',
+        agenda: {
+          configuracao,
+          slots: []
+        }
+      });
+    }
 
   } catch (error) {
-    console.error("Erro no GET /api/profissionais/agenda:", error);
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
+    console.error('Erro ao criar cronograma:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }

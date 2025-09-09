@@ -8,7 +8,7 @@ export async function GET(
   try {
     const supabase = await createClient();
 
-    // Verificar autenticação
+    // Autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -19,39 +19,33 @@ export async function GET(
     const dataInicio = searchParams.get('dataInicio');
     const dataFim = searchParams.get('dataFim');
 
-    // Definir período padrão se não fornecido (próximos 30 dias)
     const hoje = new Date();
-    const inicioDate = dataInicio || hoje.toISOString().split('T')[0];
-    const fimDate = dataFim || new Date(hoje.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const inicioDate = dataInicio || hoje.toISOString();
+    const fimDate = dataFim || new Date(hoje.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    console.log(`Buscando slots para profissional ${profissionalId} entre ${inicioDate} e ${fimDate}`);
-
-    // Buscar todos os slots disponíveis da tabela agendamento_slot
+    // Buscar slots usando timestamptz
     const { data: slots, error } = await supabase
       .from('agendamento_slot')
       .select('*')
       .eq('profissional_id', profissionalId)
-      .eq('status', 'livre') // Apenas slots livres
-      .gte('data', inicioDate)
-      .lte('data', fimDate)
-      .order('data')
-      .order('hora_inicio');
+      .eq('status', 'livre')
+      .gte('data_hora_inicio', inicioDate)
+      .lte('data_hora_inicio', fimDate)
+      .order('data_hora_inicio');
 
     if (error) {
       console.error('Erro ao buscar slots:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log(`Encontrados ${slots?.length || 0} slots disponíveis`);
-
-    // Mapear para o formato esperado pelo frontend
+    // Mapear para frontend
     const slotsFormatted = (slots || []).map(slot => ({
       id: slot.id,
-      data: slot.data,
-      horario: slot.hora_inicio,
-      hora_inicio: slot.hora_inicio,
-      hora_fim: slot.hora_fim,
-      disponivel: true, // Já filtrados apenas os livres
+      data: slot.data_hora_inicio,
+      horario: slot.data_hora_inicio,
+      hora_inicio: slot.data_hora_inicio,
+      hora_fim: slot.data_hora_fim,
+      disponivel: slot.status === 'livre',
       status: slot.status,
       profissional_id: slot.profissional_id
     }));
@@ -60,14 +54,10 @@ export async function GET(
 
   } catch (error) {
     console.error('Erro ao buscar slots:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST - criar agendamento em um slot específico
 export async function POST(
   request: NextRequest,
   { params }: { params: { profissionalId: string } }
@@ -75,21 +65,19 @@ export async function POST(
   try {
     const supabase = await createClient();
 
-    // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { profissionalId } = params;
-    const body = await request.json();
-    const { slotId, modalidade, notas } = body;
+    const { slotId, modalidade, notas } = await request.json();
 
     if (!slotId) {
       return NextResponse.json({ error: 'slotId é obrigatório' }, { status: 400 });
     }
 
-    // Verificar se o slot ainda está disponível
+    // Buscar slot pelo ID
     const { data: slot, error: slotError } = await supabase
       .from('agendamento_slot')
       .select('*')
@@ -102,8 +90,8 @@ export async function POST(
       return NextResponse.json({ error: 'Slot não disponível' }, { status: 400 });
     }
 
-    // Criar agendamento
-    const dataConsulta = new Date(`${slot.data}T${slot.hora_inicio}:00`).toISOString();
+    // Criar agendamento usando data_hora_inicio
+    const dataConsulta = new Date(slot.data_hora_inicio).toISOString();
 
     const { data: agendamento, error: agendamentoError } = await supabase
       .from('agendamentos')
@@ -135,22 +123,18 @@ export async function POST(
 
     if (updateSlotError) {
       console.error('Erro ao ocupar slot:', updateSlotError);
-      // Se não conseguir ocupar o slot, cancelar o agendamento
       await supabase.from('agendamentos').delete().eq('id', agendamento.id);
       return NextResponse.json({ error: 'Erro ao reservar horário' }, { status: 500 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      agendamento: agendamento,
+    return NextResponse.json({
+      success: true,
+      agendamento,
       message: 'Agendamento criado com sucesso!'
     });
 
   } catch (error) {
     console.error('Erro ao criar agendamento:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

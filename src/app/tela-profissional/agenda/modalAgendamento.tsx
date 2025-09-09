@@ -26,6 +26,7 @@ export function AgendaModal({ profissionalId }: AgendaModalProps) {
   const [horaFim, setHoraFim] = useState("17:00");
   const [intervalo, setIntervalo] = useState(60);
   const [agendaExistente, setAgendaExistente] = useState(false);
+  const [slots, setSlots] = useState<any[]>([]); // 🔹 agora vamos guardar os slots reais
 
   // 🔹 Carrega cronograma existente ao abrir modal
   useEffect(() => {
@@ -38,6 +39,9 @@ export function AgendaModal({ profissionalId }: AgendaModalProps) {
           setHoraFim(data.configuracao.horaFim || "17:00");
           setIntervalo(data.configuracao.intervalo_minutos || 60);
           setAgendaExistente(true);
+        }
+        if (data?.slots) {
+          setSlots(data.slots); // 🔹 slots já vêm com data
         }
       })
       .catch((err) => console.error("Erro ao carregar agenda:", err));
@@ -79,6 +83,7 @@ export function AgendaModal({ profissionalId }: AgendaModalProps) {
       const data = await res.json();
       if (res.ok) {
         setAgendaExistente(true);
+        setSlots(data.agenda.slots); // 🔹 salvar slots atualizados
         alert("Agenda salva com sucesso!");
       } else {
         alert(data.error || "Erro ao salvar agenda");
@@ -138,6 +143,19 @@ export function AgendaModal({ profissionalId }: AgendaModalProps) {
       <Button onClick={salvarAgenda}>
         {agendaExistente ? "Atualizar Cronograma" : "Salvar Cronograma"}
       </Button>
+
+      {slots.length > 0 && (
+        <div className="mt-4">
+          <Label>Próximos horários gerados:</Label>
+          <ul className="mt-2 max-h-40 overflow-y-auto border rounded p-2 text-sm">
+            {slots.slice(0, 10).map((slot, idx) => (
+              <li key={idx}>
+                📅 {slot.data} ⏰ {slot.horaInicio}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
