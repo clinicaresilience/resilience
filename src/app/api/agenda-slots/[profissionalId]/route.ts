@@ -38,8 +38,68 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Buscar exceções/paradas do profissional
+    const { data: excessoes, error: excessoesError } = await supabase
+      .from('agenda_excessoes')
+      .select('*')
+      .eq('profissional_id', profissionalId)
+      .eq('disponivel', false);
+
+    if (excessoesError) {
+      console.error('Erro ao buscar exceções:', excessoesError);
+    }
+
+    // Função para verificar se um slot deve ser bloqueado por exceções
+    const isSlotBlocked = (slotDate: Date, slotHoraInicio: string, slotHoraFim: string) => {
+      if (!excessoes) return false;
+
+      const slotDateStr = slotDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const slotDiaSemana = slotDate.getDay(); // 0 = domingo, 1 = segunda, etc.
+
+      for (const excecao of excessoes) {
+        // Tipo pontual: bloquear dia e horário específico
+        if (excecao.tipo === 'pontual') {
+          if (excecao.data === slotDateStr && 
+              excecao.hora_inicio && excecao.hora_fim &&
+              slotHoraInicio >= excecao.hora_inicio && 
+              slotHoraFim <= excecao.hora_fim) {
+            return true;
+          }
+        }
+        
+        // Tipo recorrente (almoço): bloquear horário em todos os dias
+        else if (excecao.tipo === 'recorrente') {
+          if (excecao.hora_inicio && excecao.hora_fim &&
+              slotHoraInicio >= excecao.hora_inicio && 
+              slotHoraFim <= excecao.hora_fim) {
+            return true;
+          }
+        }
+        
+        // Tipo feriado/férias: bloquear período inteiro de dias
+        else if (excecao.tipo === 'feriado') {
+          const dataFim = excecao.data_fim || excecao.data;
+          if (slotDateStr >= excecao.data && slotDateStr <= dataFim) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    };
+
+    // Filtrar slots que não estão bloqueados por exceções
+    const slotsDisponiveis = (slots || []).filter(slot => {
+      const dataHoraInicio = new Date(slot.data_hora_inicio);
+      const dataHoraFim = new Date(slot.data_hora_fim);
+      const horaInicio = dataHoraInicio.toISOString().split('T')[1].substring(0, 5);
+      const horaFim = dataHoraFim.toISOString().split('T')[1].substring(0, 5);
+      
+      return !isSlotBlocked(dataHoraInicio, horaInicio, horaFim);
+    });
+
     // Mapear para frontend com formato correto
-    const slotsFormatted = (slots || []).map(slot => {
+    const slotsFormatted = slotsDisponiveis.map(slot => {
       const dataHoraInicio = new Date(slot.data_hora_inicio);
       const dataHoraFim = new Date(slot.data_hora_fim);
       

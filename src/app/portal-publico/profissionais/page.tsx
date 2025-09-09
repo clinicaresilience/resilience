@@ -11,11 +11,14 @@ import { CheckCircle, Users } from "lucide-react";
 type Profissional = {
   id: string;
   nome: string;
+  avatar_url?: string;
+  bio?: string;
+  especialidade?: string;
   informacoes_adicionais: {
-    crp: string;
-    especialidade: string;
-    descricao: string;
-    foto: string;
+    crp?: string;
+    especialidade?: string;
+    descricao?: string;
+    foto?: string;
   };
 };
 
@@ -29,12 +32,12 @@ export default function ProfissionaisAgendamentos({
       {data.map((prof) => (
         <div key={prof.id} className="group relative">
           <div className="absolute -inset-1 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-3xl blur opacity-20 group-hover:opacity-25 transition duration-1000"></div>
-          <Card className="relative bg-white rounded-3xl shadow-2xl p-8 border border-[#edfffe] hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 flex flex-col justify-between text-center">
+          <Card className="relative bg-white rounded-3xl shadow-2xl p-8 border border-[#edfffe] hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 flex flex-col justify-between text-center h-[600px]">
             {/* Foto */}
             <div className="w-40 h-40 -mt-16 mb-6 rounded-full overflow-hidden border-4 border-[#02b1aa] shadow-lg bg-gray-100 mx-auto group-hover:border-[#029fdf] transition-colors duration-300">
-              {prof.informacoes_adicionais.foto ? (
+              {prof.avatar_url || prof.informacoes_adicionais?.foto ? (
                 <img
-                  src={prof.informacoes_adicionais.foto}
+                  src={prof.avatar_url || prof.informacoes_adicionais.foto}
                   alt={`Foto de ${prof.nome}`}
                   className="object-cover w-full h-full"
                 />
@@ -54,19 +57,24 @@ export default function ProfissionaisAgendamentos({
               </CardTitle>
 
               <p className="text-base text-[#02b1aa] font-semibold mb-1">
-                {prof.informacoes_adicionais.especialidade}
+                {prof.especialidade || prof.informacoes_adicionais?.especialidade || "Psicólogo"}
               </p>
 
               <p className="text-sm text-gray-500">
-                CRP: {prof.informacoes_adicionais.crp}
+                {prof.informacoes_adicionais?.crp ? `CRP: ${prof.informacoes_adicionais.crp}` : "Profissional Certificado"}
               </p>
             </CardHeader>
 
             {/* Conteúdo */}
             <CardContent className="p-0 mt-4 flex flex-col flex-1">
-              <p className="text-gray-700 text-base mb-6 leading-relaxed flex-1">
-                {prof.informacoes_adicionais.descricao}
-              </p>
+              <div className="text-gray-700 text-base mb-6 leading-relaxed flex-1 overflow-hidden" style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: 'vertical',
+                maxHeight: '6rem'
+              }}>
+                {prof.bio || prof.informacoes_adicionais?.descricao || "Profissional experiente em sua área de atuação."}
+              </div>
 
               <div className="mt-6 flex items-center text-[#02b1aa] font-semibold text-sm mb-4">
                 <CheckCircle className="w-4 h-4 mr-2" />
