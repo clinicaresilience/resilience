@@ -13,10 +13,10 @@ export async function fetchConsultasByProfissional(profissionalId: string) {
       status,
       local,
       observacoes,
-      data_hora
+      data_consulta
     `)
         .eq("profissional_id", profissionalId)
-        .order("data_hora", { ascending: true });
+        .order("data_consulta", { ascending: true });
 
     if (error) throw error;
 
@@ -27,7 +27,7 @@ export async function fetchConsultasByProfissional(profissionalId: string) {
         status: c.status || "pendente",
         local: c.local || "",
         observacoes: c.observacoes || null,
-        dataISO: c.data_hora,
+        dataISO: c.data_consulta,
     })) ?? [];
 }
 
@@ -90,9 +90,9 @@ export async function GET() {
       profissional_id,
       profissional:profissional_id(nome),
       status,
-      data_hora
+      data_consulta
     `)
-        .order("data_hora", { ascending: true });
+        .order("data_consulta", { ascending: true });
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

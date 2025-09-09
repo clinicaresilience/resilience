@@ -109,21 +109,21 @@ export function CalendarBooking({
           id: string;
           profissional_id: string;
           data: string;
-          hora_inicio: string;
-          hora_fim: string;
+          horaInicio: string;
+          horaFim: string;
           status: 'livre' | 'ocupado' | 'cancelado';
           paciente_id?: string;
         }): AgendaSlot => ({
           id: slot.id,
           profissional_id: slot.profissional_id,
           data: slot.data,
-          hora_inicio: slot.hora_inicio,
-          hora_fim: slot.hora_fim,
+          hora_inicio: slot.horaInicio,
+          hora_fim: slot.horaFim,
           status: slot.status,
           paciente_id: slot.paciente_id,
           // Campos de compatibilidade para não quebrar a interface
-          hora: slot.hora_inicio,
-          horaInicio: slot.hora_inicio,
+          hora: slot.horaInicio,
+          horaInicio: slot.horaInicio,
           disponivel: slot.status === 'livre',
           diaSemana: new Date(slot.data + 'T00:00:00').getDay(),
         }));

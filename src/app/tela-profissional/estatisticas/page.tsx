@@ -51,7 +51,7 @@ export default async function EstatisticasPage() {
     .from("consultas")
     .select("paciente_id")
     .eq("profissional_id", user.id)
-    .gte("data_hora", seisMesesAtras.toISOString());
+    .gte("data_consulta", seisMesesAtras.toISOString());
 
   const pacientesUnicos = new Set(pacientesAtivos?.map(c => c.paciente_id) || []).size;
 
@@ -77,8 +77,8 @@ export default async function EstatisticasPage() {
       .from("consultas")
       .select("id", { count: "exact" })
       .eq("profissional_id", user.id)
-      .gte("data_hora", inicioMesAtual.toISOString())
-      .lte("data_hora", fimMesAtual.toISOString());
+      .gte("data_consulta", inicioMesAtual.toISOString())
+      .lte("data_consulta", fimMesAtual.toISOString());
 
     consultasPorMes.push({
       mes: mesAtual.toLocaleDateString('pt-BR', { month: 'long' }),
@@ -89,12 +89,12 @@ export default async function EstatisticasPage() {
   // Horários mais procurados
   const { data: consultasHorarios } = await supabase
     .from("consultas")
-    .select("data_hora")
+    .select("data_consulta")
     .eq("profissional_id", user.id);
 
   const horariosCounts: { [key: string]: number } = {};
   consultasHorarios?.forEach(consulta => {
-    const hora = new Date(consulta.data_hora).getHours();
+    const hora = new Date(consulta.data_consulta).getHours();
     const faixaHorario = `${hora.toString().padStart(2, '0')}:00 - ${(hora + 1).toString().padStart(2, '0')}:00`;
     horariosCounts[faixaHorario] = (horariosCounts[faixaHorario] || 0) + 1;
   });
@@ -122,8 +122,8 @@ export default async function EstatisticasPage() {
     .from("consultas")
     .select("status_consulta")
     .eq("profissional_id", user.id)
-    .gte("data_hora", inicioMesPassado.toISOString())
-    .lte("data_hora", fimMesPassado.toISOString());
+    .gte("data_consulta", inicioMesPassado.toISOString())
+    .lte("data_consulta", fimMesPassado.toISOString());
 
   const totalMesPassado = consultasMesPassado?.length || 0;
   const concluidasMesPassado = consultasMesPassado?.filter(c => c.status_consulta === "concluido").length || 0;
@@ -138,13 +138,13 @@ export default async function EstatisticasPage() {
     .from("consultas")
     .select("paciente_id")
     .eq("profissional_id", user.id)
-    .gte("data_hora", trintaDiasAtras.toISOString());
+    .gte("data_consulta", trintaDiasAtras.toISOString());
 
   const { data: todasConsultas } = await supabase
     .from("consultas")
-    .select("paciente_id, data_hora")
+    .select("paciente_id, data_consulta")
     .eq("profissional_id", user.id)
-    .order("data_hora", { ascending: true });
+    .order("data_consulta", { ascending: true });
 
   // Identificar novos pacientes (primeira consulta nos últimos 30 dias)
   const novosPacientes = new Set<string>();
@@ -152,7 +152,7 @@ export default async function EstatisticasPage() {
 
   pacientesRecentes.forEach(pacienteId => {
     const primeiraConsulta = todasConsultas?.find(c => c.paciente_id === pacienteId);
-    if (primeiraConsulta && new Date(primeiraConsulta.data_hora) >= trintaDiasAtras) {
+    if (primeiraConsulta && new Date(primeiraConsulta.data_consulta) >= trintaDiasAtras) {
       novosPacientes.add(pacienteId);
     }
   });

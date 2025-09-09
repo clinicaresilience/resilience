@@ -25,7 +25,7 @@ type AgendamentoNorm = {
   id: string;
   profissional_id?: string;
   profissional_nome?: string;
-  data_hora?: string;
+  data_consulta?: string;
   status_agendamento?: string; // ex: 'confirmado'
 };
 
@@ -33,7 +33,7 @@ type ConsultaNorm = {
   id: string;
   profissional_id?: string;
   profissional_nome?: string;
-  data_hora?: string;
+  data_consulta?: string;
   status_consulta?: string; // ex: 'concluido', 'pendente', 'cancelado'
 };
 
@@ -78,8 +78,8 @@ export function AdminDashboard() {
             a.profissional?.name ||
             (typeof a.profissional === "string" ? a.profissional : null) ||
             "Sem Profissional",
-          data_hora:
-            a.dataISO || a.data_consulta || a.data_hora || a.data || null,
+          data_consulta:
+            a.dataISO || a.data_consulta || a.data_consulta || a.data || null,
           status_agendamento: (a.status || a.status_agendamento || "")
             .toString()
             .toLowerCase(),
@@ -106,8 +106,8 @@ export function AdminDashboard() {
             c.profissional_nome ||
             (typeof c.profissional === "string" ? c.profissional : null) ||
             "Sem Profissional",
-          data_hora:
-            c.dataISO || c.data_consulta || c.data_hora || c.data || null,
+          data_consulta:
+            c.dataISO || c.data_consulta || c.data_consulta || c.data || null,
           status_consulta: (
             c.status_consulta ||
             c.status ||
@@ -191,7 +191,7 @@ export function AdminDashboard() {
         s.confirmadas += 1;
 
       // próximas: conta agendamentos futuros (considerando confirmado/pendente como "próxima")
-      const dt = a.data_hora ? Date.parse(a.data_hora) : NaN;
+      const dt = a.data_consulta ? Date.parse(a.data_consulta) : NaN;
       if (!isNaN(dt) && dt > now) {
         const st = (a.status_agendamento || "").toLowerCase();
         if (st === "confirmado" || st === "pendente") s.proximas += 1;

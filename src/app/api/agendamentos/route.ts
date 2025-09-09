@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
       if (slotError || !slot) return NextResponse.json({ error: "Slot não disponível ou não encontrado" }, { status: 409 });
 
       // Criar agendamento usando timestamptz do slot
-      const dataConsulta = new Date(slot.data).toISOString();
+      const dataConsulta = new Date(slot.data_hora_inicio).toISOString();
       agendamento = await AgendamentosService.createAgendamento({
         usuario_id: user.id,
         profissional_id,

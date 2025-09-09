@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       data: {
         consultaId: consulta.id,
         pacienteNome: consulta.paciente?.nome,
-        dataConsulta: consulta.data_hora,
+        dataConsulta: consulta.data_consulta,
       },
     });
 

@@ -52,8 +52,8 @@ export default async function TelaProfissional() {
     .from("consultas")
     .select("id")
     .eq("profissional_id", user.id)
-    .gte("data_hora", inicioHoje.toISOString())
-    .lt("data_hora", fimHoje.toISOString());
+    .gte("data_consulta", inicioHoje.toISOString())
+    .lt("data_consulta", fimHoje.toISOString());
 
   const totalConsultasHoje = consultasHoje?.length || 0;
 
@@ -61,17 +61,17 @@ export default async function TelaProfissional() {
   const { data: proximaConsulta } = await supabase
     .from("consultas")
     .select(`
-      data_hora,
+      data_consulta,
       paciente:usuarios!consultas_paciente_id_fkey(nome)
     `)
     .eq("profissional_id", user.id)
     .eq("status_consulta", "confirmado")
-    .order("data_hora", { ascending: true })
+    .order("data_consulta", { ascending: true })
     .limit(1)
     .maybeSingle();
 
   const proximaConsultaHorario = proximaConsulta
-    ? new Date(proximaConsulta.data_hora).toLocaleTimeString("pt-BR", {
+    ? new Date(proximaConsulta.data_consulta).toLocaleTimeString("pt-BR", {
         hour: "2-digit",
         minute: "2-digit",
         timeZone: tz,
@@ -85,7 +85,7 @@ export default async function TelaProfissional() {
     .from("consultas")
     .select("paciente_id")
     .eq("profissional_id", user.id)
-    .gte("data_hora", seisMesesAtras.toISOString());
+    .gte("data_consulta", seisMesesAtras.toISOString());
   const totalPacientesAtivos = new Set(pacientesAtivos?.map(c => c.paciente_id) || []).size;
 
   // Consultas pendentes
@@ -94,7 +94,7 @@ export default async function TelaProfissional() {
     .select("id")
     .eq("profissional_id", user.id)
     .in("status_consulta", ["agendado", "confirmado"])
-    .gte("data_hora", new Date().toISOString());
+    .gte("data_consulta", new Date().toISOString());
   const totalPendentes = consultasPendentes?.length || 0;
 
   // Próximas consultas (3 dias)
@@ -104,14 +104,14 @@ export default async function TelaProfissional() {
     .from("consultas")
     .select(`
       id,
-      data_hora,
+      data_consulta,
       status_consulta,
       observacoes,
       paciente:usuarios!consultas_paciente_id_fkey(nome)
     `)
     .eq("profissional_id", user.id)
     .eq("status_consulta", "confirmado")
-    .order("data_hora", { ascending: true });
+    .order("data_consulta", { ascending: true });
 
   // Função auxiliar para formatar datas
   const formatarData = (dataStr: string) => {
@@ -200,7 +200,7 @@ export default async function TelaProfissional() {
           <div className="space-y-4">
             {proximasConsultas && proximasConsultas.length > 0 ? (
               proximasConsultas.map((consulta: any) => {
-                const { horario, texto } = formatarData(consulta.data_hora);
+                const { horario, texto } = formatarData(consulta.data_consulta);
                 const nomePaciente = consulta.paciente?.nome || "Paciente não identificado";
 
                 return (

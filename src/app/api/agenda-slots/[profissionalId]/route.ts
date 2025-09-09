@@ -38,18 +38,29 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Mapear para frontend
-    const slotsFormatted = (slots || []).map(slot => ({
-      id: slot.id,
-      data: slot.data_hora_inicio,
-      horario: slot.data_hora_inicio,
-      hora_inicio: slot.data_hora_inicio,
-      hora_fim: slot.data_hora_fim,
-      disponivel: slot.status === 'livre',
-      status: slot.status,
-      profissional_id: slot.profissional_id
-    }));
+    // Mapear para frontend com formato correto
+    const slotsFormatted = (slots || []).map(slot => {
+      const dataHoraInicio = new Date(slot.data_hora_inicio);
+      const dataHoraFim = new Date(slot.data_hora_fim);
+      
+      return {
+        id: slot.id,
+        profissional_id: slot.profissional_id,
+        // Separar data e hora para compatibilidade com frontend
+        data: dataHoraInicio.toISOString().split('T')[0], // YYYY-MM-DD
+        hora: dataHoraInicio.toISOString().split('T')[1].substring(0, 5), // HH:mm
+        hora_inicio: dataHoraInicio.toISOString().split('T')[1].substring(0, 5), // HH:mm
+        hora_fim: dataHoraFim.toISOString().split('T')[1].substring(0, 5), // HH:mm
+        // Campos adicionais para compatibilidade
+        horario: dataHoraInicio.toISOString().split('T')[1].substring(0, 5), // HH:mm
+        data_hora_inicio: slot.data_hora_inicio, // Timestamp completo
+        data_hora_fim: slot.data_hora_fim, // Timestamp completo
+        disponivel: slot.status === 'livre',
+        status: slot.status
+      };
+    });
 
+    console.log(`Retornando ${slotsFormatted.length} slots para profissional ${profissionalId}`);
     return NextResponse.json(slotsFormatted);
 
   } catch (error) {

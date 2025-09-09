@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         id,
         paciente_id,
         profissional_id,
-        data_hora,
+        data_consulta,
         status,
         modalidade,
         local,
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         agendamento_id
       `)
       .eq('profissional_id', profissionalId)
-      .order('data_hora', { ascending: false });
+      .order('data_consulta', { ascending: false });
 
     if (consultasError) {
       console.error('Error fetching consultas:', consultasError);
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
       prontuarios = consultasComProntuario.map(consulta => ({
         id: consulta.id,
         usuario_id: consulta.paciente_id,
-        dataConsulta: consulta.data_hora,
+        dataConsulta: consulta.data_consulta,
         tipoConsulta: consulta.modalidade || 'Consulta',
         observacoes: consulta.observacoes || '',
         diagnostico: '', // Not available in current schema
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
       id: consulta.id,
       paciente_id: consulta.paciente_id,
       profissional_id: consulta.profissional_id,
-      data_consulta: consulta.data_hora, // Map data_hora to data_consulta for client compatibility
+      data_consulta: consulta.data_consulta,
       status: consulta.status_consulta || consulta.status,
       especialidade: consulta.modalidade || 'Consulta',
       notas: consulta.observacoes

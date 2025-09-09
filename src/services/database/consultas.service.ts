@@ -11,7 +11,7 @@ export interface PacienteAtendido {
 interface ConsultaComPaciente {
   id: string;
   paciente_id: string;
-  data_hora: string;
+  data_consulta: string;
   status_consulta: string;
   paciente: {
     id: string;
@@ -24,7 +24,7 @@ export interface Consulta {
   id: string;
   paciente_id: string;
   profissional_id: string;
-  data_hora: string;
+  data_consulta: string;
   status: string;
   modalidade: string;
   local?: string;
@@ -51,7 +51,7 @@ export class ConsultasService {
         .select(`
           id,
           paciente_id,
-          data_hora,
+          data_consulta,
           status_consulta,
           paciente:usuarios!consultas_paciente_id_fkey(
             id,
@@ -61,7 +61,7 @@ export class ConsultasService {
         `)
         .eq('profissional_id', profissionalId)
         .eq('status_consulta', 'concluido')
-        .order('data_hora', { ascending: false });
+        .order('data_consulta', { ascending: false });
 
       if (error) {
         console.error('Erro ao buscar pacientes atendidos:', error);
@@ -81,15 +81,15 @@ export class ConsultasService {
           paciente.totalConsultas += 1;
           
           // Atualizar última consulta se for mais recente
-          if (new Date(consulta.data_hora) > new Date(paciente.ultimaConsulta)) {
-            paciente.ultimaConsulta = consulta.data_hora;
+          if (new Date(consulta.data_consulta) > new Date(paciente.ultimaConsulta)) {
+            paciente.ultimaConsulta = consulta.data_consulta;
           }
         } else {
           pacientesMap.set(pacienteId, {
             id: pacienteId,
             nome: consulta.paciente.nome,
             email: consulta.paciente.email,
-            ultimaConsulta: consulta.data_hora,
+            ultimaConsulta: consulta.data_consulta,
             totalConsultas: 1
           });
         }
@@ -122,7 +122,7 @@ export class ConsultasService {
         .eq('profissional_id', profissionalId)
         .eq('paciente_id', pacienteId)
         .eq('status_consulta', 'concluido')
-        .order('data_hora', { ascending: false })
+        .order('data_consulta', { ascending: false })
         .limit(1)
         .single();
 
@@ -172,7 +172,7 @@ export class ConsultasService {
         `)
         .eq('profissional_id', profissionalId)
         .not('prontuario', 'is', null)
-        .order('data_hora', { ascending: false });
+        .order('data_consulta', { ascending: false });
 
       if (error) {
         console.error('Erro ao buscar prontuários:', error);

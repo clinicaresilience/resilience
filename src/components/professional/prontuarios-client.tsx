@@ -83,7 +83,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
       resultado = resultado.filter(p => p.status_consulta === filtroStatus)
     }
 
-    return resultado.sort((a, b) => new Date(b.data_hora).getTime() - new Date(a.data_hora).getTime())
+    return resultado.sort((a, b) => new Date(b.data_consulta).getTime() - new Date(a.data_consulta).getTime())
   }, [prontuarios, busca, filtroStatus])
 
   const formatarData = (dataISO: string) => {
@@ -233,7 +233,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
       comProntuario: prontuariosFiltrados.filter(p => p.prontuario).length,
       semProntuario: prontuariosFiltrados.filter(p => !p.prontuario).length,
       recentes: prontuariosFiltrados.filter(p => {
-        const dataConsulta = new Date(p.data_hora)
+        const dataConsulta = new Date(p.data_consulta)
         const agora = new Date()
         const diasAtras = (agora.getTime() - dataConsulta.getTime()) / (1000 * 60 * 60 * 24)
         return diasAtras <= 30
@@ -546,7 +546,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                 <CardContent className="flex-1 flex flex-col space-y-3">
                   <div className="flex items-center space-x-2 text-sm text-gray-600 flex-shrink-0">
                     <Calendar className="h-4 w-4 flex-shrink-0" />
-                    <span className="break-words">{formatarData(consulta.data_hora)}</span>
+                    <span className="break-words">{formatarData(consulta.data_consulta)}</span>
                   </div>
 
                   {consulta.observacoes && (
@@ -587,7 +587,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                             <div>
                               <DialogTitle className="text-blue-900">Consulta Médica</DialogTitle>
                               <DialogDescription className="text-gray-700">
-                                {prontuarioSelecionado?.paciente?.nome} - {formatarData(prontuarioSelecionado?.data_hora || '')}
+                                {prontuarioSelecionado?.paciente?.nome} - {formatarData(prontuarioSelecionado?.data_consulta || '')}
                               </DialogDescription>
                             </div>
                             <div className="flex space-x-2">
@@ -621,7 +621,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                               </div>
                               <div>
                                 <Label className="text-gray-800 font-medium">Data da Consulta</Label>
-                                <p className="font-medium text-gray-900">{formatarData(prontuarioSelecionado.data_hora)}</p>
+                                <p className="font-medium text-gray-900">{formatarData(prontuarioSelecionado.data_consulta)}</p>
                               </div>
                             </div>
 

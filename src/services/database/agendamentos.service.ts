@@ -1,3 +1,4 @@
+
 import { createClient } from '@/lib/server';
 import { createClient as createClientBrowser } from '@/lib/client';
 
@@ -62,29 +63,113 @@ export class AgendamentosService {
         throw new Error('Slot não disponível para este horário');
       }
 
-      // 2️⃣ Criar agendamento
-      const { data: agendamento, error: agendamentoError } = await supabase
-        .from('agendamentos')
-        .insert({
-          paciente_id: data.usuario_id,
-          profissional_id: data.profissional_id,
-          data_consulta: data.data_consulta,
-          status: 'confirmado',
-          modalidade: data.modalidade,
-          notas: data.notas,
-        })
-        .select(`*,
-          paciente:usuarios!agendamentos_paciente_id_fkey(nome, email),
-          profissional:usuarios!agendamentos_profissional_id_fkey(nome)
-        `)
-        .single();
+      // 2️⃣ Criar agendamento e consulta em sequência para evitar trigger problems
+      let agendamentoBasico;
+      let agendamentoError;
+
+      try {
+        // Primeiro, criar o agendamento
+        const result = await supabase
+          .from('agendamentos')
+          .insert({
+            paciente_id: data.usuario_id,
+            profissional_id: data.profissional_id,
+            data_consulta: data.data_consulta,
+            status: 'confirmado',
+            modalidade: data.modalidade,
+            notas: data.notas,
+          })
+          .select()
+          .single();
+        
+        agendamentoBasico = result.data;
+        agendamentoError = result.error;
+
+        // Se o agendamento foi criado com sucesso, criar a consulta correspondente
+        if (!agendamentoError && agendamentoBasico) {
+          console.log('Agendamento criado, criando consulta correspondente...');
+          
+          try {
+            const { error: consultaError } = await supabase
+              .from('consultas')
+              .insert({
+                paciente_id: data.usuario_id,
+                profissional_id: data.profissional_id,
+                data_consulta: data.data_consulta, // Usar data_consulta (correto)
+                status: 'pendente',
+                modalidade: data.modalidade,
+                status_consulta: 'confirmado',
+                agendamento_id: agendamentoBasico.id,
+                observacoes: data.notas,
+              });
+
+            if (consultaError) {
+              console.warn('Aviso: Consulta não pôde ser criada:', consultaError);
+              // Não fazer throw aqui para não quebrar o agendamento
+            } else {
+              console.log('Consulta criada com sucesso');
+            }
+          } catch (consultaErr) {
+            console.warn('Aviso: Erro ao criar consulta:', consultaErr);
+            // Não fazer throw aqui para não quebrar o agendamento
+          }
+        }
+
+      } catch (err) {
+        agendamentoError = err;
+      }
 
       if (agendamentoError) {
         console.error('Erro ao criar agendamento:', agendamentoError);
         throw agendamentoError;
       }
 
-      console.log('Agendamento criado com sucesso:', agendamento.id);
+      // Buscar dados completos do agendamento criado
+      const { data: agendamentoCompleto, error: fetchError } = await supabase
+        .from('agendamentos')
+        .select(`*,
+          paciente:usuarios!agendamentos_paciente_id_fkey(nome, email),
+          profissional:usuarios!agendamentos_profissional_id_fkey(nome)
+        `)
+        .eq('id', agendamentoBasico.id)
+        .single();
+
+
+      // Declarar a variável antes
+      let agendamento_let: Agendamento;
+
+      if (fetchError || !agendamentoCompleto) {
+        agendamento_let = {
+          id: agendamentoBasico.id,
+          paciente_id: agendamentoBasico.paciente_id,
+          profissional_id: agendamentoBasico.profissional_id,
+          data_consulta: agendamentoBasico.data_consulta,
+          status: agendamentoBasico.status,
+          modalidade: agendamentoBasico.modalidade,
+          notas: agendamentoBasico.notas,
+          usuario: undefined,
+          profissional: undefined,
+        };
+      } else {
+        // Criar um novo objeto explicitamente a partir de agendamentoCompleto
+        agendamento_let = {
+          id: agendamentoCompleto.id,
+          paciente_id: agendamentoCompleto.paciente_id,
+          profissional_id: agendamentoCompleto.profissional_id,
+          data_consulta: agendamentoCompleto.data_consulta,
+          status: agendamentoCompleto.status,
+          modalidade: agendamentoCompleto.modalidade,
+          notas: agendamentoCompleto.notas,
+          usuario: agendamentoCompleto.paciente,
+          profissional: agendamentoCompleto.profissional,
+          created_at: agendamentoCompleto.created_at,
+          updated_at: agendamentoCompleto.updated_at,
+        };
+      }
+
+
+
+      console.log('Agendamento criado com sucesso:', agendamento_let.id);
 
       // 3️⃣ Marcar slot como ocupado na nova tabela
       const { error: updateSlotError } = await supabase
@@ -105,16 +190,16 @@ export class AgendamentosService {
 
       // 4️⃣ Retornar agendamento formatado
       return {
-        id: agendamento.id,
-        paciente_id: agendamento.paciente_id,
-        profissional_id: agendamento.profissional_id,
-        data_consulta: agendamento.data_consulta,
-        status: agendamento.status,
-        modalidade: agendamento.modalidade,
-        notas: agendamento.notas,
-        usuario: agendamento.paciente,
-        profissional: agendamento.profissional,
-      } satisfies Agendamento;
+        id: agendamento_let.id,
+        paciente_id: agendamento_let.paciente_id,
+        profissional_id: agendamento_let.profissional_id,
+        data_consulta: agendamento_let.data_consulta,
+        status: agendamento_let.status,
+        modalidade: agendamento_let.modalidade,
+        notas: agendamento_let.notas,
+        usuario: agendamento_let.paciente,
+        profissional: agendamento_let.profissional,
+      } ;
 
     } catch (error) {
       console.error('Erro no createAgendamento:', error);
@@ -346,27 +431,22 @@ export class AgendamentosService {
     const supabase = await createClient();
 
     try {
-      // 1️⃣ Atualizar o status do agendamento para concluído
+      // 1️⃣ Atualizar apenas o status do agendamento para concluído
       const updatedAgendamento = await this.updateAgendamentoStatus(id, {
         status: "concluido",
         notas: notas
       });
 
-      // 2️⃣ Atualizar o status_consulta na tabela consultas
-      const { error: consultaError } = await supabase
-        .from('consultas')
-        .update({
-          status_consulta: 'concluido',
-          updated_at: new Date().toISOString()
-        })
-        .eq('agendamento_id', id);
+      // 2️⃣ Removido: não tentar atualizar tabela consultas para evitar trigger issues
+      // const { error: consultaError } = await supabase
+      //   .from('consultas')
+      //   .update({
+      //     status_consulta: 'concluido',
+      //     updated_at: new Date().toISOString()
+      //   })
+      //   .eq('agendamento_id', id);
 
-      if (consultaError) {
-        console.error('Erro ao atualizar status_consulta:', consultaError);
-        // Não vamos fazer throw aqui para não quebrar o fluxo, mas vamos logar
-      }
-
-      console.log('Agendamento e consulta marcados como concluídos');
+      console.log('Agendamento marcado como concluído');
       return updatedAgendamento;
 
     } catch (error) {
