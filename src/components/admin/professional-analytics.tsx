@@ -262,7 +262,10 @@ export function ProfessionalAnalytics() {
                   <div>
                     <p className="text-green-100 text-sm">Taxa Média de Comparecimento</p>
                     <p className="text-2xl font-bold">
-                      {Math.round(professionalAnalytics.reduce((acc, p) => acc + p.taxaComparecimento, 0) / professionalAnalytics.length)}%
+                      {professionalAnalytics.length > 0 
+                        ? Math.round(professionalAnalytics.reduce((acc, p) => acc + p.taxaComparecimento, 0) / professionalAnalytics.length)
+                        : 0
+                      }%
                     </p>
                   </div>
                   <Target className="h-8 w-8 text-green-200" />
