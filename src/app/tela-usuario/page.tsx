@@ -1,6 +1,5 @@
 "use client";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/server";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,10 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Calendar, User, Clock, FileText, Heart, Phone } from "lucide-react";
+import { Calendar, User, Clock, FileText, Heart } from "lucide-react";
 import PendingAppointmentResumer from "@/components/user/pending-appointment-resumer";
 import { PendingBookingModal } from "@/components/user/pending-booking-modal";
-import { PendingBookingManager, PendingBookingData } from "@/utils/pending-booking";
+import {
+  PendingBookingManager,
+  PendingBookingData,
+} from "@/utils/pending-booking";
 import { useEffect, useState } from "react";
 
 type Consulta = {
@@ -43,25 +45,29 @@ export default function TelaUsuario() {
 
   // Efeito separado para verificar agendamento pendente
   useEffect(() => {
-    console.log('Componente TelaUsuario montado, verificando agendamento pendente...');
+    console.log(
+      "Componente TelaUsuario montado, verificando agendamento pendente..."
+    );
 
     // Verificar imediatamente se há dados no localStorage
     const pendingData = PendingBookingManager.get();
-    console.log('Dados do localStorage:', pendingData);
+    console.log("Dados do localStorage:", pendingData);
 
     if (pendingData) {
-      console.log('Agendamento pendente encontrado:', pendingData);
+      console.log("Agendamento pendente encontrado:", pendingData);
       setShowPendingModal(true);
     } else {
-      console.log('Nenhum agendamento pendente encontrado no localStorage');
+      console.log("Nenhum agendamento pendente encontrado no localStorage");
     }
 
     // Também verificar após um pequeno delay para garantir que tudo carregou
     const timer = setTimeout(() => {
       const hasPending = PendingBookingManager.hasPending();
-      console.log('Verificação com delay - agendamento pendente:', hasPending);
+      console.log("Verificação com delay - agendamento pendente:", hasPending);
       if (hasPending && !showPendingModal) {
-        console.log('Agendamento pendente encontrado no delay, mostrando modal');
+        console.log(
+          "Agendamento pendente encontrado no delay, mostrando modal"
+        );
         setShowPendingModal(true);
       }
     }, 2000);
@@ -69,7 +75,9 @@ export default function TelaUsuario() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleConfirmPendingBooking = async (pendingData: PendingBookingData) => {
+  const handleConfirmPendingBooking = async (
+    pendingData: PendingBookingData
+  ) => {
     try {
       const dataHora = `${pendingData.slot.data}T${pendingData.slot.hora}:00.000Z`;
 
@@ -228,38 +236,6 @@ export default function TelaUsuario() {
             </CardContent>
           </Link>
         </Card>
-
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <Link href="/tela-usuario/contato">
-            <CardHeader className="pb-3">
-              <div className="flex items-center space-x-2">
-                <Phone className="h-6 w-6 text-azul-escuro" />
-                <CardTitle className="text-lg">Contato</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                Entre em contato conosco para dúvidas ou emergências
-              </CardDescription>
-            </CardContent>
-          </Link>
-        </Card>
-
-        {/* <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <Link href="/tela-usuario/recursos">
-            <CardHeader className="pb-3">
-              <div className="flex items-center space-x-2">
-                <Heart className="h-6 w-6 text-azul-escuro" />
-                <CardTitle className="text-lg">Recursos de Bem-estar</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                Acesse materiais e dicas para seu bem-estar mental
-              </CardDescription>
-            </CardContent>
-          </Link>
-        </Card> */}
       </div>
 
       {/* Próximas Consultas */}
@@ -311,41 +287,6 @@ export default function TelaUsuario() {
                   Ver Todos os Agendamentos
                 </Link>
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Heart className="h-5 w-5" />
-              <span>Dicas de Bem-estar</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                <p className="font-medium text-blue-800">
-                  Respiração Consciente
-                </p>
-                <p className="text-sm text-blue-600 mt-1">
-                  Pratique 5 minutos de respiração profunda pela manhã
-                </p>
-              </div>
-
-              <div className="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
-                <p className="font-medium text-green-800">Exercício Regular</p>
-                <p className="text-sm text-green-600 mt-1">
-                  Caminhadas de 30 minutos ajudam a reduzir o estresse
-                </p>
-              </div>
-
-              <div className="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">
-                <p className="font-medium text-purple-800">Sono Reparador</p>
-                <p className="text-sm text-purple-600 mt-1">
-                  Mantenha uma rotina de sono de 7-8 horas por noite
-                </p>
-              </div>
             </div>
           </CardContent>
         </Card>
