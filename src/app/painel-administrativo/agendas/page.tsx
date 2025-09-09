@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
-import { EditProfileForm } from "@/components/profile/edit-profile-form";
+import { SchedulesSection } from "@/components/admin/schedules-section";
 
-export default async function PerfilPage() {
+export default async function AgendasPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -10,10 +10,10 @@ export default async function PerfilPage() {
 
   if (!user) redirect("/auth/login");
 
-  // buscar dados completos do usuário
+  // buscar dados do usuário
   const { data: usuario, error } = await supabase
     .from("usuarios")
-    .select("*")
+    .select("tipo_usuario, nome")
     .eq("id", user.id)
     .single();
 
@@ -34,7 +34,7 @@ export default async function PerfilPage() {
     <div>
       {/* Welcome Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-azul-escuro">Meu Perfil</h1>
+        <h1 className="text-3xl font-bold text-azul-escuro">Gerenciar Agendas</h1>
         <p className="mt-2 text-lg text-gray-600">
           Bem-vindo, <span className="font-semibold">{usuario.nome}</span> ({user.email})
         </p>
@@ -44,14 +44,14 @@ export default async function PerfilPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
           <p className="text-sm text-gray-600">
-            Gerenciar perfil pessoal
+            Calendário e horários dos profissionais
           </p>
         </div>
       </div>
 
       {/* Content */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <EditProfileForm user={usuario} userType="administrador" />
+        <SchedulesSection />
       </div>
     </div>
   );

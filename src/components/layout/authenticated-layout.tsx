@@ -71,30 +71,24 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   return (
     <SidebarContext.Provider value={{ collapsed: sidebarCollapsed }}>
       <div className="flex flex-col w-full h-full bg-gray-50">
-        {pathname.startsWith("/painel-administrativo") ? null : (
-          <ConditionalNavigation />
-        )}
+        <ConditionalNavigation />
         {usuario && (
           <>
+            {/* Sidebar para todos os usuários autenticados */}
             <Sidebar
               userType={usuario.tipo_usuario}
               userName={usuario.nome}
               onCollapseChange={setSidebarCollapsed}
             />
+            
             <main
               className={`transition-all duration-500 ease-in-out overflow-y-auto min-h-screen
-    ${pathname.startsWith("/painel-administrativo") ? "" : "pt-8"}
-    ${sidebarCollapsed ? "md:ml-16" : "md:ml-64"}
-    pb-20 md:pb-0
-  `}
+    ${pathname.startsWith("/painel-administrativo") 
+      ? `pt-20 ${sidebarCollapsed ? "md:ml-16" : "md:ml-64"} pb-20 md:pb-6` 
+      : `pt-8 ${sidebarCollapsed ? "md:ml-16" : "md:ml-64"} pb-20 md:pb-0`
+    }`}
             >
-              <div
-                className={`${
-                  pathname.startsWith("/painel-administrativo")
-                    ? "p-0 w-full max-w-none"
-                    : "px-4 sm:px-6 lg:px-8 pb-6 w-full mx-auto"
-                }`}
-              >
+              <div className="px-4 sm:px-6 lg:px-8 pb-6 w-full mx-auto">
                 {children}
               </div>
             </main>

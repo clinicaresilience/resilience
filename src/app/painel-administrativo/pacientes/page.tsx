@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
-import { Button } from "@/components/ui/button";
-import { UserPlus } from "lucide-react";
 import { PacientesListClient } from "@/components/admin/pacientes-list-client";
 
 export default async function PacientesPage() {
@@ -33,19 +31,28 @@ export default async function PacientesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-azul-escuro">Gerenciar Pacientes</h1>
-          <p className="text-gray-600">Visualize e gerencie todos os pacientes cadastrados no sistema.</p>
-        </div>
-        <Button className="flex items-center gap-2">
-          <UserPlus className="h-4 w-4" />
-          Novo Paciente
-        </Button>
+    <div>
+      {/* Welcome Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-azul-escuro">Gerenciar Pacientes</h1>
+        <p className="mt-2 text-lg text-gray-600">
+          Bem-vindo, <span className="font-semibold">{usuario.nome}</span> ({user.email})
+        </p>
       </div>
 
-      <PacientesListClient />
+      {/* Content Description */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <p className="text-sm text-gray-600">
+            Gerenciar pacientes e histórico médico
+          </p>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <PacientesListClient />
+      </div>
     </div>
   );
 }
