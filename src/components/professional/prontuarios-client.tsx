@@ -49,7 +49,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
     try {
       setCarregandoProntuarios(true)
       setErro("")
-      const response = await fetch('/api/consultas/prontuarios')
+      const response = await fetch('/api/agendamentos/prontuarios')
       const data = await response.json()
 
       if (!response.ok) {
@@ -80,7 +80,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
 
     // Filtro por status
     if (filtroStatus !== "todos") {
-      resultado = resultado.filter(p => p.status_consulta === filtroStatus)
+      resultado = resultado.filter(p => p.status === filtroStatus)
     }
 
     return resultado.sort((a, b) => new Date(b.data_consulta).getTime() - new Date(a.data_consulta).getTime())
@@ -97,7 +97,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
       observacoes: consulta.observacoes || "",
       modalidade: consulta.modalidade || "",
       local: consulta.local || "",
-      status_consulta: consulta.status_consulta
+      status: consulta.status
     })
     setModoEdicao(true)
   }
@@ -131,7 +131,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
   const buscarPacientesAtendidos = async () => {
     try {
       setCarregandoPacientes(true)
-      const response = await fetch('/api/consultas/pacientes-atendidos')
+      const response = await fetch('/api/agendamentos/pacientes-atendidos')
       const data = await response.json()
 
       if (!response.ok) {
@@ -191,7 +191,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
       formData.append('pacienteId', pacienteSelecionado)
       formData.append('arquivo', arquivo)
 
-      const response = await fetch('/api/consultas/prontuarios', {
+      const response = await fetch('/api/agendamentos/prontuarios', {
         method: 'POST',
         body: formData,
       })
@@ -558,7 +558,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
 
                   <div className="text-sm text-gray-600 flex-1 min-h-0 overflow-hidden">
                     <p className="break-words">
-                      Status: <span className="font-medium">{consulta.status_consulta}</span>
+                      Status: <span className="font-medium">{consulta.status}</span>
                     </p>
                     <p className="break-words">
                       Modalidade: <span className="font-medium">{consulta.modalidade}</span>
@@ -681,8 +681,8 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                 <Label htmlFor="statusEdit" className="text-gray-800 font-medium">Status</Label>
                                 {modoEdicao ? (
                                   <Select
-                                    value={dadosEdicao.status_consulta || ""}
-                                    onValueChange={(value) => setDadosEdicao({...dadosEdicao, status_consulta: value})}
+                                    value={dadosEdicao.status || ""}
+                                    onValueChange={(value) => setDadosEdicao({...dadosEdicao, status: value})}
                                   >
                                     <SelectTrigger>
                                       <SelectValue placeholder="Selecione o status" />
@@ -696,7 +696,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                 ) : (
                                   <div className="p-2">
                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                      {prontuarioSelecionado.status_consulta}
+                                      {prontuarioSelecionado.status}
                                     </span>
                                   </div>
                                 )}
@@ -767,7 +767,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                                   formData.append('consultaId', prontuarioSelecionado.id)
                                                   formData.append('arquivo', file)
                                                   
-                                                  const response = await fetch('/api/consultas/prontuarios/substituir', {
+                                                  const response = await fetch('/api/agendamentos/prontuarios/substituir', {
                                                     method: 'PUT',
                                                     body: formData,
                                                   })
@@ -797,7 +797,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                           onClick={async () => {
                                             if (confirm('Tem certeza que deseja remover o prontuário PDF? Esta ação não pode ser desfeita.')) {
                                               try {
-                                                const response = await fetch('/api/consultas/prontuarios/remover', {
+                                                const response = await fetch('/api/agendamentos/prontuarios/remover', {
                                                   method: 'DELETE',
                                                   headers: {
                                                     'Content-Type': 'application/json',
@@ -864,7 +864,7 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
                                                 formData.append('consultaId', prontuarioSelecionado.id)
                                                 formData.append('arquivo', file)
                                                 
-                                                const response = await fetch('/api/consultas/prontuarios/adicionar', {
+                                                const response = await fetch('/api/agendamentos/prontuarios/adicionar', {
                                                   method: 'POST',
                                                   body: formData,
                                                 })

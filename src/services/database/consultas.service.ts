@@ -12,7 +12,7 @@ interface ConsultaComPaciente {
   id: string;
   paciente_id: string;
   data_consulta: string;
-  status_consulta: string;
+  status: string;
   paciente: {
     id: string;
     nome: string;
@@ -29,9 +29,8 @@ export interface Consulta {
   modalidade: string;
   local?: string;
   observacoes?: string;
-  status_consulta: string;
   prontuario?: string;
-  agendamento_id?: string;
+  notas?: string;
   paciente?: {
     nome: string;
     email: string;
@@ -46,21 +45,21 @@ export class ConsultasService {
     const supabase = await createClient();
 
     try {
-      const { data: consultas, error } = await supabase
-        .from('consultas')
+      const { data: agendamentos, error } = await supabase
+        .from('agendamentos')
         .select(`
           id,
           paciente_id,
           data_consulta,
-          status_consulta,
-          paciente:usuarios!consultas_paciente_id_fkey(
+          status,
+          paciente:usuarios!agendamentos_paciente_id_fkey(
             id,
             nome,
             email
           )
         `)
         .eq('profissional_id', profissionalId)
-        .eq('status_consulta', 'concluido')
+        .eq('status', 'concluido')
         .order('data_consulta', { ascending: false });
 
       if (error) {
@@ -71,25 +70,25 @@ export class ConsultasService {
       // Agrupar por paciente e calcular estatísticas
       const pacientesMap = new Map<string, PacienteAtendido>();
 
-      consultas?.forEach((consulta: any) => {
-        if (!consulta.paciente) return;
+      agendamentos?.forEach((agendamento: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+        if (!agendamento.paciente) return;
 
-        const pacienteId = consulta.paciente.id;
+        const pacienteId = agendamento.paciente.id;
         
         if (pacientesMap.has(pacienteId)) {
           const paciente = pacientesMap.get(pacienteId)!;
           paciente.totalConsultas += 1;
           
           // Atualizar última consulta se for mais recente
-          if (new Date(consulta.data_consulta) > new Date(paciente.ultimaConsulta)) {
-            paciente.ultimaConsulta = consulta.data_consulta;
+          if (new Date(agendamento.data_consulta) > new Date(paciente.ultimaConsulta)) {
+            paciente.ultimaConsulta = agendamento.data_consulta;
           }
         } else {
           pacientesMap.set(pacienteId, {
             id: pacienteId,
-            nome: consulta.paciente.nome,
-            email: consulta.paciente.email,
-            ultimaConsulta: consulta.data_consulta,
+            nome: agendamento.paciente.nome,
+            email: agendamento.paciente.email,
+            ultimaConsulta: agendamento.data_consulta,
             totalConsultas: 1
           });
         }
@@ -115,41 +114,41 @@ export class ConsultasService {
     const supabase = await createClient();
 
     try {
-      // Buscar a consulta mais recente do paciente com este profissional
-      const { data: consulta, error: consultaError } = await supabase
-        .from('consultas')
+      // Buscar o agendamento mais recente do paciente com este profissional
+      const { data: agendamento, error: agendamentoError } = await supabase
+        .from('agendamentos')
         .select('*')
         .eq('profissional_id', profissionalId)
         .eq('paciente_id', pacienteId)
-        .eq('status_consulta', 'concluido')
+        .eq('status', 'concluido')
         .order('data_consulta', { ascending: false })
         .limit(1)
         .single();
 
-      if (consultaError || !consulta) {
+      if (agendamentoError || !agendamento) {
         throw new Error('Nenhuma consulta concluída encontrada para este paciente');
       }
 
-      // Atualizar a consulta com o prontuário
-      const { data: consultaAtualizada, error: updateError } = await supabase
-        .from('consultas')
+      // Atualizar o agendamento com o prontuário
+      const { data: agendamentoAtualizado, error: updateError } = await supabase
+        .from('agendamentos')
         .update({ 
           prontuario: arquivoPdf,
           updated_at: new Date().toISOString()
         })
-        .eq('id', consulta.id)
+        .eq('id', agendamento.id)
         .select(`
           *,
-          paciente:usuarios!consultas_paciente_id_fkey(nome, email)
+          paciente:usuarios!agendamentos_paciente_id_fkey(nome, email)
         `)
         .single();
 
       if (updateError) {
-        console.error('Erro ao atualizar consulta com prontuário:', updateError);
+        console.error('Erro ao atualizar agendamento com prontuário:', updateError);
         throw updateError;
       }
 
-      return consultaAtualizada as Consulta;
+      return agendamentoAtualizado as Consulta;
 
     } catch (error) {
       console.error('Erro no criarProntuario:', error);
@@ -164,11 +163,11 @@ export class ConsultasService {
     const supabase = await createClient();
 
     try {
-      const { data: consultas, error } = await supabase
-        .from('consultas')
+      const { data: agendamentos, error } = await supabase
+        .from('agendamentos')
         .select(`
           *,
-          paciente:usuarios!consultas_paciente_id_fkey(nome, email)
+          paciente:usuarios!agendamentos_paciente_id_fkey(nome, email)
         `)
         .eq('profissional_id', profissionalId)
         .not('prontuario', 'is', null)
@@ -179,7 +178,7 @@ export class ConsultasService {
         throw error;
       }
 
-      return consultas as Consulta[];
+      return agendamentos as Consulta[];
 
     } catch (error) {
       console.error('Erro no getProntuarios:', error);

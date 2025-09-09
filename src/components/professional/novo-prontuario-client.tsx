@@ -33,7 +33,7 @@ export function NovoProntuarioClient({ profissionalNome, profissionalId }: NovoP
   const buscarPacientesAtendidos = async () => {
     try {
       setCarregandoPacientes(true)
-      const response = await fetch('/api/consultas/pacientes-atendidos')
+      const response = await fetch('/api/agendamentos/pacientes-atendidos')
       const data = await response.json()
 
       if (!response.ok) {
@@ -95,7 +95,7 @@ export function NovoProntuarioClient({ profissionalNome, profissionalId }: NovoP
       formData.append('pacienteId', pacienteSelecionado)
       formData.append('arquivo', arquivo)
 
-      const response = await fetch('/api/consultas/prontuarios', {
+      const response = await fetch('/api/agendamentos/prontuarios', {
         method: 'POST',
         body: formData,
       })

@@ -31,7 +31,7 @@ import {
   XCircle,
   AlertCircle,
 } from "lucide-react";
-import { fetchConsultasByProfissional } from "@/app/api/consultas/route";
+import { AgendamentosService } from "@/services/database/agendamentos.service";
 
 interface Consulta {
   id: string;
@@ -66,8 +66,25 @@ export function ProfessionalConsultasClient({
     async function load() {
       setLoading(true);
       try {
-        const data = await fetchConsultasByProfissional(profissionalId);
-        setConsultas(data);
+        const response = await fetch(`/api/agendamentos?profissional_id=${profissionalId}`);
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Erro ao buscar agendamentos');
+        }
+        
+        // Mapear agendamentos para formato de consultas
+        const consultasMapeadas = (result.data || []).map((agendamento: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+          id: agendamento.id,
+          usuario_id: agendamento.paciente_id,
+          usuario: agendamento.paciente,
+          status: agendamento.status,
+          local: 'Clínica Resilience',
+          observacoes: agendamento.notas,
+          dataISO: agendamento.data_consulta,
+        }));
+        
+        setConsultas(consultasMapeadas);
       } catch (err) {
         console.error("Erro ao buscar consultas:", err);
       } finally {
@@ -118,7 +135,7 @@ export function ProfessionalConsultasClient({
     if (acao === "cancelar") statusNovo = "cancelado";
 
     try {
-      const res = await fetch(`/api/consultas/${consulta.id}/status`, {
+      const res = await fetch(`/api/agendamentos/${consulta.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: statusNovo }),
@@ -162,8 +179,8 @@ export function ProfessionalConsultasClient({
     if (!consultaSelecionada) return;
 
     try {
-      const res = await fetch("/api/consultas", {
-        method: "PATCH",
+      const res = await fetch("/api/agendamentos", {
+        method: "GET",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: consultaSelecionada.id,
@@ -297,7 +314,7 @@ export function ProfessionalConsultasClient({
                         consulta.usuario_id ||
                         "Não informado"}
                     </h3>
-                    <StatusBadge status={consulta.status as any} />
+                    <StatusBadge status={consulta.status as "pendente" | "confirmado" | "concluido" | "cancelado"} />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
@@ -409,7 +426,7 @@ export function ProfessionalConsultasClient({
                 </div>
                 <div>
                   <Label>Status</Label>
-                  <StatusBadge status={consultaSelecionada.status as any} />
+                  <StatusBadge status={consultaSelecionada.status as "pendente" | "confirmado" | "concluido" | "cancelado"} />
                 </div>
                 <div>
                   <Label>Data e Hora</Label>
