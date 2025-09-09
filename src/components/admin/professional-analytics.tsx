@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AgendamentosService, type Agendamento } from "@/services/database/agendamentos.service"
 import { ConsultasService, type ConsultaComProntuario } from "@/services/database/consultas.service"
 import { 
@@ -225,16 +226,17 @@ export function ProfessionalAnalytics() {
           </div>
 
           {viewMode === "detailed" && (
-            <select
-              value={selectedProfessional}
-              onChange={(e) => setSelectedProfessional(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm min-w-[200px]"
-            >
-              <option value="todos">Selecione um Profissional</option>
-              {professionalAnalytics.map(prof => (
-                <option key={prof.nome} value={prof.nome}>{prof.nome}</option>
-              ))}
-            </select>
+            <Select value={selectedProfessional} onValueChange={setSelectedProfessional}>
+              <SelectTrigger className="w-[200px] h-8">
+                <SelectValue placeholder="Selecione um Profissional" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Selecione um Profissional</SelectItem>
+                {professionalAnalytics.map(prof => (
+                  <SelectItem key={prof.nome} value={prof.nome}>{prof.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </div>
       </div>

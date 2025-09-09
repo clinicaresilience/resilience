@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CalendarView } from "./calendar-view"
 import {
   Calendar,
@@ -260,41 +261,44 @@ export function SchedulesSection() {
             </div>
 
             {/* Filtro por Profissional */}
-            <select
-              value={selectedProfessional}
-              onChange={(e) => setSelectedProfessional(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm min-w-[150px]"
-            >
-              <option value="todos">Todos os Profissionais</option>
-              {profissionais.map(prof => (
-                <option key={prof} value={prof}>{prof}</option>
-              ))}
-            </select>
+            <Select value={selectedProfessional} onValueChange={setSelectedProfessional}>
+              <SelectTrigger className="w-[140px] h-8">
+                <SelectValue placeholder="Todos os Profissionais" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os Profissionais</SelectItem>
+                {profissionais.map(prof => (
+                  <SelectItem key={prof} value={prof}>{prof}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Filtro por Status */}
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-            >
-              <option value="todos">Todos os Status</option>
-              <option value="confirmado">Confirmado</option>
-              <option value="pendente">Pendente</option>
-              <option value="cancelado">Cancelado</option>
-              <option value="concluido">Concluído</option>
-            </select>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="w-[120px] h-8">
+                <SelectValue placeholder="Todos os Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os Status</SelectItem>
+                <SelectItem value="confirmado">Confirmado</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="cancelado">Cancelado</SelectItem>
+                <SelectItem value="concluido">Concluído</SelectItem>
+              </SelectContent>
+            </Select>
 
             {/* Filtro por Data */}
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-            >
-              <option value="todos">Todas as Datas</option>
-              <option value="hoje">Hoje</option>
-              <option value="semana">Próximos 7 dias</option>
-              <option value="mes">Próximos 30 dias</option>
-            </select>
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-[130px] h-8">
+                <SelectValue placeholder="Todas as Datas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas as Datas</SelectItem>
+                <SelectItem value="hoje">Hoje</SelectItem>
+                <SelectItem value="semana">Próximos 7 dias</SelectItem>
+                <SelectItem value="mes">Próximos 30 dias</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
