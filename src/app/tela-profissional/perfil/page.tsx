@@ -81,7 +81,7 @@ export default async function ProfissionalPerfilPage() {
           <h1 className="text-3xl font-bold text-azul-escuro-secundario text-center">
             Perfil do Profissional
           </h1>
-          <p className="mt-2 text-lg text-center">
+          <p className="mt-2 text-lg text-center text-azul-escuro">
             Gerencie suas informações pessoais, {usuario.nome}
           </p>
         </div>

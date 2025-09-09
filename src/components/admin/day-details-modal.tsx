@@ -58,6 +58,10 @@ type PatientDetailsModalProps = {
 }
 
 function PatientDetailsModal({ isOpen, onClose, agendamento }: PatientDetailsModalProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [justificativa, setJustificativa] = useState("")
+  const [showCancelForm, setShowCancelForm] = useState(false)
+
   if (!agendamento) return null
 
   const formatDateTime = (dateString: string) => {
@@ -79,6 +83,45 @@ function PatientDetailsModal({ isOpen, onClose, agendamento }: PatientDetailsMod
     }
     return colors[status as keyof typeof colors] || colors.confirmado
   }
+
+  const handleCancelAgendamento = async () => {
+    if (!justificativa.trim()) {
+      alert('Por favor, informe uma justificativa para o cancelamento.')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/agendamentos/${agendamento.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'cancelado',
+          justificativa: justificativa.trim()
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert('Agendamento cancelado com sucesso!')
+        onClose()
+        // Recarregar a página para atualizar a lista
+        window.location.reload()
+      } else {
+        alert(result.error || 'Erro ao cancelar agendamento')
+      }
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error)
+      alert('Erro ao cancelar agendamento')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const canCancel = agendamento.status === 'confirmado' || agendamento.status === 'pendente'
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -151,6 +194,65 @@ function PatientDetailsModal({ isOpen, onClose, agendamento }: PatientDetailsMod
               )}
             </CardContent>
           </Card>
+
+          {/* Ações */}
+          {canCancel && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Ações</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {!showCancelForm ? (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowCancelForm(true)}
+                    className="w-full"
+                  >
+                    Cancelar Agendamento
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Justificativa do cancelamento:
+                      </label>
+                      <textarea
+                        value={justificativa}
+                        onChange={(e) => setJustificativa(e.target.value)}
+                        placeholder="Informe o motivo do cancelamento..."
+                        className="w-full p-2 border rounded-md text-sm resize-none h-20"
+                        required
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleCancelAgendamento}
+                        disabled={isLoading || !justificativa.trim()}
+                        className="flex-1"
+                      >
+                        {isLoading ? 'Cancelando...' : 'Confirmar Cancelamento'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowCancelForm(false)
+                          setJustificativa("")
+                        }}
+                        disabled={isLoading}
+                        className="flex-1"
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </DialogContent>
     </Dialog>

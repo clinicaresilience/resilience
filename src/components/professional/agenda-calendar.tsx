@@ -67,6 +67,9 @@ export function AgendaCalendar() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [isLoading, setIsLoading] = useState(false)
+  const [justificativa, setJustificativa] = useState("")
+  const [showCancelForm, setShowCancelForm] = useState(false)
 
   // Buscar agendamentos do profissional
   const fetchAgendamentos = async () => {
@@ -184,6 +187,46 @@ export function AgendaCalendar() {
   // Função para formatar data e hora
   const formatDateTime = (date: Date) => {
     return moment(date).format('dddd, DD [de] MMMM [de] YYYY [às] HH:mm')
+  }
+
+  // Função para cancelar agendamento
+  const handleCancelAgendamento = async () => {
+    if (!selectedEvent || !justificativa.trim()) {
+      alert('Por favor, informe uma justificativa para o cancelamento.')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/agendamentos/${selectedEvent.resource.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'cancelado',
+          justificativa: justificativa.trim()
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert('Agendamento cancelado com sucesso!')
+        setIsModalOpen(false)
+        setShowCancelForm(false)
+        setJustificativa("")
+        // Recarregar agendamentos
+        fetchAgendamentos()
+      } else {
+        alert(result.error || 'Erro ao cancelar agendamento')
+      }
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error)
+      alert('Erro ao cancelar agendamento')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   if (loading) {
@@ -349,14 +392,82 @@ export function AgendaCalendar() {
                 )}
               </div>
 
+              {/* Form de cancelamento */}
+              {showCancelForm && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                  <h3 className="font-medium text-red-800 mb-2">Cancelar Consulta</h3>
+                  <div className="mb-3">
+                    <label htmlFor="justificativa" className="block text-sm font-medium text-red-700 mb-1">
+                      Justificativa (obrigatória)
+                    </label>
+                    <textarea
+                      id="justificativa"
+                      value={justificativa}
+                      onChange={(e) => setJustificativa(e.target.value)}
+                      placeholder="Digite o motivo do cancelamento..."
+                      className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      rows={3}
+                    />
+                  </div>
+                  <p className="text-sm text-red-600">
+                    Esta ação irá cancelar a consulta e liberar o horário para outros agendamentos.
+                  </p>
+                </div>
+              )}
+
               <div className="pt-4 border-t">
-                <Button 
-                  onClick={() => setIsModalOpen(false)}
-                  className="w-full"
-                  variant="outline"
-                >
-                  Fechar
-                </Button>
+                {selectedEvent.resource.status === 'confirmado' || selectedEvent.resource.status === 'pendente' ? (
+                  <>
+                    {!showCancelForm ? (
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => setSelectedEvent(null)}
+                          className="flex-1"
+                          variant="outline"
+                        >
+                          Fechar
+                        </Button>
+                        <Button
+                          onClick={() => setShowCancelForm(true)}
+                          className="flex-1"
+                          variant="destructive"
+                        >
+                          Cancelar Consulta
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => {
+                            setShowCancelForm(false)
+                            setJustificativa("")
+                          }}
+                          className="flex-1"
+                          variant="outline"
+                          disabled={isLoading}
+                        >
+                          Voltar
+                        </Button>
+                        <Button
+                          onClick={handleCancelAgendamento}
+                          disabled={isLoading || !justificativa.trim()}
+                          className="flex-1"
+                          variant="destructive"
+                        >
+                          {isLoading ? 'Cancelando...' : 'Confirmar Cancelamento'}
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Button 
+                    onClick={() => setSelectedEvent(null)}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    Fechar
+                  </Button>
+                )}
               </div>
             </div>
           )}

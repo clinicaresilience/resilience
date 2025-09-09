@@ -62,34 +62,37 @@ export function ProfessionalConsultasClient({
   const [observacoes, setObservacoes] = useState("");
   const [consultaAbertaId, setConsultaAbertaId] = useState<string | null>(null);
 
-
-
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
       try {
-        const response = await fetch(`/api/agendamentos?profissional_id=${profissionalId}`);
+        const response = await fetch(
+          `/api/agendamentos?profissional_id=${profissionalId}`
+        );
         const result = await response.json();
 
         if (!response.ok) {
-          throw new Error(result.error || 'Erro ao buscar agendamentos');
+          throw new Error(result.error || "Erro ao buscar agendamentos");
         }
 
         // Mapear agendamentos para formato de consultas
-        const consultasMapeadas = (result.data || []).map((agendamento: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
-          id: agendamento.id,
-          usuario_id: agendamento.usuarioId || agendamento.paciente_id,
-          usuario: {
-            nome: agendamento.pacienteNome || 'Paciente não informado',
-            email: agendamento.pacienteEmail || ''
-          },
-          status: agendamento.status,
-          local: agendamento.local || 'Clínica Resilience',
-          observacoes: agendamento.notas,
-          dataISO: agendamento.dataISO || agendamento.data_consulta,
-        }));
+        const consultasMapeadas = (result.data || []).map(
+          (agendamento: any) => ({
+            // eslint-disable-line @typescript-eslint/no-explicit-any
+            id: agendamento.id,
+            usuario_id: agendamento.usuarioId || agendamento.paciente_id,
+            usuario: {
+              nome: agendamento.pacienteNome || "Paciente não informado",
+              email: agendamento.pacienteEmail || "",
+            },
+            status: agendamento.status,
+            local: agendamento.local || "Clínica Resilience",
+            observacoes: agendamento.notas,
+            dataISO: agendamento.dataISO || agendamento.data_consulta,
+          })
+        );
 
         setConsultas(consultasMapeadas);
       } catch (err) {
@@ -111,7 +114,8 @@ export function ProfessionalConsultasClient({
     if (busca)
       resultado = resultado.filter(
         (c) =>
-          (c.usuario?.nome?.toLowerCase().includes(busca.toLowerCase()) ?? false) ||
+          (c.usuario?.nome?.toLowerCase().includes(busca.toLowerCase()) ??
+            false) ||
           c.usuario_id.toLowerCase().includes(busca.toLowerCase()) ||
           (c.observacoes?.toLowerCase().includes(busca.toLowerCase()) ?? false)
       );
@@ -148,7 +152,7 @@ export function ProfessionalConsultasClient({
       statusNovo = "cancelado";
       requestBody = {
         status: statusNovo,
-        justificativa: "Cancelado pelo profissional"
+        justificativa: "Cancelado pelo profissional",
       };
     }
 
@@ -163,11 +167,13 @@ export function ProfessionalConsultasClient({
       if (!res.ok) throw new Error(result.error || "Erro ao atualizar status");
 
       setConsultas((prev) =>
-        prev.map((c) => (c.id === consulta.id ? { ...c, status: statusNovo } : c))
+        prev.map((c) =>
+          c.id === consulta.id ? { ...c, status: statusNovo } : c
+        )
       );
 
       // Trigger refresh to get updated data from API
-      setRefreshTrigger(prev => prev + 1);
+      setRefreshTrigger((prev) => prev + 1);
 
       console.log("Status atualizado com sucesso!");
     } catch (error) {
@@ -210,7 +216,8 @@ export function ProfessionalConsultasClient({
       });
 
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Erro ao salvar observações");
+      if (!res.ok)
+        throw new Error(result.error || "Erro ao salvar observações");
 
       setConsultas((prev) =>
         prev.map((c) =>
@@ -340,7 +347,15 @@ export function ProfessionalConsultasClient({
                         consulta.usuario_id ||
                         "Não informado"}
                     </h3>
-                    <StatusBadge status={consulta.status as "pendente" | "confirmado" | "concluido" | "cancelado"} />
+                    <StatusBadge
+                      status={
+                        consulta.status as
+                          | "pendente"
+                          | "confirmado"
+                          | "concluido"
+                          | "cancelado"
+                      }
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
@@ -452,7 +467,15 @@ export function ProfessionalConsultasClient({
                 </div>
                 <div>
                   <Label>Status</Label>
-                  <StatusBadge status={consultaSelecionada.status as "pendente" | "confirmado" | "concluido" | "cancelado"} />
+                  <StatusBadge
+                    status={
+                      consultaSelecionada.status as
+                        | "pendente"
+                        | "confirmado"
+                        | "concluido"
+                        | "cancelado"
+                    }
+                  />
                 </div>
                 <div>
                   <Label>Data e Hora</Label>
@@ -470,29 +493,12 @@ export function ProfessionalConsultasClient({
               <div>
                 <Label htmlFor="observacoes">Observações</Label>
                 <Textarea
+                  disabled
                   id="observacoes"
                   value={observacoes}
-                  onChange={(e) => setObservacoes(e.target.value)}
-                  placeholder="Adicione observações sobre a consulta..."
+                  placeholder="observações "
                   rows={4}
                 />
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                <Button
-                  onClick={() => setConsultaAbertaId(null)}
-                  variant="outline"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={async () => {
-                    await handleSalvarObservacoes();
-                    setConsultaAbertaId(null);
-                  }}
-                >
-                  Salvar Observações
-                </Button>
               </div>
             </div>
           </DialogContent>

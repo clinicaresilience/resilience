@@ -572,9 +572,9 @@ export function ProfessionalProntuariosClient({
               >
                 <CardHeader className="pb-3 flex-shrink-0">
                   <div className="flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-col items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg leading-tight break-words truncate pr-2">
+                        <CardTitle className="text-lg leading-tight break-words truncate pr-2 whitespace-break-spaces">
                           {consulta.paciente?.nome ||
                             "Paciente não identificado"}
                         </CardTitle>
@@ -582,7 +582,7 @@ export function ProfessionalProntuariosClient({
                           Consulta - {consulta.modalidade}
                         </CardDescription>
                       </div>
-                      <div className="flex-shrink-0 mt-1">
+                      <div className=" mt-1">
                         {consulta.prontuario ? (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             Com PDF

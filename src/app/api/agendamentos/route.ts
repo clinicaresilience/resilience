@@ -16,21 +16,41 @@ export async function PATCH(
   const { justificativa } = await req.json().catch(() => ({}));
   if (!justificativa?.trim()) return NextResponse.json({ error: "Justificativa é obrigatória" }, { status: 400 });
 
-  const agendamento = await AgendamentosService.updateAgendamentoStatus(id, {
-    status: "cancelado",
-    notas: justificativa,
-  });
+  try {
+    // Verificar se o usuário tem permissão para cancelar este agendamento
+    const agendamentoExistente = await AgendamentosService.getAgendamentoById(id);
+    if (!agendamentoExistente) {
+      return NextResponse.json({ error: "Agendamento não encontrado" }, { status: 404 });
+    }
 
-  if (!agendamento) return NextResponse.json({ error: "Agendamento não encontrado" }, { status: 404 });
+    // Verificar se o usuário é o paciente ou o profissional do agendamento
+    const { data: userData } = await supabase.from("usuarios").select("tipo_usuario").eq("id", user.id).single();
+    const isPaciente = userData?.tipo_usuario === "comum" && agendamentoExistente.paciente_id === user.id;
+    const isProfissional = userData?.tipo_usuario === "profissional" && agendamentoExistente.profissional_id === user.id;
+    const isAdmin = userData?.tipo_usuario === "administrador";
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      id: agendamento.id,
-      status: agendamento.status,
-      notas: agendamento.notas,
-    },
-  });
+    if (!isPaciente && !isProfissional && !isAdmin) {
+      return NextResponse.json({ error: "Não autorizado a cancelar este agendamento" }, { status: 403 });
+    }
+
+    // Usar o método cancelAgendamento que libera o slot automaticamente
+    const agendamento = await AgendamentosService.cancelAgendamento(id, justificativa);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: agendamento.id,
+        status: agendamento.status,
+        notas: agendamento.notas,
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao cancelar agendamento:", error);
+    return NextResponse.json({ 
+      error: "Erro ao cancelar agendamento", 
+      detail: error instanceof Error ? error.message : "Erro desconhecido" 
+    }, { status: 500 });
+  }
 }
 
 export async function GET() {
