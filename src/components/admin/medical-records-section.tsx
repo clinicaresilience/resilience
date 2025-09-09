@@ -52,7 +52,7 @@ export function MedicalRecordsSection() {
         const response = await fetch('/api/agendamentos/prontuarios');
         if (response.ok) {
           const data = await response.json();
-          setConsultas(data.consultas || []);
+          setConsultas(data.data || []);
         }
       } catch (error) {
         console.error('Erro ao buscar consultas:', error);
@@ -95,6 +95,8 @@ export function MedicalRecordsSection() {
       ultimaConsulta: string;
       profissionaisAtendentes: string[];
       statusAtual: "ativo" | "inativo" | "alta";
+      proximaConsulta?: string;
+      observacoesGerais?: string;
     }>();
     
     consultas.forEach(consulta => {
@@ -460,6 +462,27 @@ export function MedicalRecordsSection() {
                               </p>
                             </div>
                           )}
+
+                          {/* PDF Viewing Section */}
+                          <div className="pt-4 border-t border-gray-200">
+                            <strong className="text-sm text-gray-800 font-medium">
+                              Arquivo PDF:
+                            </strong>
+                            <div className="mt-2">
+                              <Button
+                                onClick={() => {
+                                  // Open PDF in new tab using the visualizar endpoint
+                                  const pdfUrl = `/api/agendamentos/prontuarios/visualizar?prontuarioId=${prontuario.id}`;
+                                  console.log('Opening PDF with URL:', pdfUrl);
+                                  window.open(pdfUrl, '_blank');
+                                }}
+                                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
+                              >
+                                <FileText className="h-4 w-4" />
+                                <span>Ver PDF do Prontuário</span>
+                              </Button>
+                            </div>
+                          </div>
 
                           <div className="flex justify-between text-xs text-gray-600 pt-4 border-t border-gray-200">
                             <span>

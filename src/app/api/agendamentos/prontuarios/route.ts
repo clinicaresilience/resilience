@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      consultas: prontuarios,
+      data: prontuarios,
     }, { status: 200 })
 
   } catch (error: unknown) {
