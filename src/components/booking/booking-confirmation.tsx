@@ -31,9 +31,17 @@ moment.locale("pt-br");
 
 type AgendaSlot = {
   id: string;
+  profissional_id: string;
   data: string;
-  hora: string;
-  disponivel: boolean;
+  hora_inicio: string;
+  hora_fim: string;
+  status: 'livre' | 'ocupado' | 'cancelado';
+  paciente_id?: string;
+  // Campos compatíveis com a interface antiga para não quebrar
+  diaSemana?: number;
+  horaInicio?: string;
+  disponivel?: boolean;
+  hora?: string;
 };
 
 type Modalidade = "presencial" | "online";
@@ -81,10 +89,13 @@ export function BookingConfirmation({
       setLoading(true);
       setError("");
 
-      const dataHora = `${slot.data}T${slot.hora}:00.000Z`;
+      // Usar o horário correto baseado na nova interface
+      const horaSlot = slot.hora || slot.hora_inicio || '00:00';
+      const dataHora = `${slot.data}T${horaSlot}:00.000Z`;
 
       console.log('Tentando criar agendamento:', {
         profissional_id: profissionalId,
+        slot_id: slot.id,
         data_consulta: dataHora,
         modalidade,
         notas: notas.trim(),
@@ -102,8 +113,8 @@ export function BookingConfirmation({
           slot: {
             id: slot.id,
             data: slot.data,
-            hora: slot.hora,
-            disponivel: slot.disponivel,
+            hora: horaSlot,
+            disponivel: slot.disponivel ?? slot.status === 'livre',
           },
           modalidade,
           codigoEmpresa,
@@ -119,16 +130,15 @@ export function BookingConfirmation({
         return;
       }
 
-      // Usuário está logado, criar agendamento normalmente
+      // ✅ USAR NOVO MÉTODO: Enviar slot_id para usar o novo sistema
       const response = await fetch("/api/agendamentos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profissional_id: profissionalId,
-          data_consulta: dataHora,
-          local: "Clínica Resilience",
-          notas: notas.trim() || undefined,
+          slot_id: slot.id, // ✅ Usar slot_id específico
           modalidade,
+          notas: notas.trim() || undefined,
         }),
       });
 
@@ -174,7 +184,8 @@ export function BookingConfirmation({
 
   if (!slot) return null;
 
-  const { date, time } = formatDateTime(slot.data, slot.hora);
+  const horaParaExibir = slot.hora || slot.hora_inicio || '00:00';
+  const { date, time } = formatDateTime(slot.data, horaParaExibir);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>

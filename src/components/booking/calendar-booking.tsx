@@ -43,10 +43,16 @@ const messages = {
 
 type AgendaSlot = {
   id: string;
-  diaSemana: number;
-  horaInicio: string;
-  disponivel: boolean;
-  data?: string;
+  profissional_id: string;
+  data: string;
+  hora_inicio: string;
+  hora_fim: string;
+  status: 'livre' | 'ocupado' | 'cancelado';
+  paciente_id?: string;
+  // Campos compatíveis com a interface antiga para não quebrar
+  diaSemana?: number;
+  horaInicio?: string;
+  disponivel?: boolean;
   hora?: string;
 };
 
@@ -86,52 +92,49 @@ export function CalendarBooking({
   const fetchAgenda = async () => {
     setLoading(true);
     try {
+      // Buscar slots dos próximos 3 meses para performance
+      const hoje = new Date();
+      const dataInicio = hoje.toISOString().split('T')[0];
+      const dataFim = new Date(hoje.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
       const res = await fetch(
-        `/api/profissionais/agenda?profissionalId=${profissionalId}`
+        `/api/profissionais/agenda?profissionalId=${profissionalId}&dataInicio=${dataInicio}&dataFim=${dataFim}`
       );
+      
       if (res.ok) {
         const data = await res.json();
         
-        // Gerar slots para os próximos 6 meses para permitir navegação
-        const allSlots: AgendaSlot[] = [];
-        const hoje = new Date();
+        // A API agora retorna slots já prontos com datas específicas
+        const slotsFromAPI = (data.slots || []).map((slot: {
+          id: string;
+          profissional_id: string;
+          data: string;
+          hora_inicio: string;
+          hora_fim: string;
+          status: 'livre' | 'ocupado' | 'cancelado';
+          paciente_id?: string;
+        }): AgendaSlot => ({
+          id: slot.id,
+          profissional_id: slot.profissional_id,
+          data: slot.data,
+          hora_inicio: slot.hora_inicio,
+          hora_fim: slot.hora_fim,
+          status: slot.status,
+          paciente_id: slot.paciente_id,
+          // Campos de compatibilidade para não quebrar a interface
+          hora: slot.hora_inicio,
+          horaInicio: slot.hora_inicio,
+          disponivel: slot.status === 'livre',
+          diaSemana: new Date(slot.data + 'T00:00:00').getDay(),
+        }));
         
-        // Para cada slot da configuração
-        (data.slots || []).forEach((slot: Record<string, unknown>) => {
-          const diaSemana = slot.diaSemana as number;
-          const horaInicio = slot.horaInicio as string;
-          const disponivel = slot.disponivel as boolean;
-          
-          // Gerar datas para os próximos 6 meses
-          for (let monthOffset = 0; monthOffset < 6; monthOffset++) {
-            const targetMonth = new Date(hoje.getFullYear(), hoje.getMonth() + monthOffset, 1);
-            
-            // Encontrar todas as ocorrências deste dia da semana no mês
-            for (let day = 1; day <= 31; day++) {
-              const testDate = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), day);
-              
-              // Verificar se a data é válida e é o dia da semana correto
-              if (testDate.getMonth() === targetMonth.getMonth() && 
-                  testDate.getDay() === diaSemana &&
-                  testDate >= hoje) {
-                
-                allSlots.push({
-                  id: `${testDate.toISOString().split('T')[0]}-${horaInicio}`,
-                  data: testDate.toISOString().split("T")[0],
-                  hora: horaInicio,
-                  diaSemana,
-                  horaInicio,
-                  disponivel,
-                });
-              }
-            }
-          }
-        });
+        // Filtrar apenas slots disponíveis (status 'livre')
+        const slotsDisponiveis = slotsFromAPI.filter(slot => slot.status === 'livre');
         
-        setAgendaSlots(allSlots);
+        setAgendaSlots(slotsDisponiveis);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Erro ao buscar agenda:', err);
     } finally {
       setLoading(false);
     }

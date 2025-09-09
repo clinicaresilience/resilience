@@ -11,10 +11,16 @@ moment.locale("pt-br");
 
 type AgendaSlot = {
   id: string;
-  diaSemana: number;
-  horaInicio: string;
-  disponivel: boolean;
-  data?: string;
+  profissional_id: string;
+  data: string;
+  hora_inicio: string;
+  hora_fim: string;
+  status: 'livre' | 'ocupado' | 'cancelado';
+  paciente_id?: string;
+  // Campos compatíveis com a interface antiga para não quebrar
+  diaSemana?: number;
+  horaInicio?: string;
+  disponivel?: boolean;
   hora?: string;
 };
 

@@ -15,74 +15,139 @@ export async function GET(
     }
 
     const { profissionalId } = params;
+    const { searchParams } = new URL(request.url);
+    const dataInicio = searchParams.get('dataInicio');
+    const dataFim = searchParams.get('dataFim');
 
-    // Verificar se o usuário é o próprio profissional ou admin
-    if (profissionalId !== user.id) {
-      const { data: userData, error: userError } = await supabase
-        .from('usuarios')
-        .select('tipo_usuario')
-        .eq('id', user.id)
-        .single();
-
-      if (userError || userData?.tipo_usuario !== 'administrador') {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-      }
-    }
-
-    // Gerar slots para os próximos 30 dias
+    // Definir período padrão se não fornecido (próximos 30 dias)
     const hoje = new Date();
-    const slots: { data: string; horario: string; disponivel: boolean }[] = [];
-    
-    for (let i = 1; i <= 30; i++) {
-      const data = new Date(hoje);
-      data.setDate(data.getDate() + i);
-      
-      // Pular fins de semana (0 = domingo, 6 = sábado)
-      if (data.getDay() === 0 || data.getDay() === 6) {
-        continue;
-      }
-      
-      const dataStr = data.toISOString().split('T')[0];
-      
-      // Buscar agendamentos existentes para esta data
-      const { data: agendamentosExistentes } = await supabase
-        .from('agendamentos')
-        .select('data_hora')
-        .eq('profissional_id', profissionalId)
-        .gte('data_hora', `${dataStr}T00:00:00Z`)
-        .lt('data_hora', `${dataStr}T23:59:59Z`)
-        .neq('status', 'cancelado');
+    const inicioDate = dataInicio || hoje.toISOString().split('T')[0];
+    const fimDate = dataFim || new Date(hoje.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-      const horariosOcupados = new Set(
-        agendamentosExistentes?.map(a => {
-          const hora = new Date(a.data_hora).toLocaleTimeString('pt-BR', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            timeZone: 'America/Sao_Paulo'
-          });
-          return hora;
-        }) || []
-      );
+    console.log(`Buscando slots para profissional ${profissionalId} entre ${inicioDate} e ${fimDate}`);
 
-      // Horários padrão de funcionamento (8h às 18h, de hora em hora)
-      const horariosTrabalho = [
-        '08:00', '09:00', '10:00', '11:00', 
-        '14:00', '15:00', '16:00', '17:00'
-      ];
+    // Buscar todos os slots disponíveis da tabela agendamento_slot
+    const { data: slots, error } = await supabase
+      .from('agendamento_slot')
+      .select('*')
+      .eq('profissional_id', profissionalId)
+      .eq('status', 'livre') // Apenas slots livres
+      .gte('data', inicioDate)
+      .lte('data', fimDate)
+      .order('data')
+      .order('hora_inicio');
 
-      horariosTrabalho.forEach(horario => {
-        slots.push({
-          data: dataStr,
-          horario: horario,
-          disponivel: !horariosOcupados.has(horario)
-        });
-      });
+    if (error) {
+      console.error('Erro ao buscar slots:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(slots);
+    console.log(`Encontrados ${slots?.length || 0} slots disponíveis`);
+
+    // Mapear para o formato esperado pelo frontend
+    const slotsFormatted = (slots || []).map(slot => ({
+      id: slot.id,
+      data: slot.data,
+      horario: slot.hora_inicio,
+      hora_inicio: slot.hora_inicio,
+      hora_fim: slot.hora_fim,
+      disponivel: true, // Já filtrados apenas os livres
+      status: slot.status,
+      profissional_id: slot.profissional_id
+    }));
+
+    return NextResponse.json(slotsFormatted);
 
   } catch (error) {
     console.error('Erro ao buscar slots:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST - criar agendamento em um slot específico
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { profissionalId: string } }
+) {
+  try {
+    const supabase = await createClient();
+
+    // Verificar autenticação
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { profissionalId } = params;
+    const body = await request.json();
+    const { slotId, modalidade, notas } = body;
+
+    if (!slotId) {
+      return NextResponse.json({ error: 'slotId é obrigatório' }, { status: 400 });
+    }
+
+    // Verificar se o slot ainda está disponível
+    const { data: slot, error: slotError } = await supabase
+      .from('agendamento_slot')
+      .select('*')
+      .eq('id', slotId)
+      .eq('profissional_id', profissionalId)
+      .eq('status', 'livre')
+      .single();
+
+    if (slotError || !slot) {
+      return NextResponse.json({ error: 'Slot não disponível' }, { status: 400 });
+    }
+
+    // Criar agendamento
+    const dataConsulta = new Date(`${slot.data}T${slot.hora_inicio}:00`).toISOString();
+
+    const { data: agendamento, error: agendamentoError } = await supabase
+      .from('agendamentos')
+      .insert({
+        paciente_id: user.id,
+        profissional_id: profissionalId,
+        data_consulta: dataConsulta,
+        status: 'confirmado',
+        modalidade: modalidade || 'presencial',
+        notas: notas
+      })
+      .select()
+      .single();
+
+    if (agendamentoError) {
+      console.error('Erro ao criar agendamento:', agendamentoError);
+      return NextResponse.json({ error: agendamentoError.message }, { status: 500 });
+    }
+
+    // Marcar slot como ocupado
+    const { error: updateSlotError } = await supabase
+      .from('agendamento_slot')
+      .update({
+        status: 'ocupado',
+        paciente_id: user.id,
+        atualizado_em: new Date().toISOString()
+      })
+      .eq('id', slotId);
+
+    if (updateSlotError) {
+      console.error('Erro ao ocupar slot:', updateSlotError);
+      // Se não conseguir ocupar o slot, cancelar o agendamento
+      await supabase.from('agendamentos').delete().eq('id', agendamento.id);
+      return NextResponse.json({ error: 'Erro ao reservar horário' }, { status: 500 });
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      agendamento: agendamento,
+      message: 'Agendamento criado com sucesso!'
+    });
+
+  } catch (error) {
+    console.error('Erro ao criar agendamento:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

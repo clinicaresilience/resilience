@@ -4,13 +4,6 @@ import { createClient as createClientBrowser } from '@/lib/client';
 export type StatusAgendamento = 'confirmado' | 'cancelado' | 'pendente' | 'concluido';
 export type Modalidade = 'presencial' | 'online';
 
-interface SlotData {
-  diaSemana: number;
-  horaInicio: string;
-  disponivel: boolean;
-  agendamento_id: string | null;
-}
-
 export interface Agendamento {
   id: string;
   paciente_id: string;
@@ -44,7 +37,26 @@ export class AgendamentosService {
     try {
       console.log('Criando agendamento:', data);
 
-      // 1️⃣ Criar agendamento
+      // Extrair data e horário do ISO datetime
+      const dataObj = new Date(data.data_consulta);
+      const dataSlot = dataObj.toISOString().split('T')[0]; // YYYY-MM-DD
+      const horarioSlot = dataObj.toISOString().split('T')[1].substring(0, 5); // HH:mm
+
+      // 1️⃣ Verificar se existe slot disponível na nova tabela agendamento_slot
+      const { data: slot, error: slotError } = await supabase
+        .from('agendamento_slot')
+        .select('*')
+        .eq('profissional_id', data.profissional_id)
+        .eq('data', dataSlot)
+        .eq('hora_inicio', horarioSlot)
+        .eq('status', 'livre')
+        .single();
+
+      if (slotError || !slot) {
+        throw new Error('Slot não disponível para este horário');
+      }
+
+      // 2️⃣ Criar agendamento
       const { data: agendamento, error: agendamentoError } = await supabase
         .from('agendamentos')
         .insert({
@@ -68,40 +80,24 @@ export class AgendamentosService {
 
       console.log('Agendamento criado com sucesso:', agendamento.id);
 
-      // 2️⃣ Atualizar slots no agenda_profissional
-      const { data: agendaProfissional } = await supabase
-        .from('agenda_profissional')
-        .select('id, slots')
-        .eq('profissional_id', data.profissional_id)
-        .single();
+      // 3️⃣ Marcar slot como ocupado na nova tabela
+      const { error: updateSlotError } = await supabase
+        .from('agendamento_slot')
+        .update({
+          status: 'ocupado',
+          paciente_id: data.usuario_id,
+          atualizado_em: new Date().toISOString()
+        })
+        .eq('id', slot.id);
 
-      if (!agendaProfissional) throw new Error('Agenda do profissional não encontrada');
+      if (updateSlotError) {
+        console.error('Erro ao atualizar slot:', updateSlotError);
+        throw updateSlotError;
+      }
 
-      const dataObj = new Date(data.data_consulta);
-      const diaSemana = dataObj.getDay();
-      const hora = dataObj.toISOString().split('T')[1].substring(0, 5);
+      console.log('Slot marcado como ocupado!');
 
-      const novosSlots = agendaProfissional.slots.map((slot: SlotData) => {
-        if (slot.diaSemana === diaSemana && slot.horaInicio === hora) {
-          return {
-            ...slot,
-            disponivel: false,
-            agendamento_id: agendamento.id,
-          };
-        }
-        return slot;
-      });
-
-      const { error: slotsError } = await supabase
-        .from('agenda_profissional')
-        .update({ slots: novosSlots })
-        .eq('id', agendaProfissional.id);
-
-      if (slotsError) throw slotsError;
-
-      console.log('Slot atualizado com sucesso!');
-
-      // 3️⃣ Retornar agendamento formatado
+      // 4️⃣ Retornar agendamento formatado
       return {
         id: agendamento.id,
         paciente_id: agendamento.paciente_id,
@@ -185,83 +181,32 @@ export class AgendamentosService {
   // ======================================
   static async checkAvailability(
     profissional_id: string,
-    data_hora: string
+    slot_id: string
   ): Promise<boolean> {
     const supabase = await createClient();
 
     try {
       console.log('=== VERIFICANDO DISPONIBILIDADE ===');
-      console.log('Input recebido:', { profissional_id, data_hora });
+      console.log('Input recebido:', { profissional_id, slot_id });
 
-      const dataObj = new Date(data_hora);
-      if (isNaN(dataObj.getTime())) {
-        console.error('Data inválida:', data_hora);
-        return false;
-      }
-
-      const data = dataObj.toISOString().split('T')[0]; // YYYY-MM-DD
-      const hora = dataObj.toISOString().split('T')[1].substring(0, 5); // HH:MM
-      const diaSemana = dataObj.getDay(); // 0=domingo, 1=segunda, etc.
-
-      console.log('Data/hora processadas:', { data, hora, diaSemana });
-
-      // 1. Buscar configuração JSON
-      // 1. Buscar configuração JSON
-      const { data: configData, error: configError } = await supabase
-        .from('agenda_profissional')
-        .select('configuracao')
+      // Buscar o slot pelo ID
+      const { data: slot, error: slotError } = await supabase
+        .from('agendamento_slot')
+        .select('id, status, data, hora_inicio, hora_fim')
+        .eq('id', slot_id)
         .eq('profissional_id', profissional_id)
         .single();
 
-      if (configError || !configData) {
-        console.log('Profissional não atende neste dia:', { diaSemana, configError });
+      if (slotError || !slot) {
+        console.log('Slot não encontrado ou não pertence ao profissional:', slotError);
         return false;
       }
 
-      // NÃO USAR JSON.parse
-      const configObj = configData.configuracao;
-      const diaConfig = configObj.dias.find((d: { diaSemana: number }) => d.diaSemana === diaSemana);
-
-      if (!diaConfig) {
-        console.log('Profissional não atende neste dia da semana:', diaSemana);
+      // Verificar se o slot está livre
+      if (slot.status !== 'livre') {
+        console.log('Slot já ocupado ou indisponível:', slot.status);
         return false;
       }
-
-      const horaInicio = diaConfig.horaInicio;
-      const horaFim = diaConfig.horaFim;
-      const intervaloMinutos = configObj.intervalo_minutos;
-
-
-      // 2. Verificar se está dentro do expediente
-      const horaMinutos = parseInt(hora.split(':')[0]) * 60 + parseInt(hora.split(':')[1]);
-      const inicioMinutos = parseInt(horaInicio.split(':')[0]) * 60 + parseInt(horaInicio.split(':')[1]);
-      const fimMinutos = parseInt(horaFim.split(':')[0]) * 60 + parseInt(horaFim.split(':')[1]);
-
-      if (horaMinutos < inicioMinutos || horaMinutos >= fimMinutos) return false;
-
-      // 3. Verificar se está no intervalo correto
-      if ((horaMinutos - inicioMinutos) % intervaloMinutos !== 0) return false;
-
-      // 4. Verificar exceções
-      const { data: excecao } = await supabase
-        .from('agenda_excecoes')
-        .select('id')
-        .eq('profissional_id', profissional_id)
-        .eq('data', data)
-        .single();
-
-      if (excecao) return false;
-
-      // 5. Verificar agendamentos existentes
-      const { data: agendamentoExistente } = await supabase
-        .from('agendamentos')
-        .select('id')
-        .eq('profissional_id', profissional_id)
-        .eq('data_consulta', data_hora)
-        .neq('status', 'cancelado')
-        .single();
-
-      if (agendamentoExistente) return false;
 
       return true;
     } catch (error) {
@@ -269,6 +214,7 @@ export class AgendamentosService {
       return false;
     }
   }
+
 
   // ======================================
   // Atualizar status do agendamento
@@ -308,54 +254,49 @@ export class AgendamentosService {
         throw new Error('Agendamento não encontrado');
       }
 
-      // 2️⃣ Calcular dia da semana e hora do agendamento
+      // 2️⃣ Extrair data e horário do agendamento
       const dataObj = new Date(agendamento.data_consulta);
-      const diaSemana = dataObj.getDay();
-      const hora = dataObj.toISOString().split('T')[1].substring(0, 5);
+      const dataSlot = dataObj.toISOString().split('T')[0]; // YYYY-MM-DD
+      const horarioSlot = dataObj.toISOString().split('T')[1].substring(0, 5); // HH:mm
 
-      console.log('Cancelando agendamento:', { id, diaSemana, hora, profissional_id: agendamento.profissional_id });
+      console.log('Cancelando agendamento:', { id, dataSlot, horarioSlot, profissional_id: agendamento.profissional_id });
 
-      // 3️⃣ Buscar a agenda do profissional
-      const { data: agendaProfissional } = await supabase
-        .from('agenda_profissional')
-        .select('id, slots')
+      // 3️⃣ Buscar slot correspondente na nova tabela agendamento_slot
+      const { data: slot, error: slotError } = await supabase
+        .from('agendamento_slot')
+        .select('*')
         .eq('profissional_id', agendamento.profissional_id)
+        .eq('data', dataSlot)
+        .eq('hora_inicio', horarioSlot)
+        .eq('paciente_id', agendamento.paciente_id)
+        .eq('status', 'ocupado')
         .single();
 
-      if (!agendaProfissional) {
-        console.warn('Agenda do profissional não encontrada, continuando com cancelamento do agendamento');
-      } else {
-        // 4️⃣ Encontrar e atualizar o slot correspondente
-        const novosSlots = agendaProfissional.slots.map((slot: SlotData) => {
-          if (slot.diaSemana === diaSemana && slot.horaInicio === hora && slot.agendamento_id === id) {
-            console.log('Slot encontrado e será liberado:', slot);
-            return {
-              ...slot,
-              disponivel: true,
-              agendamento_id: null,
-            };
-          }
-          return slot;
-        });
+      if (slot) {
+        // 4️⃣ Liberar o slot na nova tabela
+        const { error: updateSlotError } = await supabase
+          .from('agendamento_slot')
+          .update({
+            status: 'livre',
+            paciente_id: null,
+            atualizado_em: new Date().toISOString()
+          })
+          .eq('id', slot.id);
 
-        // 5️⃣ Atualizar os slots na agenda do profissional
-        const { error: slotsError } = await supabase
-          .from('agenda_profissional')
-          .update({ slots: novosSlots })
-          .eq('id', agendaProfissional.id);
-
-        if (slotsError) {
-          console.error('Erro ao atualizar slots:', slotsError);
-          throw slotsError;
+        if (updateSlotError) {
+          console.error('Erro ao liberar slot:', updateSlotError);
+          throw updateSlotError;
         }
 
         console.log('Slot liberado com sucesso!');
+      } else {
+        console.warn('Slot não encontrado na nova tabela agendamento_slot:', slotError);
       }
 
-      // 6️⃣ Atualizar o status do agendamento para cancelado
-      const updatedAgendamento = await this.updateAgendamentoStatus(id, { 
-        status: "cancelado", 
-        notas: motivo 
+      // 5️⃣ Atualizar o status do agendamento para cancelado
+      const updatedAgendamento = await this.updateAgendamentoStatus(id, {
+        status: "cancelado",
+        notas: motivo
       });
 
       return updatedAgendamento;
@@ -374,15 +315,15 @@ export class AgendamentosService {
 
     try {
       // 1️⃣ Atualizar o status do agendamento para concluído
-      const updatedAgendamento = await this.updateAgendamentoStatus(id, { 
-        status: "concluido", 
-        notas: notas 
+      const updatedAgendamento = await this.updateAgendamentoStatus(id, {
+        status: "concluido",
+        notas: notas
       });
 
       // 2️⃣ Atualizar o status_consulta na tabela consultas
       const { error: consultaError } = await supabase
         .from('consultas')
-        .update({ 
+        .update({
           status_consulta: 'concluido',
           updated_at: new Date().toISOString()
         })
