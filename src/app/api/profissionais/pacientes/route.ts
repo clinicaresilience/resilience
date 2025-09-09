@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied - not a professional' }, { status: 403 });
     }
 
-    // Fetch consultas for this professional (replacing agendamentos)
-    const { data: consultas, error: consultasError } = await supabase
-      .from('consultas')
+    // Fetch agendamentos for this professional
+    const { data: agendamentos, error: agendamentosError } = await supabase
+      .from('agendamentos')
       .select(`
         id,
         paciente_id,
@@ -50,51 +50,32 @@ export async function GET(request: NextRequest) {
         data_consulta,
         status,
         modalidade,
-        local,
-        observacoes,
-        status_consulta,
-        prontuario,
-        agendamento_id
+        notas,
+        paciente:usuarios!agendamentos_paciente_id_fkey(nome, email, telefone)
       `)
       .eq('profissional_id', profissionalId)
       .order('data_consulta', { ascending: false });
 
-    if (consultasError) {
-      console.error('Error fetching consultas:', consultasError);
+    if (agendamentosError) {
+      console.error('Error fetching agendamentos:', agendamentosError);
       return NextResponse.json(
-        { error: 'Error fetching consultations', detail: consultasError.message },
+        { error: 'Error fetching appointments', detail: agendamentosError.message },
         { status: 500 }
       );
     }
 
-    // Get unique patient IDs from consultas
+    // Get unique patient IDs from agendamentos
     const pacienteIds = Array.from(
-      new Set(consultas?.map((c) => c.paciente_id).filter(Boolean))
+      new Set(agendamentos?.map((a) => a.paciente_id).filter(Boolean))
     );
 
-    let prontuarios: Array<Record<string, unknown>> = [];
     let pacientes: Array<Record<string, unknown>> = [];
 
     if (pacienteIds.length > 0) {
-      // Fetch prontuarios (consultas with prontuario field not null)
-      const consultasComProntuario = consultas?.filter(c => c.prontuario) || [];
-      
-      // Transform consultas with prontuarios to match expected format
-      prontuarios = consultasComProntuario.map(consulta => ({
-        id: consulta.id,
-        usuario_id: consulta.paciente_id,
-        dataConsulta: consulta.data_consulta,
-        tipoConsulta: consulta.modalidade || 'Consulta',
-        observacoes: consulta.observacoes || '',
-        diagnostico: '', // Not available in current schema
-        prescricoes: [], // Not available in current schema
-        prontuario_url: consulta.prontuario
-      }));
-
-      // Fetch patient data
+      // Fetch patient data with appointment information
       const { data: pacData, error: pacError } = await supabase
         .from('usuarios')
-        .select('id, nome, email, ativo')
+        .select('id, nome, email, telefone, ativo')
         .in('id', pacienteIds);
 
       if (pacError) {
@@ -106,25 +87,25 @@ export async function GET(request: NextRequest) {
       }
 
       // Map the patient data and convert 'ativo' field to expected 'status' format
-      pacientes = pacData?.map(paciente => ({
-        ...paciente,
-        status: paciente.ativo ? 'ativo' : 'inativo'
-      })) || [];
+      // Also include appointment count for each patient
+      pacientes = pacData?.map(paciente => {
+        const patientAppointments = agendamentos?.filter(a => a.paciente_id === paciente.id) || [];
+        return {
+          ...paciente,
+          status: paciente.ativo ? 'ativo' : 'inativo',
+          totalAgendamentos: patientAppointments.length,
+          ultimoAgendamento: patientAppointments.length > 0 ?
+            patientAppointments.sort((a, b) => new Date(b.data_consulta).getTime() - new Date(a.data_consulta).getTime())[0].data_consulta :
+            null
+        };
+      }) || [];
     }
 
-    // Transform consultas to match expected agendamentos format for backward compatibility
-    const agendamentos = consultas?.map(consulta => ({
-      id: consulta.id,
-      paciente_id: consulta.paciente_id,
-      profissional_id: consulta.profissional_id,
-      data_consulta: consulta.data_consulta,
-      status: consulta.status_consulta || consulta.status,
-      especialidade: consulta.modalidade || 'Consulta',
-      notas: consulta.observacoes
-    })) || [];
+    // For now, return empty prontuarios array since we're focusing on patients
+    const prontuarios: Array<Record<string, unknown>> = [];
 
     console.log(`Successfully fetched data for professional ${profissionalId}:`, {
-      consultasCount: consultas?.length || 0,
+      agendamentosCount: agendamentos?.length || 0,
       pacientesCount: pacientes.length,
       prontuariosCount: prontuarios.length
     });
