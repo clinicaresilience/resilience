@@ -135,6 +135,7 @@ export function EditProfileForm({
   const uploadAvatar = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("avatar", file);
+    formData.append("userId", user.id);
 
     const res = await fetch("/api/upload-avatar", {
       method: "POST",
