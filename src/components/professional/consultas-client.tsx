@@ -62,6 +62,8 @@ export function ProfessionalConsultasClient({
   const [observacoes, setObservacoes] = useState("");
   const [consultaAbertaId, setConsultaAbertaId] = useState<string | null>(null);
 
+
+
   useEffect(() => {
     async function load() {
       setLoading(true);
@@ -76,12 +78,15 @@ export function ProfessionalConsultasClient({
         // Mapear agendamentos para formato de consultas
         const consultasMapeadas = (result.data || []).map((agendamento: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           id: agendamento.id,
-          usuario_id: agendamento.paciente_id,
-          usuario: agendamento.paciente,
+          usuario_id: agendamento.usuarioId || agendamento.paciente_id,
+          usuario: {
+            nome: agendamento.pacienteNome || 'Paciente não informado',
+            email: agendamento.pacienteEmail || ''
+          },
           status: agendamento.status,
-          local: 'Clínica Resilience',
+          local: agendamento.local || 'Clínica Resilience',
           observacoes: agendamento.notas,
-          dataISO: agendamento.data_consulta,
+          dataISO: agendamento.dataISO || agendamento.data_consulta,
         }));
         
         setConsultas(consultasMapeadas);
@@ -104,6 +109,7 @@ export function ProfessionalConsultasClient({
     if (busca)
       resultado = resultado.filter(
         (c) =>
+          (c.usuario?.nome?.toLowerCase().includes(busca.toLowerCase()) ?? false) ||
           c.usuario_id.toLowerCase().includes(busca.toLowerCase()) ||
           (c.observacoes?.toLowerCase().includes(busca.toLowerCase()) ?? false)
       );

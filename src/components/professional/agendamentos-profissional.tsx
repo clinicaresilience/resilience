@@ -73,7 +73,18 @@ interface SlotDisponivel {
 }
 
 function formatarDataHora(iso: string) {
+  // Verificar se a string ISO é válida
+  if (!iso || iso.trim() === '') {
+    return 'Data não informada';
+  }
+  
   const d = new Date(iso);
+  
+  // Verificar se a data é válida
+  if (isNaN(d.getTime())) {
+    return 'Data inválida';
+  }
+  
   return d.toLocaleString("pt-BR", {
     weekday: "short",
     day: "2-digit",
@@ -124,11 +135,46 @@ export default function AgendamentosProfissional({
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.data) {
-            // Mapear corretamente os campos de data
-            const agendamentosFormatados = result.data.map((ag: Record<string, any>) => ({
-              ...ag,
-              dataISO: ag.data_consulta || ag.data_hora_inicio || ag.dataISO
-            }));
+            // Mapear corretamente os campos de data e paciente
+            const agendamentosFormatados = result.data.map((ag: Record<string, any>) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+              // Extrair nome do paciente corretamente
+              let pacienteNome = 'Paciente não identificado';
+              if (ag.pacienteNome) {
+                pacienteNome = ag.pacienteNome;
+              } else if (ag.paciente && ag.paciente.nome) {
+                pacienteNome = ag.paciente.nome;
+              } else if (ag.usuario && ag.usuario.nome) {
+                pacienteNome = ag.usuario.nome;
+              }
+              
+              // Extrair data corretamente
+              let dataISO = '';
+              if (ag.dataISO) {
+                dataISO = ag.dataISO;
+              } else if (ag.data_consulta) {
+                dataISO = ag.data_consulta;
+              } else if (ag.data_hora_inicio) {
+                dataISO = ag.data_hora_inicio;
+              }
+              
+              const agendamentoFormatado = {
+                id: ag.id,
+                usuarioId: ag.usuarioId || ag.paciente_id,
+                profissionalId: ag.profissionalId || ag.profissional_id,
+                profissionalNome: ag.profissionalNome || ag.profissional?.nome || 'Profissional',
+                especialidade: ag.especialidade || ag.profissional?.especialidade || '',
+                dataISO: dataISO,
+                local: ag.local || 'Clínica Resilience',
+                status: ag.status,
+                notas: ag.notas,
+                modalidade: ag.modalidade,
+                pacienteNome: pacienteNome,
+                pacienteEmail: ag.pacienteEmail || ag.paciente?.email || ag.usuario?.email || '',
+                pacienteTelefone: ag.pacienteTelefone || ag.paciente?.telefone || ag.usuario?.telefone || ''
+              };
+              
+              return agendamentoFormatado;
+            });
             setAgendamentos(agendamentosFormatados);
           }
         } else {
