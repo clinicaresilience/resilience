@@ -82,8 +82,8 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
               onCollapseChange={setSidebarCollapsed}
             />
             <main
-              className={`transition-all duration-500 ease-in-out overflow-y-auto min-h-screen 
-    ${pathname.startsWith("/painel-administrativo") ? "" : "pt-8"} 
+              className={`transition-all duration-500 ease-in-out overflow-y-auto min-h-screen
+    ${pathname.startsWith("/painel-administrativo") ? "" : "pt-8"}
     ${sidebarCollapsed ? "md:ml-16" : "md:ml-64"}
   `}
             >

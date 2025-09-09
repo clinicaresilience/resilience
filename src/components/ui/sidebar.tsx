@@ -85,7 +85,7 @@ export function Sidebar({
         <Button
           variant="ghost"
           size="sm"
-          className="absolute -right-3 top-6 hidden md:flex h-6 w-6 rounded-full border border-gray-200 bg-white shadow-sm z-20"
+          className="absolute -right-3 top-6 hidden md:flex h-6 w-6 rounded-full border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow z-40"
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
           {isCollapsed ? (
@@ -146,26 +146,28 @@ export function Sidebar({
                 key={tab.id}
                 href={tab.path!}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-1'} px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   activeTab === tab.id
                     ? "bg-azul-escuro text-white"
                     : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
                 }`}
               >
-                <tab.icon className="w-4 h-4" />
-                <span>{tab.label}</span>
+                <tab.icon className="w-4 h-4 flex-shrink-0" />
+                {!isCollapsed && <span className="truncate">{tab.label}</span>}
               </Link>
             ))}
           </nav>
 
           {/* Footer */}
           <div className="p-4 border-t border-gray-200 space-y-3">
-            <LogoutButton
-              className={cn(
-                "w-full justify-center",
-                isCollapsed ? "px-2" : "px-4"
-              )}
-            />
+            <div className="flex justify-center">
+              <LogoutButton
+                className={cn(
+                  "w-full",
+                  isCollapsed ? "px-2" : "px-4"
+                )}
+              />
+            </div>
             {!isCollapsed && (
               <div className="text-xs text-gray-500 text-center">
                 © 2025 Clínica Resilience
