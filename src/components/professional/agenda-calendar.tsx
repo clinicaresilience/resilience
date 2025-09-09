@@ -108,7 +108,21 @@ export function AgendaCalendar() {
 
       // Garantir que a data seja interpretada corretamente para o timezone local
       const startDate = new Date(dataHora)
-      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000) // 1 hora de duração
+      
+      // Calcular duração baseada nos dados do banco ou usar 1 hora como padrão
+      let endDate: Date
+      let duracaoTexto: string
+      
+      if (ag.data_hora_fim) {
+        endDate = new Date(ag.data_hora_fim)
+        const duracaoMs = endDate.getTime() - startDate.getTime()
+        const duracaoMinutos = Math.round(duracaoMs / (1000 * 60))
+        duracaoTexto = `${duracaoMinutos} minutos`
+      } else {
+        // Fallback para 1 hora se não houver data_hora_fim
+        endDate = new Date(startDate.getTime() + 60 * 60 * 1000)
+        duracaoTexto = '60 minutos'
+      }
 
       return {
         id: ag.id,
@@ -117,7 +131,7 @@ export function AgendaCalendar() {
         end: endDate,
         resource: {
           ...ag,
-          duracao: '60 minutos'
+          duracao: duracaoTexto
         }
       }
     }).filter((event): event is CalendarEvent => event !== null) // Remove null events with proper type guard

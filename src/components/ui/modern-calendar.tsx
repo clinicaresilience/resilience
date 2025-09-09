@@ -90,8 +90,22 @@ export function ModernCalendar({
     ]
 
     return filteredAgendamentos.map(ag => {
-      const startDate = new Date(ag.dataISO)
-      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000) // 1 hora de duração
+      const startDate = new Date(ag.dataISO || ag.data_hora_inicio)
+      
+      // Calcular duração baseada nos dados do banco ou usar 1 hora como padrão
+      let endDate: Date
+      let duracaoTexto: string
+      
+      if (ag.data_hora_fim) {
+        endDate = new Date(ag.data_hora_fim)
+        const duracaoMs = endDate.getTime() - startDate.getTime()
+        const duracaoMinutos = Math.round(duracaoMs / (1000 * 60))
+        duracaoTexto = `${duracaoMinutos} minutos`
+      } else {
+        // Fallback para 1 hora se não houver data_hora_fim
+        endDate = new Date(startDate.getTime() + 60 * 60 * 1000)
+        duracaoTexto = '60 minutos'
+      }
 
       // Encontrar paciente correspondente ou criar um mock
       const paciente = pacientes.find(p => p.id === ag.usuarioId) || {
@@ -110,7 +124,7 @@ export function ModernCalendar({
           ...ag,
           pacienteDetalhes: paciente,
           motivoConsulta: motivosConsulta[Math.floor(Math.random() * motivosConsulta.length)],
-          duracao: '60 minutos'
+          duracao: duracaoTexto
         }
       }
     })

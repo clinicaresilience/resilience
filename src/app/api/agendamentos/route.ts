@@ -41,39 +41,99 @@ export async function GET() {
 
     const { data: userData } = await supabase.from("usuarios").select("tipo_usuario").eq("id", user.id).single();
 
-    const filters: { usuario_id?: string; profissional_id?: string } = {};
-    if (userData?.tipo_usuario === "comum") filters.usuario_id = user.id;
-    if (userData?.tipo_usuario === "profissional") filters.profissional_id = user.id;
+    // Buscar agendamentos com dados dos slots para obter duração real
+    let query = supabase
+      .from('agendamentos')
+      .select(`
+        *,
+        paciente:usuarios!agendamentos_paciente_id_fkey(id, nome, email, telefone),
+        profissional:usuarios!agendamentos_profissional_id_fkey(nome)
+      `);
 
-    const agendamentos = await AgendamentosService.listAgendamentos(filters);
+    if (userData?.tipo_usuario === "comum") query = query.eq('paciente_id', user.id);
+    if (userData?.tipo_usuario === "profissional") query = query.eq('profissional_id', user.id);
 
-    const formattedAgendamentos = agendamentos.map(ag => ({
-      id: ag.id,
-      usuarioId: ag.paciente_id,
-      profissionalId: ag.profissional_id,
-      profissionalNome: ag.profissional?.nome || "Profissional",
-      especialidade: ag.profissional?.especialidade || "",
-      dataISO: ag.data_consulta,
-      data_consulta: ag.data_consulta,
-      local: "Clínica Resilience",
-      status: ag.status,
-      notas: ag.notas,
-      modalidade: ag.modalidade,
-      pacienteNome: ag.paciente?.nome || "Paciente",
-      pacienteEmail: ag.paciente?.email || "",
-      pacienteTelefone: ag.paciente?.telefone || "",
-      paciente: {
-        id: ag.paciente_id,
-        nome: ag.paciente?.nome || "Paciente",
-        email: ag.paciente?.email || "",
-        telefone: ag.paciente?.telefone || "",
-      },
-      profissional: {
-        nome: ag.profissional?.nome || "Profissional",
-      },
-    }));
+    const { data: agendamentos, error: agendamentosError } = await query.order('data_consulta', { ascending: true });
 
-    return NextResponse.json({ success: true, data: formattedAgendamentos }, { status: 200 });
+    if (agendamentosError) {
+      console.error('Erro ao buscar agendamentos:', agendamentosError);
+      throw agendamentosError;
+    }
+
+    // Para cada agendamento, buscar o slot correspondente para obter data_hora_fim
+    const agendamentosComSlots = await Promise.all(
+      (agendamentos || []).map(async (ag) => {
+        try {
+          const dataConsultaISO = new Date(ag.data_consulta).toISOString();
+          
+          const { data: slot } = await supabase
+            .from('agendamento_slot')
+            .select('data_hora_inicio, data_hora_fim')
+            .eq('profissional_id', ag.profissional_id)
+            .eq('data_hora_inicio', dataConsultaISO)
+            .eq('paciente_id', ag.paciente_id)
+            .single();
+
+          return {
+            id: ag.id,
+            usuarioId: ag.paciente_id,
+            profissionalId: ag.profissional_id,
+            profissionalNome: ag.profissional?.nome || "Profissional",
+            especialidade: ag.profissional?.especialidade || "",
+            dataISO: ag.data_consulta,
+            data_consulta: ag.data_consulta,
+            data_hora_inicio: slot?.data_hora_inicio || ag.data_consulta,
+            data_hora_fim: slot?.data_hora_fim,
+            local: "Clínica Resilience",
+            status: ag.status,
+            notas: ag.notas,
+            modalidade: ag.modalidade,
+            pacienteNome: ag.paciente?.nome || "Paciente",
+            pacienteEmail: ag.paciente?.email || "",
+            pacienteTelefone: ag.paciente?.telefone || "",
+            paciente: {
+              id: ag.paciente_id,
+              nome: ag.paciente?.nome || "Paciente",
+              email: ag.paciente?.email || "",
+              telefone: ag.paciente?.telefone || "",
+            },
+            profissional: {
+              nome: ag.profissional?.nome || "Profissional",
+            },
+          };
+        } catch (error) {
+          console.warn('Erro ao buscar slot para agendamento:', ag.id, error);
+          // Retornar agendamento sem dados de slot em caso de erro
+          return {
+            id: ag.id,
+            usuarioId: ag.paciente_id,
+            profissionalId: ag.profissional_id,
+            profissionalNome: ag.profissional?.nome || "Profissional",
+            especialidade: ag.profissional?.especialidade || "",
+            dataISO: ag.data_consulta,
+            data_consulta: ag.data_consulta,
+            local: "Clínica Resilience",
+            status: ag.status,
+            notas: ag.notas,
+            modalidade: ag.modalidade,
+            pacienteNome: ag.paciente?.nome || "Paciente",
+            pacienteEmail: ag.paciente?.email || "",
+            pacienteTelefone: ag.paciente?.telefone || "",
+            paciente: {
+              id: ag.paciente_id,
+              nome: ag.paciente?.nome || "Paciente",
+              email: ag.paciente?.email || "",
+              telefone: ag.paciente?.telefone || "",
+            },
+            profissional: {
+              nome: ag.profissional?.nome || "Profissional",
+            },
+          };
+        }
+      })
+    );
+
+    return NextResponse.json({ success: true, data: agendamentosComSlots }, { status: 200 });
   } catch (error) {
     console.error("Erro ao buscar agendamentos:", error);
     return NextResponse.json({ error: "Erro ao buscar agendamentos", detail: error instanceof Error ? error.message : "Erro desconhecido" }, { status: 500 });

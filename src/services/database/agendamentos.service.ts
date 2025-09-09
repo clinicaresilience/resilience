@@ -165,21 +165,29 @@ export class AgendamentosService {
       console.log('Agendamento criado com sucesso:', agendamento_let.id);
 
       // 3️⃣ Marcar slot como ocupado na nova tabela
-      const { error: updateSlotError } = await supabase
+      console.log('Marcando slot como ocupado:', { slot_id: slot.id, paciente_id: data.usuario_id });
+      
+      const { data: updateResult, error: updateSlotError } = await supabase
         .from('agendamento_slot')
         .update({
           status: 'ocupado',
           paciente_id: data.usuario_id,
           atualizado_em: new Date().toISOString()
         })
-        .eq('id', slot.id);
+        .eq('id', slot.id)
+        .select();
 
       if (updateSlotError) {
         console.error('Erro ao atualizar slot:', updateSlotError);
         throw updateSlotError;
       }
 
-      console.log('Slot marcado como ocupado!');
+      if (!updateResult || updateResult.length === 0) {
+        console.error('Nenhum slot foi atualizado. Possível problema de ID ou permissões.');
+        throw new Error('Falha ao marcar slot como ocupado');
+      }
+
+      console.log('Slot marcado como ocupado com sucesso!', updateResult[0]);
 
       // 4️⃣ Retornar agendamento formatado
       return {
@@ -371,13 +379,13 @@ export class AgendamentosService {
 
       console.log('Cancelando agendamento:', { id, dataSlot, horarioSlot, profissional_id: agendamento.profissional_id });
 
-      // 3️⃣ Buscar slot correspondente na nova tabela agendamento_slot
+      // 3️⃣ Buscar slot correspondente na nova tabela agendamento_slot usando data_hora_inicio
+      const dataConsultaISO = new Date(agendamento.data_consulta).toISOString();
       const { data: slot, error: slotError } = await supabase
         .from('agendamento_slot')
         .select('*')
         .eq('profissional_id', agendamento.profissional_id)
-        .eq('data', dataSlot)
-        .eq('hora_inicio', horarioSlot)
+        .eq('data_hora_inicio', dataConsultaISO)
         .eq('paciente_id', agendamento.paciente_id)
         .eq('status', 'ocupado')
         .single();
