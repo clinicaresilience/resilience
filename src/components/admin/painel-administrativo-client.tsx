@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useTabStore, TabType } from "../../app/store/useTabStore";
 import { useSidebar } from "@/components/layout/authenticated-layout";
+import { MobileHamburgerMenu } from "./mobile-hamburger-menu";
 
 import { AdminDashboard } from "@/components/admin/dashboard";
 import { MedicalRecordsSection } from "@/components/admin/medical-records-section";
@@ -19,6 +20,8 @@ import {
   Home,
   Building2,
   UserCheck,
+  User,
+  Menu,
 } from "lucide-react";
 
 interface PainelAdministrativoClientProps {
@@ -35,6 +38,7 @@ export function PainelAdministrativoClient({
 }: PainelAdministrativoClientProps) {
   const { activeTab, setActiveTab } = useTabStore();
   const { collapsed } = useSidebar();
+  const [isHamburgerMenuOpen, setIsHamburgerMenuOpen] = useState(false);
 
   const tabs = [
     {
@@ -62,16 +66,22 @@ export function PainelAdministrativoClient({
       description: "Calendário e horários dos profissionais",
     },
     {
-      id: "analytics" as TabType,
-      label: "Análises",
-      icon: TrendingUp,
-      description: "Análises detalhadas por profissional",
-    },
-    {
       id: "usuarios" as TabType,
       label: "Usuários",
       icon: Users,
       description: "Gerenciar usuários do sistema",
+    },
+    {
+      id: "perfil" as TabType,
+      label: "Perfil",
+      icon: User,
+      description: "Gerenciar perfil pessoal",
+    },
+    {
+      id: "analytics" as TabType,
+      label: "Análises",
+      icon: TrendingUp,
+      description: "Análises detalhadas por profissional",
     },
     {
       id: "empresas" as TabType,
@@ -108,11 +118,6 @@ export function PainelAdministrativoClient({
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex justify-center items-center h-16 relative">
-            {/* Admin Title - Left on Mobile, Right on Desktop */}
-            <div className="md:absolute md:right-0 flex items-center">
-              <h1 className="text-xl font-bold text-azul-escuro">Admin</h1>
-            </div>
-
             {/* Desktop Navigation - Centered */}
             <nav className="hidden md:flex items-center space-x-6 xl:space-x-8">
               {tabs.map((tab) => {
@@ -150,9 +155,8 @@ export function PainelAdministrativoClient({
 
       {/* Fixed Mobile Navigation Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
-        <div className="flex justify-around items-center py-2">
-          {tabs.slice(0, 6).map((tab) => {
-            // Limit to 6 tabs for mobile (including pacientes)
+        <div className="flex justify-around items-center py-1">
+          {tabs.slice(0, 5).map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
 
@@ -160,17 +164,26 @@ export function PainelAdministrativoClient({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
+                className={`flex flex-col items-center justify-center p-1 rounded-lg transition-colors ${
                   isActive
                     ? "bg-azul-escuro text-white"
                     : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
                 }`}
               >
-                <Icon className="h-5 w-5" />
-                <span className="text-xs mt-1">{tab.label}</span>
+                <Icon className="h-4 w-4" />
+                <span className="text-xs mt-0.5 leading-tight">{tab.label}</span>
               </button>
             );
           })}
+
+          {/* Hamburger Menu Button */}
+          <button
+            onClick={() => setIsHamburgerMenuOpen(true)}
+            className="flex flex-col items-center justify-center p-1 rounded-lg transition-colors text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
+          >
+            <Menu className="h-4 w-4" />
+            <span className="text-xs mt-0.5 leading-tight">Menu</span>
+          </button>
         </div>
       </div>
 
@@ -205,6 +218,12 @@ export function PainelAdministrativoClient({
           {renderContent()}
         </div>
       </div>
+
+      {/* Mobile Hamburger Menu */}
+      <MobileHamburgerMenu
+        isOpen={isHamburgerMenuOpen}
+        onToggle={() => setIsHamburgerMenuOpen(false)}
+      />
     </div>
   );
 }

@@ -85,6 +85,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
               className={`transition-all duration-500 ease-in-out overflow-y-auto min-h-screen
     ${pathname.startsWith("/painel-administrativo") ? "" : "pt-8"}
     ${sidebarCollapsed ? "md:ml-16" : "md:ml-64"}
+    pb-20 md:pb-0
   `}
             >
               <div
