@@ -11,7 +11,7 @@ export async function GET(
   // Buscar profissional
   const { data: profissional, error: profError } = await supabase
     .from("usuarios")
-    .select("id, nome, informacoes_adicionais")
+    .select("id, nome, informacoes_adicionais, avatar_url")
     .eq("id", id)
     .eq("tipo_usuario", "profissional")
     .single();
