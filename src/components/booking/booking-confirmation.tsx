@@ -35,7 +35,7 @@ type AgendaSlot = {
   data: string;
   hora_inicio: string;
   hora_fim: string;
-  status: 'livre' | 'ocupado' | 'cancelado';
+  status: "livre" | "ocupado" | "cancelado";
   paciente_id?: string;
   // Campos compatíveis com a interface antiga para não quebrar
   diaSemana?: number;
@@ -79,9 +79,6 @@ export function BookingConfirmation({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  console.log('BookingConfirmation - Usuário autenticado:', !!user);
-  console.log('BookingConfirmation - Dados do usuário:', user);
-
   const handleConfirm = async () => {
     if (!slot) return;
 
@@ -90,22 +87,22 @@ export function BookingConfirmation({
       setError("");
 
       // Usar o horário correto baseado na nova interface
-      const horaSlot = slot.hora || slot.hora_inicio || '00:00';
+      const horaSlot = slot.hora || slot.hora_inicio || "00:00";
       const dataHora = `${slot.data}T${horaSlot}:00.000Z`;
 
-      console.log('Tentando criar agendamento:', {
+      console.log("Tentando criar agendamento:", {
         profissional_id: profissionalId,
         slot_id: slot.id,
         data_consulta: dataHora,
         modalidade,
         notas: notas.trim(),
         codigoEmpresa,
-        usuarioAutenticado: !!user
+        usuarioAutenticado: !!user,
       });
 
       // Se o usuário não estiver logado, salvar dados e redirecionar para login
       if (!user) {
-        console.log('Usuário não autenticado, salvando dados pendentes...');
+        console.log("Usuário não autenticado, salvando dados pendentes...");
 
         PendingBookingManager.save({
           profissionalId,
@@ -114,17 +111,19 @@ export function BookingConfirmation({
             id: slot.id,
             data: slot.data,
             hora: horaSlot,
-            disponivel: slot.disponivel ?? slot.status === 'livre',
+            disponivel: slot.disponivel ?? slot.status === "livre",
           },
           modalidade,
           codigoEmpresa,
           notas: notas.trim() || undefined,
         });
 
-        console.log('Dados salvos no localStorage, redirecionando para login...');
+        console.log(
+          "Dados salvos no localStorage, redirecionando para login..."
+        );
         setSuccess(true);
         setTimeout(() => {
-          router.push('/auth/login');
+          router.push("/auth/login");
         }, 2000);
 
         return;
@@ -142,11 +141,9 @@ export function BookingConfirmation({
         }),
       });
 
-      console.log('Resposta da API:', response.status, response.statusText);
-
       if (response.ok) {
         const data = await response.json();
-        console.log('Agendamento criado com sucesso:', data);
+
         setSuccess(true);
 
         if (onConfirm) onConfirm(data.data);
@@ -154,11 +151,11 @@ export function BookingConfirmation({
         setTimeout(() => handleClose(), 3000);
       } else {
         const errorData = await response.json();
-        console.error('Erro na API:', errorData);
+        console.error("Erro na API:", errorData);
         setError(errorData.error || "Erro ao criar agendamento");
       }
     } catch (err) {
-      console.error('Erro de conexão:', err);
+      console.error("Erro de conexão:", err);
       setError("Erro de conexão. Tente novamente.");
     } finally {
       setLoading(false);
@@ -184,7 +181,7 @@ export function BookingConfirmation({
 
   if (!slot) return null;
 
-  const horaParaExibir = slot.hora || slot.hora_inicio || '00:00';
+  const horaParaExibir = slot.hora || slot.hora_inicio || "00:00";
   const { date, time } = formatDateTime(slot.data, horaParaExibir);
 
   return (

@@ -64,11 +64,11 @@ export interface ConsultaComProntuario {
 }
 
 export class ConsultasService {
-  
+
   // Buscar TODOS os prontuários (para admin)
   static async getAllProntuarios() {
     const supabase = await createClient();
-    
+
     const { data: consultas, error } = await supabase
       .from('agendamentos')
       .select(`
@@ -363,7 +363,7 @@ export class ConsultasService {
         .single();
 
       if (ownershipError || !ownershipCheck) {
-        console.log("Ownership check failed for delete:", ownershipError);
+
         throw new Error("Acesso negado: prontuário não pertence ao profissional ou não encontrado");
       }
 
@@ -412,7 +412,7 @@ export class ConsultasService {
         .single();
 
       if (ownershipError || !ownershipCheck) {
-        console.log("Ownership check failed for update:", ownershipError);
+  
         throw new Error("Acesso negado: prontuário não pertence ao profissional ou não encontrado");
       }
 
@@ -478,7 +478,7 @@ export class ConsultasService {
         .single();
 
       if (ownershipError || !ownershipCheck) {
-        console.log("Ownership check failed:", ownershipError);
+       
         throw new Error("Acesso negado: prontuário não pertence ao profissional ou não encontrado");
       }
 

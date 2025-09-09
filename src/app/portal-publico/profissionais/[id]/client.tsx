@@ -58,7 +58,6 @@ export function PerfilProfissionalClient({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
 
   // Verificar se o usuário está autenticado
   useEffect(() => {
@@ -74,9 +73,6 @@ export function PerfilProfissionalClient({
   }, []);
 
   const handleSlotSelect = (slot: AgendaSlot) => {
-    console.log("Slot selecionado:", slot);
-    console.log("Usuário autenticado:", isAuthenticated);
-
     setSelectedSlot(slot);
 
     if (!isAuthenticated) {
@@ -110,7 +106,6 @@ export function PerfilProfissionalClient({
     dataISO: string;
     status: string;
   }) => {
-    console.log("Agendamento criado:", agendamento);
     setShowConfirmation(false);
     setSelectedSlot(null);
     // Redirecionar para página de agendamentos
@@ -125,20 +120,22 @@ export function PerfilProfissionalClient({
     }
   };
 
-  console.log("profissional data:", profissional);
-
   return (
     <div className="flex font-['Red_Hat_Display'] flex-col items-center min-h-screen bg-gradient-to-br  from-slate-50 via-[#edfffe]/30 to-[#f5b26b]/5 p-6 ">
       <Card className="font-['Red_Hat_Display'] w-full mt-24 max-w-5xl bg-white/95 backdrop-blur-xl shadow-xl shadow-[#02b1aa]/10 border border-white/50 rounded-3xl p-8 md:p-10">
         {/* Cabeçalho do Profissional */}
         <div className="flex flex-col items-center text-center mb-10">
           {/* Foto */}
-          {(profissional.avatar_url || profissional.informacoes_adicionais?.foto) && (
+          {(profissional.avatar_url ||
+            profissional.informacoes_adicionais?.foto) && (
             <div className="relative -mt-16 mb-6">
               <div className="absolute -inset-2 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-full blur-lg opacity-50"></div>
               <div className="relative w-36 h-36 rounded-full overflow-hidden border-4 border-white shadow-xl bg-white/90 backdrop-blur-sm">
                 <img
-                  src={profissional.avatar_url || profissional.informacoes_adicionais.foto}
+                  src={
+                    profissional.avatar_url ||
+                    profissional.informacoes_adicionais.foto
+                  }
                   alt={`Foto de ${profissional.nome}`}
                   className="object-cover w-full h-full"
                 />
@@ -150,15 +147,21 @@ export function PerfilProfissionalClient({
             {profissional.nome}
           </h1>
           <p className="text-lg md:text-xl text-[#02b1aa] font-semibold mb-2">
-            {profissional.especialidade || profissional.informacoes_adicionais?.especialidade || "Psicólogo"}
+            {profissional.especialidade ||
+              profissional.informacoes_adicionais?.especialidade ||
+              "Psicólogo"}
           </p>
           <p className="text-sm md:text-base text-[#029fdf] font-medium mb-6 px-4 py-2 bg-gradient-to-r from-[#edfffe] to-blue-50/50 rounded-full border border-[#02b1aa]/20">
-            {profissional.informacoes_adicionais?.crp ? `CRP ${profissional.informacoes_adicionais.crp}` : "Profissional Certificado"}
+            {profissional.informacoes_adicionais?.crp
+              ? `CRP ${profissional.informacoes_adicionais.crp}`
+              : "Profissional Certificado"}
           </p>
 
           <div className="max-w-3xl">
             <p className="text-gray-700 text-base leading-relaxed bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/30 shadow-lg">
-              {profissional.bio || profissional.informacoes_adicionais?.descricao || "Profissional experiente em sua área de atuação."}
+              {profissional.bio ||
+                profissional.informacoes_adicionais?.descricao ||
+                "Profissional experiente em sua área de atuação."}
             </p>
           </div>
         </div>

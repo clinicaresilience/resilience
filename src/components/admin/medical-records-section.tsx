@@ -49,13 +49,13 @@ export function MedicalRecordsSection() {
   useEffect(() => {
     const fetchConsultas = async () => {
       try {
-        const response = await fetch('/api/agendamentos/prontuarios');
+        const response = await fetch("/api/agendamentos/prontuarios");
         if (response.ok) {
           const data = await response.json();
           setConsultas(data.data || []);
         }
       } catch (error) {
-        console.error('Erro ao buscar consultas:', error);
+        console.error("Erro ao buscar consultas:", error);
       } finally {
         setLoading(false);
       }
@@ -67,8 +67,8 @@ export function MedicalRecordsSection() {
   // Processar dados para formato de prontuários
   const allProntuarios = useMemo(() => {
     return consultas
-      .filter(consulta => consulta.prontuario) // Apenas consultas com prontuário
-      .map(consulta => ({
+      .filter((consulta) => consulta.prontuario) // Apenas consultas com prontuário
+      .map((consulta) => ({
         id: consulta.prontuario!.id,
         pacienteId: consulta.paciente.id,
         pacienteNome: consulta.paciente.nome,
@@ -76,32 +76,35 @@ export function MedicalRecordsSection() {
         profissionalNome: consulta.profissional.nome,
         dataConsulta: consulta.data_consulta,
         tipoConsulta: `${consulta.modalidade} - ${consulta.profissional.especialidade}`,
-        observacoes: consulta.notas || 'Sem observações',
+        observacoes: consulta.notas || "Sem observações",
         status: consulta.status as "ativo" | "arquivado" | "em_andamento",
         criadoEm: consulta.data_consulta,
         atualizadoEm: consulta.data_consulta,
-        diagnostico: '', // Campo opcional do mock
+        diagnostico: "", // Campo opcional do mock
         proximaConsulta: undefined, // Campo opcional do mock
-        prescricoes: [] as string[] // Campo opcional do mock
+        prescricoes: [] as string[], // Campo opcional do mock
       }));
   }, [consultas]);
 
   // Histórico por paciente
   const historicoPacientes = useMemo(() => {
-    const historicoPorPaciente = new Map<string, {
-      pacienteId: string;
-      pacienteNome: string;
-      totalConsultas: number;
-      ultimaConsulta: string;
-      profissionaisAtendentes: string[];
-      statusAtual: "ativo" | "inativo" | "alta";
-      proximaConsulta?: string;
-      observacoesGerais?: string;
-    }>();
-    
-    consultas.forEach(consulta => {
+    const historicoPorPaciente = new Map<
+      string,
+      {
+        pacienteId: string;
+        pacienteNome: string;
+        totalConsultas: number;
+        ultimaConsulta: string;
+        profissionaisAtendentes: string[];
+        statusAtual: "ativo" | "inativo" | "alta";
+        proximaConsulta?: string;
+        observacoesGerais?: string;
+      }
+    >();
+
+    consultas.forEach((consulta) => {
       const pacienteId = consulta.paciente.id;
-      
+
       if (!historicoPorPaciente.has(pacienteId)) {
         historicoPorPaciente.set(pacienteId, {
           pacienteId,
@@ -116,44 +119,54 @@ export function MedicalRecordsSection() {
       const historico = historicoPorPaciente.get(pacienteId);
       if (historico) {
         historico.totalConsultas += 1;
-        
-        if (new Date(consulta.data_consulta) > new Date(historico.ultimaConsulta)) {
+
+        if (
+          new Date(consulta.data_consulta) > new Date(historico.ultimaConsulta)
+        ) {
           historico.ultimaConsulta = consulta.data_consulta;
         }
 
-        if (!historico.profissionaisAtendentes.includes(consulta.profissional.nome)) {
+        if (
+          !historico.profissionaisAtendentes.includes(
+            consulta.profissional.nome
+          )
+        ) {
           historico.profissionaisAtendentes.push(consulta.profissional.nome);
         }
       }
     });
 
-    return Array.from(historicoPorPaciente.values()).sort((a, b) => 
-      new Date(b.ultimaConsulta).getTime() - new Date(a.ultimaConsulta).getTime()
+    return Array.from(historicoPorPaciente.values()).sort(
+      (a, b) =>
+        new Date(b.ultimaConsulta).getTime() -
+        new Date(a.ultimaConsulta).getTime()
     );
   }, [consultas]);
 
   // Filtros aplicados
   const filteredProntuarios = useMemo(() => {
     let filtered = allProntuarios;
-    
+
     // Filtro por busca
     if (searchTerm.trim()) {
       const termoLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(pront => 
-        pront.pacienteNome.toLowerCase().includes(termoLower) ||
-        pront.profissionalNome.toLowerCase().includes(termoLower) ||
-        pront.tipoConsulta.toLowerCase().includes(termoLower) ||
-        pront.observacoes.toLowerCase().includes(termoLower)
+      filtered = filtered.filter(
+        (pront) =>
+          pront.pacienteNome.toLowerCase().includes(termoLower) ||
+          pront.profissionalNome.toLowerCase().includes(termoLower) ||
+          pront.tipoConsulta.toLowerCase().includes(termoLower) ||
+          pront.observacoes.toLowerCase().includes(termoLower)
       );
     }
-    
+
     // Filtro por status
     if (statusFilter !== "todos") {
-      filtered = filtered.filter(pront => pront.status === statusFilter);
+      filtered = filtered.filter((pront) => pront.status === statusFilter);
     }
-    
+
     return filtered.sort(
-      (a, b) => new Date(b.dataConsulta).getTime() - new Date(a.dataConsulta).getTime()
+      (a, b) =>
+        new Date(b.dataConsulta).getTime() - new Date(a.dataConsulta).getTime()
     );
   }, [allProntuarios, searchTerm, statusFilter]);
 
@@ -185,9 +198,7 @@ export function MedicalRecordsSection() {
           <div className="p-2 bg-white/20 rounded-lg">
             <FileText className="h-6 w-6" />
           </div>
-          <h2 className="text-2xl font-bold">
-            Prontuários e Histórico Médico
-          </h2>
+          <h2 className="text-2xl font-bold">Prontuários e Histórico Médico</h2>
         </div>
         <p className="text-blue-100 text-sm">
           Gerencie prontuários médicos e acompanhe o histórico de pacientes
@@ -248,7 +259,9 @@ export function MedicalRecordsSection() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 min-w-0">
               <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-azul-escuro/10 to-blue-50 rounded-lg border border-azul-escuro/20 shadow-sm">
                 <Filter className="h-4 w-4 text-azul-escuro" />
-                <span className="text-sm font-semibold text-azul-escuro whitespace-nowrap">Status</span>
+                <span className="text-sm font-semibold text-azul-escuro whitespace-nowrap">
+                  Status
+                </span>
               </div>
               <div className="relative w-full sm:w-auto">
                 <select
@@ -256,14 +269,38 @@ export function MedicalRecordsSection() {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="appearance-none bg-white border-2 border-gray-200 rounded-lg px-4 py-3 pr-12 text-sm font-semibold text-gray-900 shadow-sm hover:border-azul-escuro/40 hover:bg-azul-escuro/5 focus:border-azul-escuro focus:ring-2 focus:ring-azul-escuro/20 focus:outline-none transition-all duration-200 cursor-pointer w-full min-w-[160px] h-12"
                 >
-                  <option value="todos" className="text-gray-900 font-medium">Todos os Status</option>
-                  <option value="ativo" className="text-green-700 font-medium">Ativo</option>
-                  <option value="em_andamento" className="text-yellow-700 font-medium">Em Andamento</option>
-                  <option value="arquivado" className="text-gray-600 font-medium">Arquivado</option>
+                  <option value="todos" className="text-gray-900 font-medium">
+                    Todos os Status
+                  </option>
+                  <option value="ativo" className="text-green-700 font-medium">
+                    Ativo
+                  </option>
+                  <option
+                    value="em_andamento"
+                    className="text-yellow-700 font-medium"
+                  >
+                    Em Andamento
+                  </option>
+                  <option
+                    value="arquivado"
+                    className="text-gray-600 font-medium"
+                  >
+                    Arquivado
+                  </option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-                  <svg className="w-5 h-5 text-azul-escuro/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <svg
+                    className="w-5 h-5 text-azul-escuro/60"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </div>
               </div>
@@ -305,12 +342,16 @@ export function MedicalRecordsSection() {
                               Dr(a). {prontuario.profissionalNome}
                             </span>
                           </div>
-                          <span className="hidden sm:inline text-gray-400">•</span>
+                          <span className="hidden sm:inline text-gray-400">
+                            •
+                          </span>
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             <span>{formatDate(prontuario.dataConsulta)}</span>
                           </div>
-                          <span className="hidden sm:inline text-gray-400">•</span>
+                          <span className="hidden sm:inline text-gray-400">
+                            •
+                          </span>
                           <span className="truncate max-w-[120px] bg-gray-100 px-2 py-1 rounded text-xs">
                             {prontuario.tipoConsulta}
                           </span>
@@ -356,7 +397,8 @@ export function MedicalRecordsSection() {
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-green-600" />
                           <span className="text-sm text-green-800 font-medium">
-                            Próxima consulta: {formatDate(prontuario.proximaConsulta)}
+                            Próxima consulta:{" "}
+                            {formatDate(prontuario.proximaConsulta)}
                           </span>
                         </div>
                       </div>
@@ -473,8 +515,8 @@ export function MedicalRecordsSection() {
                                 onClick={() => {
                                   // Open PDF in new tab using the visualizar endpoint
                                   const pdfUrl = `/api/agendamentos/prontuarios/visualizar?prontuarioId=${prontuario.id}`;
-                                  console.log('Opening PDF with URL:', pdfUrl);
-                                  window.open(pdfUrl, '_blank');
+
+                                  window.open(pdfUrl, "_blank");
                                 }}
                                 className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
                               >
@@ -532,16 +574,22 @@ export function MedicalRecordsSection() {
                       <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mt-3">
                         <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-full">
                           <FileText className="h-3 w-3 text-blue-600" />
-                          <span className="font-medium">{historico.totalConsultas} consulta(s)</span>
+                          <span className="font-medium">
+                            {historico.totalConsultas} consulta(s)
+                          </span>
                         </div>
                         <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-full">
                           <Calendar className="h-3 w-3 text-green-600" />
-                          <span>Última: {formatDate(historico.ultimaConsulta)}</span>
+                          <span>
+                            Última: {formatDate(historico.ultimaConsulta)}
+                          </span>
                         </div>
                         {historico.proximaConsulta && (
                           <div className="flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-full">
                             <Calendar className="h-3 w-3 text-orange-600" />
-                            <span>Próxima: {formatDate(historico.proximaConsulta)}</span>
+                            <span>
+                              Próxima: {formatDate(historico.proximaConsulta)}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -562,14 +610,16 @@ export function MedicalRecordsSection() {
                       </strong>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {historico.profissionaisAtendentes.map((prof: string, index: number) => (
-                        <span
-                          key={index}
-                          className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 px-3 py-1 rounded-full text-xs font-medium truncate border border-purple-200"
-                        >
-                          {prof}
-                        </span>
-                      ))}
+                      {historico.profissionaisAtendentes.map(
+                        (prof: string, index: number) => (
+                          <span
+                            key={index}
+                            className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 px-3 py-1 rounded-full text-xs font-medium truncate border border-purple-200"
+                          >
+                            {prof}
+                          </span>
+                        )
+                      )}
                     </div>
                   </div>
                   {historico.observacoesGerais && (

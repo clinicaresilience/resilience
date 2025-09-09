@@ -704,7 +704,7 @@ export function ProfessionalProntuariosClient({
                                   </div>
                                 </div>
                               </div>
-                              
+
                               {prontuarioSelecionado.local && (
                                 <div>
                                   <Label className="text-gray-800 font-medium">
@@ -715,7 +715,7 @@ export function ProfessionalProntuariosClient({
                                   </p>
                                 </div>
                               )}
-                              
+
                               {prontuarioSelecionado.observacoes && (
                                 <div>
                                   <Label className="text-gray-800 font-medium">
@@ -749,13 +749,24 @@ export function ProfessionalProntuariosClient({
                                           variant="outline"
                                           onClick={() => {
                                             // Abrir PDF em nova aba usando o endpoint correto
-                                            if (prontuarioSelecionado.prontuario && typeof prontuarioSelecionado.prontuario === 'object' && 'id' in prontuarioSelecionado.prontuario) {
+                                            if (
+                                              prontuarioSelecionado.prontuario &&
+                                              typeof prontuarioSelecionado.prontuario ===
+                                                "object" &&
+                                              "id" in
+                                                prontuarioSelecionado.prontuario
+                                            ) {
                                               const pdfUrl = `/api/agendamentos/prontuarios/visualizar?prontuarioId=${prontuarioSelecionado.prontuario.id}`;
-                                              console.log('Opening PDF with URL:', pdfUrl);
-                                              window.open(pdfUrl, '_blank');
+
+                                              window.open(pdfUrl, "_blank");
                                             } else {
-                                              console.error('Prontuário ID not found:', prontuarioSelecionado.prontuario);
-                                              alert('Erro: ID do prontuário não encontrado');
+                                              console.error(
+                                                "Prontuário ID not found:",
+                                                prontuarioSelecionado.prontuario
+                                              );
+                                              alert(
+                                                "Erro: ID do prontuário não encontrado"
+                                              );
                                             }
                                           }}
                                         >
@@ -787,8 +798,7 @@ export function ProfessionalProntuariosClient({
                                             ).files?.[0];
                                             if (file) {
                                               if (
-                                                file.type !==
-                                                "application/pdf"
+                                                file.type !== "application/pdf"
                                               ) {
                                                 alert(
                                                   "Apenas arquivos PDF são permitidos"
@@ -806,17 +816,22 @@ export function ProfessionalProntuariosClient({
                                               }
 
                                               try {
-                                                const formData =
-                                                  new FormData();
+                                                const formData = new FormData();
                                                 // Use prontuario ID, not consulta ID
-                                                const prontuarioId = prontuarioSelecionado.prontuario &&
-                                                  typeof prontuarioSelecionado.prontuario === 'object' &&
-                                                  'id' in prontuarioSelecionado.prontuario
-                                                    ? prontuarioSelecionado.prontuario.id
+                                                const prontuarioId =
+                                                  prontuarioSelecionado.prontuario &&
+                                                  typeof prontuarioSelecionado.prontuario ===
+                                                    "object" &&
+                                                  "id" in
+                                                    prontuarioSelecionado.prontuario
+                                                    ? prontuarioSelecionado
+                                                        .prontuario.id
                                                     : null;
 
                                                 if (!prontuarioId) {
-                                                  alert("Erro: ID do prontuário não encontrado");
+                                                  alert(
+                                                    "Erro: ID do prontuário não encontrado"
+                                                  );
                                                   return;
                                                 }
 
@@ -849,9 +864,7 @@ export function ProfessionalProntuariosClient({
                                                 }
                                               } catch (error) {
                                                 console.error("Erro:", error);
-                                                alert(
-                                                  "Erro ao substituir PDF"
-                                                );
+                                                alert("Erro ao substituir PDF");
                                               }
                                             }
                                           };
@@ -873,18 +886,22 @@ export function ProfessionalProntuariosClient({
                                           ) {
                                             try {
                                               // Get the prontuario ID safely
-                                              const prontuarioId = prontuarioSelecionado.prontuario &&
-                                                typeof prontuarioSelecionado.prontuario === 'object' &&
-                                                'id' in prontuarioSelecionado.prontuario
-                                                  ? prontuarioSelecionado.prontuario.id
+                                              const prontuarioId =
+                                                prontuarioSelecionado.prontuario &&
+                                                typeof prontuarioSelecionado.prontuario ===
+                                                  "object" &&
+                                                "id" in
+                                                  prontuarioSelecionado.prontuario
+                                                  ? prontuarioSelecionado
+                                                      .prontuario.id
                                                   : null;
 
                                               if (!prontuarioId) {
-                                                alert("Erro: ID do prontuário não encontrado");
+                                                alert(
+                                                  "Erro: ID do prontuário não encontrado"
+                                                );
                                                 return;
                                               }
-
-                                              console.log("Excluindo prontuario ID:", prontuarioId);
 
                                               const response = await fetch(
                                                 "/api/agendamentos/prontuarios/remover",
@@ -906,13 +923,24 @@ export function ProfessionalProntuariosClient({
                                                 );
                                                 buscarProntuarios(); // Recarregar dados
                                               } else {
-                                                const errorData = await response.json();
-                                                console.error("Erro na resposta:", errorData);
-                                                alert(`Erro ao excluir prontuário: ${errorData.error || 'Erro desconhecido'}`);
+                                                const errorData =
+                                                  await response.json();
+                                                console.error(
+                                                  "Erro na resposta:",
+                                                  errorData
+                                                );
+                                                alert(
+                                                  `Erro ao excluir prontuário: ${
+                                                    errorData.error ||
+                                                    "Erro desconhecido"
+                                                  }`
+                                                );
                                               }
                                             } catch (error) {
                                               console.error("Erro:", error);
-                                              alert("Erro ao excluir prontuário");
+                                              alert(
+                                                "Erro ao excluir prontuário"
+                                              );
                                             }
                                           }
                                         }}
@@ -962,10 +990,7 @@ export function ProfessionalProntuariosClient({
                                               );
                                               return;
                                             }
-                                            if (
-                                              file.size >
-                                              10 * 1024 * 1024
-                                            ) {
+                                            if (file.size > 10 * 1024 * 1024) {
                                               alert(
                                                 "O arquivo deve ter no máximo 10MB"
                                               );
@@ -978,10 +1003,7 @@ export function ProfessionalProntuariosClient({
                                                 "consultaId",
                                                 prontuarioSelecionado.id
                                               );
-                                              formData.append(
-                                                "arquivo",
-                                                file
-                                              );
+                                              formData.append("arquivo", file);
 
                                               const response = await fetch(
                                                 "/api/agendamentos/prontuarios/adicionar",
@@ -997,9 +1019,7 @@ export function ProfessionalProntuariosClient({
                                                 );
                                                 buscarProntuarios(); // Recarregar dados
                                               } else {
-                                                alert(
-                                                  "Erro ao adicionar PDF"
-                                                );
+                                                alert("Erro ao adicionar PDF");
                                               }
                                             } catch (error) {
                                               console.error("Erro:", error);

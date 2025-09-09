@@ -36,7 +36,7 @@ export class AgendamentosService {
     const supabase = await createClient();
 
     try {
-      console.log('Criando agendamento:', data);
+
 
       // Validação: não permitir agendamentos para horários passados
       const dataConsulta = new Date(data.data_consulta);
@@ -101,7 +101,7 @@ export class AgendamentosService {
           })
           .select()
           .single();
-        
+
         agendamentoBasico = result.data;
         agendamentoError = result.error;
 
@@ -162,11 +162,10 @@ export class AgendamentosService {
 
 
 
-      console.log('Agendamento criado com sucesso:', agendamento_let.id);
 
-      // 3️⃣ Marcar slot como ocupado na nova tabela
-      console.log('Marcando slot como ocupado:', { slot_id: slot.id, paciente_id: data.usuario_id });
-      
+
+
+
       const { data: updateResult, error: updateSlotError } = await supabase
         .from('agendamento_slot')
         .update({
@@ -187,7 +186,7 @@ export class AgendamentosService {
         throw new Error('Falha ao marcar slot como ocupado');
       }
 
-      console.log('Slot marcado como ocupado com sucesso!', updateResult[0]);
+
 
       // 4️⃣ Retornar agendamento formatado
       return {
@@ -200,7 +199,7 @@ export class AgendamentosService {
         notas: agendamento_let.notas,
         usuario: agendamento_let.paciente,
         profissional: agendamento_let.profissional,
-      } ;
+      };
 
     } catch (error) {
       console.error('Erro no createAgendamento:', error);
@@ -279,7 +278,7 @@ export class AgendamentosService {
 
     try {
       console.log('=== VERIFICANDO DISPONIBILIDADE DE SLOT ===');
-      console.log('Input recebido:', { profissional_id, slot_id });
+
 
       // Buscar o slot pelo ID usando novo schema
       const { data: slot, error: slotError } = await supabase
@@ -372,12 +371,6 @@ export class AgendamentosService {
         throw new Error('Agendamento não encontrado');
       }
 
-      // 2️⃣ Extrair data e horário do agendamento
-      const dataObj = new Date(agendamento.data_consulta);
-      const dataSlot = dataObj.toISOString().split('T')[0]; // YYYY-MM-DD
-      const horarioSlot = dataObj.toISOString().split('T')[1].substring(0, 5); // HH:mm
-
-      console.log('Cancelando agendamento:', { id, dataSlot, horarioSlot, profissional_id: agendamento.profissional_id });
 
       // 3️⃣ Buscar slot correspondente na nova tabela agendamento_slot usando data_hora_inicio
       const dataConsultaISO = new Date(agendamento.data_consulta).toISOString();

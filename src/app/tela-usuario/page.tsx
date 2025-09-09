@@ -56,18 +56,12 @@ export default function TelaUsuario() {
     fetchHistorico();
   }, []);
 
-  // Efeito separado para verificar agendamento pendente
-  useEffect(() => {
-    console.log(
-      "Componente TelaUsuario montado, verificando agendamento pendente..."
-    );
-
     // Verificar imediatamente se há dados no localStorage
     const pendingData = PendingBookingManager.get();
-    console.log("Dados do localStorage:", pendingData);
+
 
     if (pendingData) {
-      console.log("Agendamento pendente encontrado:", pendingData);
+  
       setShowPendingModal(true);
     } else {
       console.log("Nenhum agendamento pendente encontrado no localStorage");
@@ -76,7 +70,7 @@ export default function TelaUsuario() {
     // Também verificar após um pequeno delay para garantir que tudo carregou
     const timer = setTimeout(() => {
       const hasPending = PendingBookingManager.hasPending();
-      console.log("Verificação com delay - agendamento pendente:", hasPending);
+  
       if (hasPending && !showPendingModal) {
         console.log(
           "Agendamento pendente encontrado no delay, mostrando modal"
@@ -117,7 +111,7 @@ export default function TelaUsuario() {
     }
   };
 
-  console.log(usuario);
+
 
   return (
     <>
