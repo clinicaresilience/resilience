@@ -5,8 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Calendar, User, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 
+type Consulta = {
+  id: string;
+  profissional_nome: string;
+  data_consulta: string;
+  modalidade?: string;
+  status?: string;
+};
+
 export default function HistoricoPage() {
-  const [consultas, setConsultas] = useState<any[]>([]);
+  const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [usuario, setUsuario] = useState<string>("");
 
   useEffect(() => {
@@ -118,12 +126,9 @@ export default function HistoricoPage() {
                       <h3 className="font-semibold text-azul-escuro">
                         {consulta.modalidade || "Consulta"}
                       </h3>
-                      <h2
-                  
-                        className="bg-green-100 w-8 text-green-800"
-                      >
-                        {consulta.status}
-                      </h2>
+                      <Badge className="bg-green-100 text-green-800">
+                        {consulta.status === 'concluido' ? 'Concluída' : consulta.status}
+                      </Badge>
                     </div>
 
                     <div className="space-y-1 text-sm text-gray-600">

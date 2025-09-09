@@ -14,14 +14,13 @@ export async function GET() {
 
         const agoraISO = new Date().toISOString();
 
-        // Buscar consultas passadas do paciente
+        // Buscar consultas passadas do paciente (confirmadas que já passaram + concluídas)
         const { data: consultasData } = await supabase
             .from("agendamentos")
             .select("id, data_consulta, status, profissional_id, modalidade")
             .eq("paciente_id", user.id)
-            .eq("status", "confirmado")
-            .lt("data_consulta", agoraISO)
-            .order("data_consulta", { ascending: true });
+            .or("status.eq.concluido,and(status.eq.confirmado,data_consulta.lt." + agoraISO + ")")
+            .order("data_consulta", { ascending: false });
 
         if (!consultasData || consultasData.length === 0)
             return NextResponse.json({ success: true, data: [], usuario: user?.user_metadata?.nome || "Paciente" });
@@ -44,7 +43,8 @@ export async function GET() {
             profissional_nome: c.profissional_id ? profMap[c.profissional_id] : "Profissional",
             tipo: "Consulta",
             data_consulta: c.data_consulta,
-            modalidade: c.modalidade, // aqui incluímos a modalidade
+            modalidade: c.modalidade,
+            status: c.status, // incluir status para mostrar no frontend
         }));
 
         return NextResponse.json({
@@ -52,10 +52,10 @@ export async function GET() {
             data: consultas,
             usuario: user?.user_metadata?.nome || "Paciente",
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Erro ao buscar próximas consultas:", error);
         return NextResponse.json(
-            { error: "Erro ao buscar próximas consultas", detail: error?.message || String(error) },
+            { error: "Erro ao buscar próximas consultas", detail: error instanceof Error ? error.message : String(error) },
             { status: 500 }
         );
     }

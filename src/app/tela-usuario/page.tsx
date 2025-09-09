@@ -24,10 +24,12 @@ type Consulta = {
   tipo: string;
   data_consulta: string;
   modalidade: string;
+  status?: string;
 };
 
 export default function TelaUsuario() {
   const [consultas, setConsultas] = useState<Consulta[]>([]);
+  const [historico, setHistorico] = useState<Consulta[]>([]);
   const [usuario, setUsuario] = useState("");
   const [showPendingModal, setShowPendingModal] = useState(false);
 
@@ -40,7 +42,18 @@ export default function TelaUsuario() {
         setUsuario(data.usuario);
       }
     }
+
+    async function fetchHistorico() {
+      const res = await fetch("/api/agendamentos/passados");
+      const data = await res.json();
+      if (data.success) {
+        // Pegar apenas os últimos 3 para mostrar como resumo
+        setHistorico(data.data.slice(0, 3));
+      }
+    }
+
     fetchConsultas();
+    fetchHistorico();
   }, []);
 
   // Efeito separado para verificar agendamento pendente
@@ -121,55 +134,6 @@ export default function TelaUsuario() {
       </div>
 
       {/* Resumo Rápido */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm">Próxima Consulta</p>
-                <p className="text-lg font-semibold">Hoje 14:30</p>
-              </div>
-              <Calendar className="h-8 w-8 text-blue-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-sm">Consultas Este Mês</p>
-                <p className="text-2xl font-bold">3</p>
-              </div>
-              <Clock className="h-8 w-8 text-green-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-sm">Profissional</p>
-                <p className="text-lg font-semibold">Dr. Silva</p>
-              </div>
-              <User className="h-8 w-8 text-purple-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-pink-500 to-pink-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-pink-100 text-sm">Bem-estar</p>
-                <p className="text-lg font-semibold">Ótimo</p>
-              </div>
-              <Heart className="h-8 w-8 text-pink-200" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Cards de Ações Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -238,7 +202,7 @@ export default function TelaUsuario() {
         </Card>
       </div>
 
-      {/* Próximas Consultas */}
+      {/* Próximas Consultas e Histórico Recente */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 ">
         <Card>
           <CardHeader>
@@ -285,6 +249,60 @@ export default function TelaUsuario() {
               <Button asChild className="w-full">
                 <Link href="/tela-usuario/agendamentos">
                   Ver Todos os Agendamentos
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5" />
+              <span>Histórico Recente</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 max-h-48 overflow-y-auto ">
+              {historico.length === 0 && (
+                <p className="text-gray-600">
+                  Você não possui consultas concluídas ainda.
+                </p>
+              )}
+              {historico.map((c) => {
+                const dataObj = new Date(c.data_consulta);
+                const hora = dataObj.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                const diaTexto = dataObj.toLocaleDateString();
+
+                return (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between p-3 bg-green-50 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium">Dr. {c.profissional_nome}</p>
+                      <p className="text-sm text-gray-600">{c.tipo}</p>
+                      <p className="text-sm text-gray-500">{c.modalidade}</p>
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {c.status === 'concluido' ? 'Concluída' : 'Realizada'}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">{hora}</p>
+                      <p className="text-sm text-gray-600">{diaTexto}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-4">
+              <Button asChild className="w-full" variant="outline">
+                <Link href="/tela-usuario/historico">
+                  Ver Histórico Completo
                 </Link>
               </Button>
             </div>
