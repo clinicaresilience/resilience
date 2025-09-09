@@ -64,17 +64,19 @@ export function ProfessionalConsultasClient({
 
 
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   useEffect(() => {
     async function load() {
       setLoading(true);
       try {
         const response = await fetch(`/api/agendamentos?profissional_id=${profissionalId}`);
         const result = await response.json();
-        
+
         if (!response.ok) {
           throw new Error(result.error || 'Erro ao buscar agendamentos');
         }
-        
+
         // Mapear agendamentos para formato de consultas
         const consultasMapeadas = (result.data || []).map((agendamento: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           id: agendamento.id,
@@ -88,7 +90,7 @@ export function ProfessionalConsultasClient({
           observacoes: agendamento.notas,
           dataISO: agendamento.dataISO || agendamento.data_consulta,
         }));
-        
+
         setConsultas(consultasMapeadas);
       } catch (err) {
         console.error("Erro ao buscar consultas:", err);
@@ -97,7 +99,7 @@ export function ProfessionalConsultasClient({
       }
     }
     load();
-  }, [profissionalId]);
+  }, [profissionalId, refreshTrigger]);
 
   const consultasFiltradas = useMemo(() => {
     let resultado = consultas;
@@ -164,6 +166,9 @@ export function ProfessionalConsultasClient({
         prev.map((c) => (c.id === consulta.id ? { ...c, status: statusNovo } : c))
       );
 
+      // Trigger refresh to get updated data from API
+      setRefreshTrigger(prev => prev + 1);
+
       console.log("Status atualizado com sucesso!");
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
@@ -188,6 +193,7 @@ export function ProfessionalConsultasClient({
       pendentes: consultas.filter((c) => c.status === "pendente").length,
       confirmadas: consultas.filter((c) => c.status === "confirmado").length,
       concluidas: consultas.filter((c) => c.status === "concluido").length,
+      canceladas: consultas.filter((c) => c.status === "cancelado").length,
     };
   }, [consultas]);
 
@@ -223,7 +229,7 @@ export function ProfessionalConsultasClient({
   return (
     <div className="space-y-6">
       {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         {[
           { icone: Calendar, titulo: "Total", valor: estatisticas.total },
           { icone: Clock, titulo: "Hoje", valor: estatisticas.hoje },
@@ -241,6 +247,11 @@ export function ProfessionalConsultasClient({
             icone: CheckCircle,
             titulo: "Concluídas",
             valor: estatisticas.concluidas,
+          },
+          {
+            icone: XCircle,
+            titulo: "Canceladas",
+            valor: estatisticas.canceladas,
           },
         ].map(({ icone: Icon, titulo, valor }) => (
           <Card key={titulo}>

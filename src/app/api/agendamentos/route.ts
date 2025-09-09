@@ -54,6 +54,7 @@ export async function GET() {
       profissionalNome: ag.profissional?.nome || "Profissional",
       especialidade: ag.profissional?.especialidade || "",
       dataISO: ag.data_consulta,
+      data_consulta: ag.data_consulta,
       local: "Clínica Resilience",
       status: ag.status,
       notas: ag.notas,
@@ -61,6 +62,15 @@ export async function GET() {
       pacienteNome: ag.paciente?.nome || "Paciente",
       pacienteEmail: ag.paciente?.email || "",
       pacienteTelefone: ag.paciente?.telefone || "",
+      paciente: {
+        id: ag.paciente_id,
+        nome: ag.paciente?.nome || "Paciente",
+        email: ag.paciente?.email || "",
+        telefone: ag.paciente?.telefone || "",
+      },
+      profissional: {
+        nome: ag.profissional?.nome || "Profissional",
+      },
     }));
 
     return NextResponse.json({ success: true, data: formattedAgendamentos }, { status: 200 });

@@ -3,7 +3,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { Home, FileText, Calendar, TrendingUp, Users, Building2, Clock, User, LucideIcon } from "lucide-react"
 
-export type adminTab = "dashboard" | "prontuarios" | "agendas" | "analytics" | "profissionais" | "usuarios" | "empresas" | "perfil"
+export type adminTab = "dashboard" | "pacientes" | "prontuarios" | "agendas" | "analytics" | "profissionais" | "usuarios" | "empresas" | "perfil"
 export type profissionalTab = "dashboard" | "prontuarios" | "agendas" | "pacientes" | "perfil"
 export type pacienteTab = "inicio" | "agendas" | "perfil"
 export type TabType = adminTab | profissionalTab | pacienteTab
@@ -58,6 +58,7 @@ export const useTabStore = create<TabStore>()(
                     case "administrador":
                         return [
                             { id: "dashboard", label: "Dashboard", icon: Home, path: "/painel-administrativo" },
+                            { id: "pacientes", label: "Pacientes", icon: Users, path: "/painel-administrativo/pacientes" },
                             { id: "prontuarios", label: "Prontuários", icon: FileText, path: "/painel-administrativo/prontuarios" },
                             { id: "agendas", label: "Agendas", icon: Calendar, path: "/painel-administrativo/agendas" },
                             { id: "analytics", label: "Análises", icon: TrendingUp, path: "/painel-administrativo/analytics" },

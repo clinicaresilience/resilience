@@ -101,7 +101,7 @@ export class AgendamentosService {
       const { data: agendamentoCompleto, error: fetchError } = await supabase
         .from('agendamentos')
         .select(`*,
-          paciente:usuarios!agendamentos_paciente_id_fkey(nome, email),
+          paciente:usuarios!agendamentos_paciente_id_fkey(id, nome, email, telefone),
           profissional:usuarios!agendamentos_profissional_id_fkey(nome)
         `)
         .eq('id', agendamentoBasico.id)
@@ -190,7 +190,7 @@ export class AgendamentosService {
       .from('agendamentos')
       .select(`
         *,
-        paciente:usuarios!agendamentos_paciente_id_fkey(nome, email),
+        paciente:usuarios!agendamentos_paciente_id_fkey(id, nome, email, telefone),
         profissional:usuarios!agendamentos_profissional_id_fkey(nome)
       `)
       .eq('id', id)
@@ -220,7 +220,7 @@ export class AgendamentosService {
       .from('agendamentos')
       .select(`
         *,
-        paciente:usuarios!agendamentos_paciente_id_fkey(nome, email),
+        paciente:usuarios!agendamentos_paciente_id_fkey(id, nome, email, telefone),
         profissional:usuarios!agendamentos_profissional_id_fkey(nome)
       `);
 
@@ -321,7 +321,7 @@ export class AgendamentosService {
       .eq('id', id)
       .select(`
         *,
-        paciente:usuarios!agendamentos_paciente_id_fkey(nome, email),
+        paciente:usuarios!agendamentos_paciente_id_fkey(id, nome, email, telefone),
         profissional:usuarios!agendamentos_profissional_id_fkey(nome)
       `)
       .single();

@@ -1,14 +1,31 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Users, Search, Phone, Mail, Calendar, Eye, User, Activity } from "lucide-react"
-import { generateMockPacientes } from "@/lib/mocks/patients"
-import { generateMockAgendamentos } from "@/lib/mocks/agendamentos"
+
+type Agendamento = {
+  id: string
+  paciente_id?: string
+  data_consulta?: string
+  dataISO?: string
+  status: string
+  paciente?: {
+    id: string
+    nome: string
+    email?: string
+    telefone?: string
+  }
+  profissional?: {
+    nome: string
+  }
+  profissionalNome?: string
+  pacienteNome?: string
+}
 
 type PacienteComHistorico = {
   id: string
@@ -27,54 +44,95 @@ export function PacientesListClient() {
   const [statusFiltro, setStatusFiltro] = useState("")
   const [pacienteSelecionado, setPacienteSelecionado] = useState<PacienteComHistorico | null>(null)
   const [modalAberto, setModalAberto] = useState(false)
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Gerar dados mock
-  const pacientesMock = useMemo(() => generateMockPacientes(), [])
-  const agendamentosMock = useMemo(() => generateMockAgendamentos(), [])
+  // Buscar dados reais do banco
+  useEffect(() => {
+    const fetchDados = async () => {
+      try {
+        const response = await fetch('/api/agendamentos')
+        if (response.ok) {
+          const data = await response.json()
+          setAgendamentos(Array.isArray(data) ? data : data.data || [])
+        }
+      } catch (error) {
+        console.error('Erro ao buscar agendamentos:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  // Processar pacientes com histórico
+    fetchDados()
+  }, [])
+
+  // Processar pacientes com histórico a partir dos dados reais
   const pacientesComHistorico = useMemo(() => {
-    return pacientesMock.map(paciente => {
-      // Encontrar agendamentos do paciente
-      const agendamentosPaciente = agendamentosMock.filter(ag => ag.usuarioId === paciente.id)
-      
-      // Calcular estatísticas
-      const totalConsultas = agendamentosPaciente.length
-      const consultasConcluidas = agendamentosPaciente.filter(ag => ag.status === "concluido")
-      
-      // Última consulta
-      const ultimaConsulta = consultasConcluidas
-        .sort((a, b) => new Date(b.dataISO).getTime() - new Date(a.dataISO).getTime())[0]
-      
-      // Próxima consulta
-      const agora = new Date()
-      const proximaConsulta = agendamentosPaciente
-        .filter(ag => new Date(ag.dataISO) > agora && (ag.status === "confirmado" || ag.status === "pendente"))
-        .sort((a, b) => new Date(a.dataISO).getTime() - new Date(b.dataISO).getTime())[0]
-      
-      // Profissionais que atenderam
-      const profissionaisAtendentes = [...new Set(agendamentosPaciente.map(ag => ag.profissionalNome))]
-      
-      // Status baseado na atividade
-      let status: "ativo" | "inativo" | "pendente" = "inativo"
-      if (proximaConsulta) {
-        status = "ativo"
-      } else if (ultimaConsulta && new Date(ultimaConsulta.dataISO) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)) {
-        status = "ativo"
-      } else if (agendamentosPaciente.some(ag => ag.status === "pendente")) {
-        status = "pendente"
+    if (!agendamentos.length) return []
+
+    const pacientesMap = new Map<string, PacienteComHistorico>()
+
+    agendamentos.forEach((agendamento: Agendamento) => {
+      if (!agendamento.paciente || !agendamento.paciente.nome) return
+
+      const pacienteId = agendamento.paciente.id || agendamento.paciente_id
+      const pacienteNome = agendamento.paciente.nome || agendamento.pacienteNome
+      const pacienteEmail = agendamento.paciente.email || agendamento.paciente?.email || `${pacienteNome.toLowerCase().replace(/\s+/g, '.')}@email.com`
+      const telefone = agendamento.paciente.telefone || "(00) 00000-0000"
+
+      if (!pacientesMap.has(pacienteId)) {
+        pacientesMap.set(pacienteId, {
+          id: pacienteId,
+          nome: pacienteNome,
+          email: pacienteEmail,
+          telefone,
+          status: "inativo",
+          totalConsultas: 0,
+          ultimaConsulta: undefined,
+          proximaConsulta: undefined,
+          profissionaisAtendentes: []
+        })
       }
 
-      return {
-        ...paciente,
-        status,
-        totalConsultas,
-        ultimaConsulta: ultimaConsulta?.dataISO,
-        proximaConsulta: proximaConsulta?.dataISO,
-        profissionaisAtendentes
+      const paciente = pacientesMap.get(pacienteId)!
+      paciente.totalConsultas += 1
+
+      // Atualizar última consulta
+      const dataConsulta = agendamento.data_consulta || agendamento.dataISO
+      if (!paciente.ultimaConsulta || new Date(dataConsulta) > new Date(paciente.ultimaConsulta)) {
+        paciente.ultimaConsulta = dataConsulta
+      }
+
+      // Próxima consulta (futuras com status confirmado ou pendente)
+      const agora = new Date()
+      if (new Date(dataConsulta) > agora && 
+          (agendamento.status === "confirmado" || agendamento.status === "pendente")) {
+        if (!paciente.proximaConsulta || new Date(dataConsulta) < new Date(paciente.proximaConsulta)) {
+          paciente.proximaConsulta = dataConsulta
+        }
+      }
+
+      // Adicionar profissional atendente
+      const profissionalNome = agendamento.profissional?.nome || agendamento.profissionalNome || "Profissional"
+      if (!paciente.profissionaisAtendentes.includes(profissionalNome)) {
+        paciente.profissionaisAtendentes.push(profissionalNome)
+      }
+
+      // Determinar status
+      if (paciente.proximaConsulta) {
+        paciente.status = "ativo"
+      } else if (paciente.ultimaConsulta && 
+                 new Date(paciente.ultimaConsulta) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)) {
+        paciente.status = "ativo"
+      } else if (agendamentos.some((ag: Agendamento) => 
+                  (ag.paciente?.id === pacienteId || ag.paciente_id === pacienteId) && 
+                  ag.status === "pendente")) {
+        paciente.status = "pendente"
       }
     })
-  }, [pacientesMock, agendamentosMock])
+
+    return Array.from(pacientesMap.values())
+  }, [agendamentos])
 
   // Filtrar pacientes
   const pacientesFiltrados = useMemo(() => {

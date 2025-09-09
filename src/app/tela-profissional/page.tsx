@@ -49,7 +49,7 @@ export default async function TelaProfissional() {
   
   // Consultas de hoje
   const { data: consultasHoje } = await supabase
-    .from("consultas")
+    .from("agendamentos")
     .select("id")
     .eq("profissional_id", user.id)
     .gte("data_consulta", inicioHoje.toISOString())
@@ -59,13 +59,14 @@ export default async function TelaProfissional() {
 
   // Próxima consulta confirmada
   const { data: proximaConsulta } = await supabase
-    .from("consultas")
+    .from("agendamentos")
     .select(`
       data_consulta,
-      paciente:usuarios!consultas_paciente_id_fkey(nome)
+      paciente:usuarios!agendamentos_paciente_id_fkey(nome)
     `)
     .eq("profissional_id", user.id)
-    .eq("status_consulta", "confirmado")
+    .eq("status", "confirmado")
+    .gte("data_consulta", new Date().toISOString())
     .order("data_consulta", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -82,7 +83,7 @@ export default async function TelaProfissional() {
   const seisMesesAtras = new Date();
   seisMesesAtras.setMonth(seisMesesAtras.getMonth() - 6);
   const { data: pacientesAtivos } = await supabase
-    .from("consultas")
+    .from("agendamentos")
     .select("paciente_id")
     .eq("profissional_id", user.id)
     .gte("data_consulta", seisMesesAtras.toISOString());
@@ -90,10 +91,10 @@ export default async function TelaProfissional() {
 
   // Consultas pendentes
   const { data: consultasPendentes } = await supabase
-    .from("consultas")
+    .from("agendamentos")
     .select("id")
     .eq("profissional_id", user.id)
-    .in("status_consulta", ["agendado", "confirmado"])
+    .in("status", ["pendente", "confirmado"])
     .gte("data_consulta", new Date().toISOString());
   const totalPendentes = consultasPendentes?.length || 0;
 
@@ -101,16 +102,18 @@ export default async function TelaProfissional() {
   const proximosTresDias = new Date();
   proximosTresDias.setDate(proximosTresDias.getDate() + 3);
   const { data: proximasConsultas } = await supabase
-    .from("consultas")
+    .from("agendamentos")
     .select(`
       id,
       data_consulta,
-      status_consulta,
-      observacoes,
-      paciente:usuarios!consultas_paciente_id_fkey(nome)
+      status,
+      notas,
+      paciente:usuarios!agendamentos_paciente_id_fkey(nome)
     `)
     .eq("profissional_id", user.id)
-    .eq("status_consulta", "confirmado")
+    .eq("status", "confirmado")
+    .gte("data_consulta", new Date().toISOString())
+    .lt("data_consulta", proximosTresDias.toISOString())
     .order("data_consulta", { ascending: true });
 
   // Função auxiliar para formatar datas
@@ -199,7 +202,7 @@ export default async function TelaProfissional() {
         <CardContent>
           <div className="space-y-4">
             {proximasConsultas && proximasConsultas.length > 0 ? (
-              proximasConsultas.map((consulta: any) => {
+              proximasConsultas.map((consulta) => {
                 const { horario, texto } = formatarData(consulta.data_consulta);
                 const nomePaciente = consulta.paciente?.nome || "Paciente não identificado";
 
@@ -207,7 +210,7 @@ export default async function TelaProfissional() {
                   <div key={consulta.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <p className="font-medium">{nomePaciente}</p>
-                      <p className="text-sm text-gray-600">{consulta.observacoes || "Consulta agendada"}</p>
+                      <p className="text-sm text-gray-600">{consulta.notas || "Consulta agendada"}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{horario}</p>

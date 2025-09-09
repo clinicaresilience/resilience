@@ -92,6 +92,7 @@ export class ConsultasService {
           arquivo
         )
       `)
+      .not('prontuario', 'is', null)
       .order('data_consulta', { ascending: false });
 
     if (error) {
@@ -99,7 +100,40 @@ export class ConsultasService {
       throw error;
     }
 
-    return consultas || [];
+    // Transform to match expected format for admin dashboard
+    const consultasFormatted = (consultas || []).map(consulta => {
+      // Handle Supabase returning arrays for related data
+      const pacienteData = Array.isArray(consulta.paciente) ? consulta.paciente[0] : consulta.paciente;
+      const profissionalData = Array.isArray(consulta.profissional) ? consulta.profissional[0] : consulta.profissional;
+      const prontuarioData = Array.isArray(consulta.prontuario) ? consulta.prontuario[0] : consulta.prontuario;
+
+      return {
+        id: consulta.id,
+        paciente_id: pacienteData?.id,
+        profissional_id: profissionalData?.id,
+        data_consulta: consulta.data_consulta,
+        status: consulta.status,
+        modalidade: consulta.modalidade,
+        notas: consulta.notas,
+        paciente: pacienteData ? {
+          nome: pacienteData.nome,
+          email: pacienteData.email
+        } : undefined,
+        profissional: profissionalData ? {
+          nome: profissionalData.nome,
+          especialidade: profissionalData.especialidade
+        } : undefined,
+        prontuario: prontuarioData ? {
+          id: prontuarioData.id,
+          consulta_id: consulta.id,
+          arquivo: prontuarioData.arquivo,
+          criado_em: consulta.data_consulta,
+          atualizado_em: consulta.data_consulta
+        } : undefined
+      };
+    });
+
+    return consultasFormatted;
   }
   // ======================================
   // Buscar pacientes atendidos por um profissional
@@ -280,7 +314,7 @@ export class ConsultasService {
         throw error;
       }
 
-      return prontuarios.map((p: any) => ({
+      return prontuarios.map((p: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
         id: p.agendamento.id,
         paciente_id: p.agendamento.paciente_id,
         profissional_id: p.agendamento.profissional_id,

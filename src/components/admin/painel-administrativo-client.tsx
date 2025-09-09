@@ -10,6 +10,7 @@ import { SchedulesSection } from "@/components/admin/schedules-section";
 import { ProfessionalAnalytics } from "@/components/admin/professional-analytics";
 import { UsersManagement } from "@/components/admin/users-management";
 import { CompaniesManagement } from "@/components/admin/companies-management";
+import { PacientesListClient } from "@/components/admin/pacientes-list-client";
 import {
   FileText,
   Calendar,
@@ -17,6 +18,7 @@ import {
   Users,
   Home,
   Building2,
+  UserCheck,
 } from "lucide-react";
 
 interface PainelAdministrativoClientProps {
@@ -42,6 +44,12 @@ export function PainelAdministrativoClient({
       description: "Visão geral e métricas principais",
     },
     {
+      id: "pacientes" as TabType,
+      label: "Pacientes",
+      icon: UserCheck,
+      description: "Gerenciar pacientes e histórico médico",
+    },
+    {
       id: "prontuarios" as TabType,
       label: "Prontuários",
       icon: FileText,
@@ -59,7 +67,6 @@ export function PainelAdministrativoClient({
       icon: TrendingUp,
       description: "Análises detalhadas por profissional",
     },
-
     {
       id: "usuarios" as TabType,
       label: "Usuários",
@@ -78,6 +85,8 @@ export function PainelAdministrativoClient({
     switch (activeTab) {
       case "dashboard":
         return <AdminDashboard />;
+      case "pacientes":
+        return <PacientesListClient />;
       case "prontuarios":
         return <MedicalRecordsSection />;
       case "agendas":
@@ -142,8 +151,8 @@ export function PainelAdministrativoClient({
       {/* Fixed Mobile Navigation Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
         <div className="flex justify-around items-center py-2">
-          {tabs.slice(0, 5).map((tab) => {
-            // Limit to 5 tabs for mobile
+          {tabs.slice(0, 6).map((tab) => {
+            // Limit to 6 tabs for mobile (including pacientes)
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
 
