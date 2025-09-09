@@ -49,6 +49,7 @@ export function AdminDashboard() {
   useEffect(() => {
     async function fetchDados() {
       // helper para extrair array de respostas diferentes (/api pode devolver { success: true, data: [...] } ou [] diretamente)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const getArray = (resJson: any) => {
         if (!resJson) return [];
         if (Array.isArray(resJson)) return resJson;
@@ -63,7 +64,7 @@ export function AdminDashboard() {
         const jsonAg = await resAg.json().catch(() => null);
         const agArray = getArray(jsonAg);
 
-        const agNormalized: AgendamentoNorm[] = agArray.map((a: any) => ({
+        const agNormalized: AgendamentoNorm[] = agArray.map((a: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           id: a.id,
           profissional_id:
             a.profissionalId ||
@@ -91,7 +92,7 @@ export function AdminDashboard() {
         const jsonCons = await resCons.json().catch(() => null);
         const consArray = getArray(jsonCons?.consultas || jsonCons);
 
-        const consNormalized: ConsultaNorm[] = consArray.map((c: any) => ({
+        const consNormalized: ConsultaNorm[] = consArray.map((c: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           id: c.id,
           profissional_id:
             c.profissional?.id ||
@@ -118,7 +119,7 @@ export function AdminDashboard() {
         const jsonProf = await resProf.json().catch(() => null);
         const profArray = getArray(jsonProf);
 
-        const profNorm: ProfissionalCadastro[] = profArray.map((p: any) => ({
+        const profNorm: ProfissionalCadastro[] = profArray.map((p: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           id: p.id,
           nome: p.nome || p.display_name || "Sem Nome",
           email: p.email,
@@ -157,7 +158,7 @@ export function AdminDashboard() {
       } as ProfissionalStats & { keyId: string };
     }
 
-    // Agendamentos -> total & confirmadas & proximas
+    // Agendamentos -> total & confirmadas & canceladas & proximas
     for (const a of agendamentosNorm) {
       // determine key: try profissional_id then profissional_nome
       const pid =
@@ -180,13 +181,14 @@ export function AdminDashboard() {
       const s = byId[key];
       s.total += 1;
 
-      if ((a.status_agendamento || "").toLowerCase() === "confirmado")
-        s.confirmadas += 1;
+      const st = (a.status_agendamento || "").toLowerCase();
+      if (st === "confirmado") s.confirmadas += 1;
+      if (st === "cancelado" || st === "cancelada") s.canceladas += 1;
+      if (st === "pendente") s.pendentes += 1;
 
       // próximas: conta agendamentos futuros (considerando confirmado/pendente como "próxima")
       const dt = a.data_consulta ? Date.parse(a.data_consulta) : NaN;
       if (!isNaN(dt) && dt > now) {
-        const st = (a.status_agendamento || "").toLowerCase();
         if (st === "confirmado" || st === "pendente") s.proximas += 1;
       }
     }
