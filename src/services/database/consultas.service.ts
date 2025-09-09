@@ -156,22 +156,33 @@ export class ConsultasService {
         throw new Error("Nenhuma consulta concluída encontrada para este paciente");
       }
 
+      // Verificar se já existe um prontuário para este agendamento
+      const { data: prontuarioExistente } = await supabase
+        .from("prontuarios")
+        .select("id")
+        .eq("consulta_id", agendamento.id)
+        .single();
+
+      if (prontuarioExistente) {
+        // Se já existe, atualizar
+        return await this.atualizarProntuario(
+          profissionalId,
+          prontuarioExistente.id,
+          texto,
+          arquivoPdf
+        );
+      }
+
       // Preparar dados para inserção
       const dadosProntuario: {
         consulta_id: string;
-        texto?: string;
-        arquivo?: Buffer;
+        texto?: string | null;
+        arquivo: Buffer;
       } = {
         consulta_id: agendamento.id,
+        texto: texto,
+        arquivo: arquivoPdf || Buffer.from(''), // Arquivo vazio se não fornecido
       };
-
-      if (texto) {
-        dadosProntuario.texto = texto;
-      }
-
-      if (arquivoPdf) {
-        dadosProntuario.arquivo = arquivoPdf;
-      }
 
       // Inserir o prontuário na tabela prontuarios
       const { data: prontuario, error: insertError } = await supabase
@@ -253,6 +264,168 @@ export class ConsultasService {
 
     } catch (error) {
       console.error('Erro no getProntuarios:', error);
+      throw error;
+    }
+  }
+
+  // ======================================
+  // Deletar prontuário
+  // ======================================
+  static async deletarProntuario(
+    profissionalId: string,
+    prontuarioId: string
+  ): Promise<{ success: boolean }> {
+    const supabase = await createClient();
+
+    try {
+      // Primeiro verificar se o prontuário pertence ao profissional
+      const { data: ownershipCheck, error: ownershipError } = await supabase
+        .from("prontuarios")
+        .select(`
+          id,
+          agendamentos!inner(
+            profissional_id
+          )
+        `)
+        .eq("id", prontuarioId)
+        .eq("agendamentos.profissional_id", profissionalId)
+        .single();
+
+      if (ownershipError || !ownershipCheck) {
+        console.log("Ownership check failed for delete:", ownershipError);
+        throw new Error("Acesso negado: prontuário não pertence ao profissional ou não encontrado");
+      }
+
+      // Deletar o prontuário
+      const { error: deleteError } = await supabase
+        .from("prontuarios")
+        .delete()
+        .eq("id", prontuarioId);
+
+      if (deleteError) {
+        console.error("Erro ao deletar prontuário:", deleteError);
+        throw deleteError;
+      }
+
+      return { success: true };
+
+    } catch (error) {
+      console.error("Erro no deletarProntuario:", error);
+      throw error;
+    }
+  }
+
+  // ======================================
+  // Atualizar prontuário (adicionar/substituir PDF ou texto)
+  // ======================================
+  static async atualizarProntuario(
+    profissionalId: string,
+    prontuarioId: string,
+    texto?: string | null,
+    arquivoPdf?: Buffer | null
+  ): Promise<ProntuarioData> {
+    const supabase = await createClient();
+
+    try {
+      // Primeiro verificar se o prontuário pertence ao profissional
+      const { data: ownershipCheck, error: ownershipError } = await supabase
+        .from("prontuarios")
+        .select(`
+          id,
+          agendamentos!inner(
+            profissional_id
+          )
+        `)
+        .eq("id", prontuarioId)
+        .eq("agendamentos.profissional_id", profissionalId)
+        .single();
+
+      if (ownershipError || !ownershipCheck) {
+        console.log("Ownership check failed for update:", ownershipError);
+        throw new Error("Acesso negado: prontuário não pertence ao profissional ou não encontrado");
+      }
+
+      // Preparar dados para atualização
+      const dadosAtualizacao: {
+        texto?: string | null;
+        arquivo?: Buffer | null;
+        atualizado_em?: string;
+      } = {
+        atualizado_em: new Date().toISOString(),
+      };
+
+      if (texto !== undefined) {
+        dadosAtualizacao.texto = texto;
+      }
+
+      if (arquivoPdf !== undefined) {
+        dadosAtualizacao.arquivo = arquivoPdf;
+      }
+
+      // Atualizar o prontuário
+      const { data: prontuario, error: updateError } = await supabase
+        .from("prontuarios")
+        .update(dadosAtualizacao)
+        .eq("id", prontuarioId)
+        .select("*")
+        .single();
+
+      if (updateError) {
+        console.error("Erro ao atualizar prontuário:", updateError);
+        throw updateError;
+      }
+
+      return prontuario;
+
+    } catch (error) {
+      console.error("Erro no atualizarProntuario:", error);
+      throw error;
+    }
+  }
+
+  // ======================================
+  // Excluir prontuário (remove o registro completo)
+  // ======================================
+  static async excluirProntuario(
+    profissionalId: string,
+    prontuarioId: string
+  ): Promise<{ success: boolean }> {
+    const supabase = await createClient();
+
+    try {
+      // Primeiro verificar se o prontuário pertence ao profissional usando uma query mais simples
+      const { data: ownershipCheck, error: ownershipError } = await supabase
+        .from("prontuarios")
+        .select(`
+          id,
+          agendamentos!inner(
+            profissional_id
+          )
+        `)
+        .eq("id", prontuarioId)
+        .eq("agendamentos.profissional_id", profissionalId)
+        .single();
+
+      if (ownershipError || !ownershipCheck) {
+        console.log("Ownership check failed:", ownershipError);
+        throw new Error("Acesso negado: prontuário não pertence ao profissional ou não encontrado");
+      }
+
+      // Excluir o prontuário completamente
+      const { error: deleteError } = await supabase
+        .from("prontuarios")
+        .delete()
+        .eq("id", prontuarioId);
+
+      if (deleteError) {
+        console.error("Erro ao excluir prontuário:", deleteError);
+        throw deleteError;
+      }
+
+      return { success: true };
+
+    } catch (error) {
+      console.error("Erro no excluirProntuario:", error);
       throw error;
     }
   }

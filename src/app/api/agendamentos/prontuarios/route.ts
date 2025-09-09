@@ -128,3 +128,85 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+// DELETE /api/agendamentos/prontuarios
+// Deletar um prontuário específico ou remover PDF
+export async function DELETE(req: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    // Verificar se o usuário é um profissional
+    const { data: userData } = await supabase
+      .from("usuarios")
+      .select("tipo_usuario")
+      .eq("id", user.id)
+      .single();
+
+    if (!userData || userData.tipo_usuario !== "profissional") {
+      return NextResponse.json({ error: "Acesso restrito a profissionais" }, { status: 403 });
+    }
+
+    const url = new URL(req.url);
+    const isRemovePdf = url.pathname.endsWith('/remover');
+
+    const body = await req.json();
+
+    if (isRemovePdf) {
+      // Remover apenas o PDF do prontuário
+      const { consultaId } = body;
+
+      if (!consultaId) {
+        return NextResponse.json(
+          { error: "consultaId é obrigatório" },
+          { status: 400 }
+        );
+      }
+
+      const resultado = await ConsultasService.excluirProntuario(
+        user.id,
+        consultaId
+      );
+
+      return NextResponse.json({
+        success: true,
+        data: resultado,
+      }, { status: 200 });
+    } else {
+      // Deletar prontuário completo
+      const { prontuarioId } = body;
+
+      if (!prontuarioId) {
+        return NextResponse.json(
+          { error: "prontuarioId é obrigatório" },
+          { status: 400 }
+        );
+      }
+
+      const resultado = await ConsultasService.deletarProntuario(
+        user.id,
+        prontuarioId
+      );
+
+      return NextResponse.json({
+        success: true,
+        data: resultado,
+      }, { status: 200 });
+    }
+
+  } catch (error: unknown) {
+    console.error("Erro na operação:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return NextResponse.json(
+      { error: "Erro na operação", detail: errorMessage },
+      { status: 500 }
+    );
+  }
+}
