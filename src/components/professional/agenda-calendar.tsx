@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { Calendar, momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import 'moment/locale/pt-br'
+import 'moment-timezone'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar as CalendarIcon, Clock, User, MapPin, Phone, Mail, FileText } from "lucide-react"
@@ -44,6 +45,9 @@ type Agendamento = {
   pacienteNome?: string
   pacienteEmail?: string
   pacienteTelefone?: string
+  data_consulta?: string
+  data_hora_inicio?: string
+  data_hora_fim?: string
 }
 
 type CalendarEvent = {
@@ -71,7 +75,12 @@ export function AgendaCalendar() {
       const response = await fetch('/api/agendamentos')
       if (response.ok) {
         const data = await response.json()
-        setAgendamentos(data.data || [])
+        // Se os dados vêm da tabela agendamento_slot, mapear corretamente
+        const agendamentosFormatados = (data.data || []).map((ag: Record<string, any>) => ({
+          ...ag,
+          dataISO: ag.data_consulta || ag.data_hora_inicio || ag.dataISO
+        }))
+        setAgendamentos(agendamentosFormatados)
       } else {
         setError('Erro ao carregar agendamentos')
       }
@@ -90,12 +99,20 @@ export function AgendaCalendar() {
   // Converter agendamentos para eventos do calendário
   const events = useMemo(() => {
     return agendamentos.map(ag => {
-      const startDate = new Date(ag.dataISO)
+      // Usar o campo correto baseado no que está disponível nos dados
+      const dataHora = ag.dataISO || ag.data_consulta || ag.data_hora_inicio
+      if (!dataHora) {
+        console.warn('Data não encontrada no agendamento:', ag)
+        return null
+      }
+
+      // Garantir que a data seja interpretada corretamente para o timezone local
+      const startDate = new Date(dataHora)
       const endDate = new Date(startDate.getTime() + 60 * 60 * 1000) // 1 hora de duração
 
       return {
         id: ag.id,
-        title: `${ag.pacienteNome || 'Paciente'} - ${startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
+        title: `${ag.pacienteNome || 'Paciente'} - ${startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })}`,
         start: startDate,
         end: endDate,
         resource: {
@@ -103,7 +120,7 @@ export function AgendaCalendar() {
           duracao: '60 minutos'
         }
       }
-    })
+    }).filter((event): event is CalendarEvent => event !== null) // Remove null events with proper type guard
   }, [agendamentos])
 
   // Função para estilizar eventos baseado no status

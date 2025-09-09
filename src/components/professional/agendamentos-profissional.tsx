@@ -81,6 +81,7 @@ function formatarDataHora(iso: string) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "America/Sao_Paulo"
   });
 }
 
@@ -123,7 +124,12 @@ export default function AgendamentosProfissional({
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.data) {
-            setAgendamentos(result.data);
+            // Mapear corretamente os campos de data
+            const agendamentosFormatados = result.data.map((ag: Record<string, any>) => ({
+              ...ag,
+              dataISO: ag.data_consulta || ag.data_hora_inicio || ag.dataISO
+            }));
+            setAgendamentos(agendamentosFormatados);
           }
         } else {
           console.error("Erro ao carregar agendamentos:", response.statusText);
@@ -158,12 +164,14 @@ export default function AgendamentosProfissional({
   }, [agendamentos, busca, statusFiltro]);
 
   function podeCancelar(a: AgendamentoPaciente) {
-    const ehPassado = +new Date(a.dataISO) < agora;
+    const agendamentoDate = new Date(a.dataISO);
+    const ehPassado = agendamentoDate.getTime() < agora;
     return a.status !== "cancelado" && a.status !== "concluido" && !ehPassado;
   }
 
   function podeReagendar(a: AgendamentoPaciente) {
-    const ehPassado = +new Date(a.dataISO) < agora;
+    const agendamentoDate = new Date(a.dataISO);
+    const ehPassado = agendamentoDate.getTime() < agora;
     return a.status !== "cancelado" && a.status !== "concluido" && !ehPassado;
   }
 
@@ -366,7 +374,7 @@ export default function AgendamentosProfissional({
 
         {listagem.map((a) => {
           const data = new Date(a.dataISO);
-          const ehPassado = +data < agora;
+          const ehPassado = data.getTime() < agora;
           return (
             <Card key={a.id} className="border-muted">
               <CardHeader className="flex-row items-start justify-between gap-4">
