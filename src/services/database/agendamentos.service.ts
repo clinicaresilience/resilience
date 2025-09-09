@@ -85,35 +85,8 @@ export class AgendamentosService {
         agendamentoBasico = result.data;
         agendamentoError = result.error;
 
-        // Se o agendamento foi criado com sucesso, criar a consulta correspondente
-        if (!agendamentoError && agendamentoBasico) {
-          console.log('Agendamento criado, criando consulta correspondente...');
-          
-          try {
-            const { error: consultaError } = await supabase
-              .from('consultas')
-              .insert({
-                paciente_id: data.usuario_id,
-                profissional_id: data.profissional_id,
-                data_consulta: data.data_consulta, // Usar data_consulta (correto)
-                status: 'pendente',
-                modalidade: data.modalidade,
-                status_consulta: 'confirmado',
-                agendamento_id: agendamentoBasico.id,
-                observacoes: data.notas,
-              });
-
-            if (consultaError) {
-              console.warn('Aviso: Consulta não pôde ser criada:', consultaError);
-              // Não fazer throw aqui para não quebrar o agendamento
-            } else {
-              console.log('Consulta criada com sucesso');
-            }
-          } catch (consultaErr) {
-            console.warn('Aviso: Erro ao criar consulta:', consultaErr);
-            // Não fazer throw aqui para não quebrar o agendamento
-          }
-        }
+        // Nota: Removido código que criava consulta correspondente
+        // pois a tabela consultas não existe mais
 
       } catch (err) {
         agendamentoError = err;
@@ -436,15 +409,6 @@ export class AgendamentosService {
         status: "concluido",
         notas: notas
       });
-
-      // 2️⃣ Removido: não tentar atualizar tabela consultas para evitar trigger issues
-      // const { error: consultaError } = await supabase
-      //   .from('consultas')
-      //   .update({
-      //     status_consulta: 'concluido',
-      //     updated_at: new Date().toISOString()
-      //   })
-      //   .eq('agendamento_id', id);
 
       console.log('Agendamento marcado como concluído');
       return updatedAgendamento;

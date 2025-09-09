@@ -136,15 +136,25 @@ export function ProfessionalConsultasClient({
     acao: "concluir" | "cancelar"
   ) => {
     let statusNovo = consulta.status;
+    let requestBody: any = { status: statusNovo }; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-    if (acao === "concluir") statusNovo = "concluido";
-    if (acao === "cancelar") statusNovo = "cancelado";
+    if (acao === "concluir") {
+      statusNovo = "concluido";
+      requestBody = { status: statusNovo };
+    }
+    if (acao === "cancelar") {
+      statusNovo = "cancelado";
+      requestBody = {
+        status: statusNovo,
+        justificativa: "Cancelado pelo profissional"
+      };
+    }
 
     try {
       const res = await fetch(`/api/agendamentos/${consulta.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: statusNovo }),
+        body: JSON.stringify(requestBody),
       });
 
       const result = await res.json();
@@ -185,17 +195,16 @@ export function ProfessionalConsultasClient({
     if (!consultaSelecionada) return;
 
     try {
-      const res = await fetch("/api/agendamentos", {
-        method: "GET",
+      const res = await fetch(`/api/agendamentos/${consultaSelecionada.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: consultaSelecionada.id,
-          observacoes,
+          notas: observacoes,
         }),
       });
 
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Erro ao salvar");
+      if (!res.ok) throw new Error(result.error || "Erro ao salvar observações");
 
       setConsultas((prev) =>
         prev.map((c) =>
@@ -205,7 +214,7 @@ export function ProfessionalConsultasClient({
 
       console.log("Observações salvas com sucesso!");
     } catch (error) {
-      console.error(error);
+      console.error("Erro ao salvar observações:", error);
     }
   };
 
