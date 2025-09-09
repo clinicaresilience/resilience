@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { generateMockAgendamentos, type Agendamento } from "@/lib/mocks/agendamentos"
-import { generateMockProntuarios, type ProntuarioMedico } from "@/lib/mocks/medical-records"
+import { AgendamentosService, type Agendamento } from "@/services/database/agendamentos.service"
+import { ConsultasService, type ConsultaComProntuario } from "@/services/database/consultas.service"
 import { 
   TrendingUp, 
   Users, 
@@ -41,51 +41,81 @@ type ProfessionalAnalytics = {
 export function ProfessionalAnalytics() {
   const [selectedProfessional, setSelectedProfessional] = useState<string>("todos")
   const [viewMode, setViewMode] = useState<"overview" | "detailed" | "comparison">("overview")
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
+  const [prontuarios, setProntuarios] = useState<ConsultaComProntuario[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Dados mock
-  const agendamentos = useMemo(() => generateMockAgendamentos(), [])
-  const prontuarios = useMemo(() => generateMockProntuarios(), [])
+  // Buscar dados reais do banco
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true)
+
+        // Buscar todos os agendamentos
+        const agendamentosResponse = await fetch('/api/agendamentos')
+        if (agendamentosResponse.ok) {
+          const agendamentosData = await agendamentosResponse.json()
+          setAgendamentos(agendamentosData.data || [])
+        }
+
+        // Buscar todos os prontuários
+        const prontuariosResponse = await fetch('/api/agendamentos/prontuarios')
+        if (prontuariosResponse.ok) {
+          const prontuariosData = await prontuariosResponse.json()
+          setProntuarios(prontuariosData.data || [])
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados para analytics:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   // Calcular análises por profissional
   const professionalAnalytics = useMemo(() => {
-    const profissionais = Array.from(new Set(agendamentos.map(ag => ag.profissionalNome)))
-    
+    if (agendamentos.length === 0) return []
+
+    const profissionais = Array.from(new Set(agendamentos.map((ag: any) => ag.profissional?.nome || 'Profissional não identificado')))
+
     return profissionais.map(nome => {
-      const agendamentosProfissional = agendamentos.filter(ag => ag.profissionalNome === nome)
-      const prontuariosProfissional = prontuarios.filter(p => p.profissionalNome === nome)
-      
+      const agendamentosProfissional = agendamentos.filter((ag: any) => ag.profissional?.nome === nome)
+      const prontuariosProfissional = prontuarios.filter((p: any) => p.profissional?.nome === nome)
+
       const totalAgendamentos = agendamentosProfissional.length
-      const confirmados = agendamentosProfissional.filter(ag => ag.status === "confirmado").length
-      const cancelados = agendamentosProfissional.filter(ag => ag.status === "cancelado").length
-      const concluidos = agendamentosProfissional.filter(ag => ag.status === "concluido").length
-      const pendentes = agendamentosProfissional.filter(ag => ag.status === "pendente").length
-      
+      const confirmados = agendamentosProfissional.filter((ag: any) => ag.status === "confirmado").length
+      const cancelados = agendamentosProfissional.filter((ag: any) => ag.status === "cancelado").length
+      const concluidos = agendamentosProfissional.filter((ag: any) => ag.status === "concluido").length
+      const pendentes = agendamentosProfissional.filter((ag: any) => ag.status === "pendente").length
+
       const taxaComparecimento = totalAgendamentos > 0 ? (concluidos / totalAgendamentos) * 100 : 0
       const taxaCancelamento = totalAgendamentos > 0 ? (cancelados / totalAgendamentos) * 100 : 0
       const taxaConfirmacao = totalAgendamentos > 0 ? (confirmados / totalAgendamentos) * 100 : 0
-      
+
       // Pacientes únicos
-      const pacientesUnicos = new Set(agendamentosProfissional.map(ag => ag.usuarioId).filter(Boolean)).size
+      const pacientesUnicos = new Set(agendamentosProfissional.map((ag: any) => ag.paciente_id).filter(Boolean)).size
       const mediaConsultasPorPaciente = pacientesUnicos > 0 ? totalAgendamentos / pacientesUnicos : 0
-      
+
       // Próximos agendamentos
       const now = new Date()
-      const proximosAgendamentos = agendamentosProfissional.filter(ag => 
-        new Date(ag.dataISO) > now && (ag.status === "confirmado" || ag.status === "pendente")
+      const proximosAgendamentos = agendamentosProfissional.filter((ag: any) =>
+        new Date(ag.data_consulta) > now && (ag.status === "confirmado" || ag.status === "pendente")
       ).length
-      
+
       // Consultas últimos 30 dias
       const trinta_dias_atras = new Date()
       trinta_dias_atras.setDate(now.getDate() - 30)
-      const consultasUltimos30Dias = agendamentosProfissional.filter(ag => 
-        new Date(ag.dataISO) >= trinta_dias_atras && ag.status === "concluido"
+      const consultasUltimos30Dias = agendamentosProfissional.filter((ag: any) =>
+        new Date(ag.data_consulta) >= trinta_dias_atras && ag.status === "concluido"
       ).length
-      
-      // Tendência (simulada)
-      const tendencia: "crescimento" | "estavel" | "declinio" = 
-        consultasUltimos30Dias > 5 ? "crescimento" : 
+
+      // Tendência baseada em dados reais
+      const tendencia: "crescimento" | "estavel" | "declinio" =
+        consultasUltimos30Dias > 5 ? "crescimento" :
         consultasUltimos30Dias > 2 ? "estavel" : "declinio"
-      
+
       // Avaliação geral
       let avaliacaoGeral: "excelente" | "bom" | "regular" | "precisa_melhorar"
       if (taxaComparecimento >= 85 && taxaCancelamento <= 10) {
@@ -97,7 +127,7 @@ export function ProfessionalAnalytics() {
       } else {
         avaliacaoGeral = "precisa_melhorar"
       }
-      
+
       return {
         nome,
         totalAgendamentos,
@@ -113,7 +143,7 @@ export function ProfessionalAnalytics() {
         proximosAgendamentos,
         consultasUltimos30Dias,
         tendenciaUltimos30Dias: tendencia,
-        especialidade: agendamentosProfissional[0]?.especialidade,
+        especialidade: agendamentosProfissional[0]?.profissional?.especialidade,
         avaliacaoGeral
       } as ProfessionalAnalytics
     }).sort((a, b) => b.totalAgendamentos - a.totalAgendamentos)
@@ -142,6 +172,22 @@ export function ProfessionalAnalytics() {
       default:
         return <Activity className="h-4 w-4 text-gray-600" />
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="w-full">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-azul-escuro mb-4">Análises Detalhadas por Profissional</h2>
+        </div>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-azul-escuro mx-auto mb-4"></div>
+            <p className="text-gray-500">Carregando dados das análises...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
