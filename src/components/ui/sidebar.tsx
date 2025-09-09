@@ -76,7 +76,7 @@ export function Sidebar({
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed left-0 top-0 h-screen bg-white border-r border-gray-200 shadow-sm transition-all duration-500 ease-in-out z-[9999]",
+          "fixed left-0 top-0 h-screen bg-white border-r border-gray-200 shadow-sm transition-all duration-500 ease-in-out z-30",
           isCollapsed ? "w-16" : "w-64",
           isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}

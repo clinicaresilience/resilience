@@ -32,7 +32,7 @@ export default function AuthenticatedHeader() {
   );
 
   return (
-    <header className="w-full bg-white border-b border-gray-200 shadow-sm overflow-x-hidden md:relative fixed top-0 z-40">
+    <header className="w-full bg-white border-b border-gray-200 shadow-sm overflow-x-hidden md:relative fixed top-0 z-30">
       <style jsx global>{`
         .scrollbar-hide {
           -ms-overflow-style: none;

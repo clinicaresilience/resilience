@@ -4,7 +4,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 
 export default function Page() {
   return (
@@ -13,18 +13,23 @@ export default function Page() {
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">Thank you for signing up!</CardTitle>
-              <CardDescription>Check your email to confirm</CardDescription>
+              <CardTitle className="text-2xl">
+                Obrigado por se cadastrar
+              </CardTitle>
+              <CardDescription>
+                Verifique o seu email para confirmar
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                You&apos;ve successfully signed up. Please check your email to confirm your account
-                before signing in.
+                Enviamos um email para o endereço fornecido durante o cadastro.
+                Por favor, clique no link de confirmação dentro do email para
+                ativar sua conta e começar a usar nossos serviços.
               </p>
             </CardContent>
           </Card>
         </div>
       </div>
     </div>
-  )
+  );
 }
