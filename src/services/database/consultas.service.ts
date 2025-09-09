@@ -29,12 +29,38 @@ export interface Consulta {
   modalidade: string;
   local?: string;
   observacoes?: string;
-  prontuario?: string;
+  prontuario?: string | ProntuarioData;
   notas?: string;
   paciente?: {
     nome: string;
     email: string;
   };
+}
+
+export interface ProntuarioData {
+  id: string;
+  consulta_id: string;
+  texto: string | null;
+  arquivo: Buffer | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface ConsultaComProntuario {
+  id: string;
+  paciente_id: string;
+  profissional_id: string;
+  data_consulta: string;
+  status: string;
+  modalidade: string;
+  local?: string;
+  observacoes?: string;
+  notas?: string;
+  paciente?: {
+    nome: string;
+    email: string;
+  };
+  prontuario: ProntuarioData;
 }
 
 export class ConsultasService {
@@ -74,11 +100,11 @@ export class ConsultasService {
         if (!agendamento.paciente) return;
 
         const pacienteId = agendamento.paciente.id;
-        
+
         if (pacientesMap.has(pacienteId)) {
           const paciente = pacientesMap.get(pacienteId)!;
           paciente.totalConsultas += 1;
-          
+
           // Atualizar última consulta se for mais recente
           if (new Date(agendamento.data_consulta) > new Date(paciente.ultimaConsulta)) {
             paciente.ultimaConsulta = agendamento.data_consulta;
@@ -104,54 +130,65 @@ export class ConsultasService {
   }
 
   // ======================================
-  // Criar prontuário (salvar PDF)
+  // Criar prontuário (salvar texto e/ou PDF)
   // ======================================
   static async criarProntuario(
     profissionalId: string,
     pacienteId: string,
-    arquivoPdf: string // Base64 ou URL do arquivo
-  ): Promise<Consulta> {
+    texto: string | null = null,
+    arquivoPdf: Buffer | null = null
+  ): Promise<ProntuarioData> {
     const supabase = await createClient();
 
     try {
       // Buscar o agendamento mais recente do paciente com este profissional
       const { data: agendamento, error: agendamentoError } = await supabase
-        .from('agendamentos')
-        .select('*')
-        .eq('profissional_id', profissionalId)
-        .eq('paciente_id', pacienteId)
-        .eq('status', 'concluido')
-        .order('data_consulta', { ascending: false })
+        .from("agendamentos")
+        .select("*")
+        .eq("profissional_id", profissionalId)
+        .eq("paciente_id", pacienteId)
+        .eq("status", "concluido")
+        .order("data_consulta", { ascending: false })
         .limit(1)
         .single();
 
       if (agendamentoError || !agendamento) {
-        throw new Error('Nenhuma consulta concluída encontrada para este paciente');
+        throw new Error("Nenhuma consulta concluída encontrada para este paciente");
       }
 
-      // Atualizar o agendamento com o prontuário
-      const { data: agendamentoAtualizado, error: updateError } = await supabase
-        .from('agendamentos')
-        .update({ 
-          prontuario: arquivoPdf,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', agendamento.id)
-        .select(`
-          *,
-          paciente:usuarios!agendamentos_paciente_id_fkey(nome, email)
-        `)
+      // Preparar dados para inserção
+      const dadosProntuario: {
+        consulta_id: string;
+        texto?: string;
+        arquivo?: Buffer;
+      } = {
+        consulta_id: agendamento.id,
+      };
+
+      if (texto) {
+        dadosProntuario.texto = texto;
+      }
+
+      if (arquivoPdf) {
+        dadosProntuario.arquivo = arquivoPdf;
+      }
+
+      // Inserir o prontuário na tabela prontuarios
+      const { data: prontuario, error: insertError } = await supabase
+        .from("prontuarios")
+        .insert([dadosProntuario])
+        .select("*")
         .single();
 
-      if (updateError) {
-        console.error('Erro ao atualizar agendamento com prontuário:', updateError);
-        throw updateError;
+      if (insertError) {
+        console.error("Erro ao inserir prontuário:", insertError);
+        throw insertError;
       }
 
-      return agendamentoAtualizado as Consulta;
+      return prontuario;
 
     } catch (error) {
-      console.error('Erro no criarProntuario:', error);
+      console.error("Erro no criarProntuario:", error);
       throw error;
     }
   }
@@ -159,30 +196,65 @@ export class ConsultasService {
   // ======================================
   // Buscar prontuários de um profissional
   // ======================================
-  static async getProntuarios(profissionalId: string): Promise<Consulta[]> {
+  static async getProntuarios(profissionalId: string): Promise<ConsultaComProntuario[]> {
     const supabase = await createClient();
 
     try {
-      const { data: agendamentos, error } = await supabase
-        .from('agendamentos')
+      const { data: prontuarios, error } = await supabase
+        .from('prontuarios')
         .select(`
-          *,
-          paciente:usuarios!agendamentos_paciente_id_fkey(nome, email)
-        `)
-        .eq('profissional_id', profissionalId)
-        .not('prontuario', 'is', null)
-        .order('data_consulta', { ascending: false });
+    id,
+    consulta_id,
+    texto,
+    arquivo,
+    criado_em,
+    atualizado_em,
+    agendamento:consulta_id!inner(
+      id,
+      paciente_id,
+      profissional_id,
+      data_consulta,
+      modalidade,
+      status,
+      notas,
+      paciente:usuarios!agendamentos_paciente_id_fkey(
+        nome,
+        email
+      )
+    )
+  `)
+        .eq('agendamento.profissional_id', profissionalId)
+        .order('criado_em', { ascending: false });
+
 
       if (error) {
         console.error('Erro ao buscar prontuários:', error);
         throw error;
       }
 
-      return agendamentos as Consulta[];
+      return prontuarios.map((p: any) => ({
+        id: p.agendamento.id,
+        paciente_id: p.agendamento.paciente_id,
+        profissional_id: p.agendamento.profissional_id,
+        data_consulta: p.agendamento.data_consulta,
+        status: p.agendamento.status,
+        modalidade: p.agendamento.modalidade,
+        observacoes: p.agendamento.notas || undefined,
+        paciente: p.agendamento.paciente || undefined,
+        prontuario: {
+          id: p.id,
+          consulta_id: p.consulta_id,
+          texto: p.texto,
+          arquivo: p.arquivo,
+          criado_em: p.criado_em,
+          atualizado_em: p.atualizado_em
+        }
+      }));
 
     } catch (error) {
       console.error('Erro no getProntuarios:', error);
       throw error;
     }
   }
+
 }

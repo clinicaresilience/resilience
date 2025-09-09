@@ -44,18 +44,19 @@ export async function GET(req: NextRequest) {
   }
 }
 
+
 // POST /api/agendamentos/prontuarios
 // Criar/atualizar prontuário para um agendamento
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createClient();
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
     // Verificar se o usuário é um profissional
@@ -63,39 +64,67 @@ export async function POST(req: NextRequest) {
       .from("usuarios")
       .select("tipo_usuario")
       .eq("id", user.id)
-      .single()
+      .single();
 
     if (!userData || userData.tipo_usuario !== "profissional") {
-      return NextResponse.json({ error: "Acesso restrito a profissionais" }, { status: 403 })
+      return NextResponse.json({ error: "Acesso restrito a profissionais" }, { status: 403 });
     }
 
-    const body = await req.json()
-    const { paciente_id, arquivo_pdf } = body
+    const contentType = req.headers.get('content-type') || '';
 
-    if (!paciente_id || !arquivo_pdf) {
-      return NextResponse.json(
-        { error: "paciente_id e arquivo_pdf são obrigatórios" },
-        { status: 400 }
-      )
+    let paciente_id: string;
+    let texto: string | null = null;
+    let arquivo_pdf_binario: Buffer | null = null;
+
+    if (contentType.includes('multipart/form-data')) {
+      // Handle FormData (PDF upload)
+      const formData = await req.formData();
+      paciente_id = formData.get('paciente_id') as string;
+      const arquivo = formData.get('arquivo') as File;
+
+      if (!paciente_id || !arquivo) {
+        return NextResponse.json(
+          { error: "paciente_id e arquivo são obrigatórios" },
+          { status: 400 }
+        );
+      }
+
+      // Convert File to Buffer
+      const arrayBuffer = await arquivo.arrayBuffer();
+      arquivo_pdf_binario = Buffer.from(arrayBuffer);
+
+    } else {
+      // Handle JSON (text content)
+      const body = await req.json();
+      paciente_id = body.paciente_id;
+      texto = body.texto;
+
+      if (!paciente_id || !texto) {
+        return NextResponse.json(
+          { error: "paciente_id e texto são obrigatórios" },
+          { status: 400 }
+        );
+      }
     }
 
     const consultaAtualizada = await ConsultasService.criarProntuario(
       user.id,
       paciente_id,
-      arquivo_pdf
-    )
+      texto,
+      arquivo_pdf_binario
+    );
 
     return NextResponse.json({
       success: true,
       data: consultaAtualizada,
-    }, { status: 200 })
+    }, { status: 200 });
 
   } catch (error: unknown) {
-    console.error("Erro ao criar prontuário:", error)
-    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error("Erro ao criar prontuário:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
       { error: "Erro ao criar prontuário", detail: errorMessage },
       { status: 500 }
-    )
+    );
   }
 }

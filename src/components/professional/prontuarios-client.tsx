@@ -171,54 +171,35 @@ export function ProfessionalProntuariosClient({ profissionalNome, profissionalId
     }
   }
 
-  const handleSubmitProntuario = async () => {
-    if (!pacienteSelecionado) {
-      setErroModal('Selecione um paciente')
-      return
+  const handleSubmitProntuario = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+  
+    if (!pacienteId || !arquivoPdf) {
+      alert("Escolha o paciente e o arquivo PDF");
+      return;
     }
-
-    if (!arquivo) {
-      setErroModal('Selecione um arquivo PDF')
-      return
-    }
-
+  
+    const formData = new FormData();
+    formData.append("paciente_id", pacienteId);
+    formData.append("arquivo", arquivoPdf); // arquivoPdf é um File vindo do <input type="file" />
+  
     try {
-      setEnviando(true)
-      setErroModal("")
-      setSucesso("")
-
-      const formData = new FormData()
-      formData.append('pacienteId', pacienteSelecionado)
-      formData.append('arquivo', arquivo)
-
-      const response = await fetch('/api/agendamentos/prontuarios', {
-        method: 'POST',
+      const res = await fetch("/api/agendamentos/prontuarios", {
+        method: "POST",
         body: formData,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao criar prontuário')
-      }
-
-      setSucesso('Prontuário criado com sucesso!')
-      
-      // Recarregar lista de prontuários e fechar modal após 2 segundos
-      setTimeout(() => {
-        setMostrarNovoProntuario(false)
-        resetarFormulario()
-        buscarProntuarios() // Recarregar a lista
-      }, 2000)
-
-    } catch (error) {
-      console.error('Erro ao criar prontuário:', error)
-      setErroModal(error instanceof Error ? error.message : 'Erro ao criar prontuário')
-    } finally {
-      setEnviando(false)
+      });
+  
+      const data = await res.json();
+  
+      if (!res.ok) throw new Error(data.error || "Erro desconhecido");
+  
+      alert("Prontuário enviado com sucesso!");
+    } catch (err: any) {
+      console.error("Erro ao criar prontuário:", err);
+      alert(err.message);
     }
-  }
-
+  };
+  
   const resetarFormulario = () => {
     setPacienteSelecionado("")
     setArquivo(null)
