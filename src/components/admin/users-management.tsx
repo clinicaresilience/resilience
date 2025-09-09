@@ -11,6 +11,7 @@ import { CadastrarProfissionalDialog } from "@/components/admin/cadastrar-profis
 import { Users, UserCheck } from "lucide-react";
 import { ExpandableUserTable } from "./expandable-user-table";
 import { UserMobileCards } from "./user-mobile-cards";
+import { ResetPasswordModal } from "./reset-password-modal";
 
 type Usuario = {
   id: string;
@@ -44,6 +45,10 @@ export function UsersManagement() {
 
   // Estado para linhas expandidas
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  // Estado para modal de reset de senha
+  const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
+  const [selectedUserForReset, setSelectedUserForReset] = useState<Usuario | null>(null);
 
   // form
   const [nome, setNome] = useState("");
@@ -227,8 +232,93 @@ export function UsersManagement() {
     });
   }
 
+  // Função para abrir modal de reset de senha
+  function onOpenResetPasswordModal(user: Usuario) {
+    setSelectedUserForReset(user);
+    setResetPasswordModalOpen(true);
+  }
+
+  // Função para confirmar reset de senha
+  async function onConfirmResetPassword(userId: string, password: string) {
+    try {
+      const response = await fetch('/api/admin/usuarios/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          password
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSuccess(`Senha redefinida com sucesso: ${data.newPassword}`);
+        setTimeout(() => setSuccess(null), 5000);
+      } else {
+        console.error("Erro ao resetar senha:", response.statusText);
+        setError("Erro ao resetar senha");
+      }
+    } catch (error) {
+      console.error("Erro ao resetar senha:", error);
+      setError("Erro ao resetar senha");
+    }
+  }
+
   return (
     <div className="w-full space-y-6">
+      {/* Mensagens de erro e sucesso */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <p className="text-sm font-medium text-red-800">{error}</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <button
+                onClick={() => setError(null)}
+                className="inline-flex rounded-md bg-red-50 p-1.5 text-red-500 hover:bg-red-100"
+              >
+                <span className="sr-only">Fechar</span>
+                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <p className="text-sm font-medium text-green-800">{success}</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <button
+                onClick={() => setSuccess(null)}
+                className="inline-flex rounded-md bg-green-50 p-1.5 text-green-500 hover:bg-green-100"
+              >
+                <span className="sr-only">Fechar</span>
+                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cabeçalho com gradiente */}
       <div className="bg-gradient-to-r from-azul-escuro to-blue-600 rounded-xl p-6 text-white shadow-lg">
         <div className="flex items-center gap-3 mb-2">
@@ -315,14 +405,14 @@ export function UsersManagement() {
                     expandedRows={expandedRows}
                     onToggleExpansion={toggleRowExpansion}
                     onToggleActive={onToggleActive}
-                    onResetPassword={onResetPassword}
+                    onOpenResetPasswordModal={onOpenResetPasswordModal}
                     userType="profissional"
                   />
 
                   <UserMobileCards
                     users={filteredProfissionais}
                     onToggleActive={onToggleActive}
-                    onResetPassword={onResetPassword}
+                    onOpenResetPasswordModal={onOpenResetPasswordModal}
                     userType="profissional"
                   />
                 </>
@@ -374,14 +464,14 @@ export function UsersManagement() {
                     expandedRows={expandedRows}
                     onToggleExpansion={toggleRowExpansion}
                     onToggleActive={onToggleActive}
-                    onResetPassword={onResetPassword}
+                    onOpenResetPasswordModal={onOpenResetPasswordModal}
                     userType="paciente"
                   />
 
                   <UserMobileCards
                     users={filteredPacientes}
                     onToggleActive={onToggleActive}
-                    onResetPassword={onResetPassword}
+                    onOpenResetPasswordModal={onOpenResetPasswordModal}
                     userType="paciente"
                   />
                 </>
@@ -390,6 +480,17 @@ export function UsersManagement() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modal de Reset de Senha */}
+      <ResetPasswordModal
+        isOpen={resetPasswordModalOpen}
+        onClose={() => {
+          setResetPasswordModalOpen(false);
+          setSelectedUserForReset(null);
+        }}
+        user={selectedUserForReset}
+        onConfirm={onConfirmResetPassword}
+      />
     </div>
   );
 }

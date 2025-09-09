@@ -23,7 +23,7 @@ interface ExpandableUserTableProps {
   expandedRows: Set<string>;
   onToggleExpansion: (userId: string) => void;
   onToggleActive: (user: Usuario) => void;
-  onResetPassword: (user: Usuario) => void;
+  onOpenResetPasswordModal: (user: Usuario) => void;
   userType: "profissional" | "paciente";
 }
 
@@ -32,7 +32,7 @@ export function ExpandableUserTable({
   expandedRows,
   onToggleExpansion,
   onToggleActive,
-  onResetPassword,
+  onOpenResetPasswordModal,
   userType,
 }: ExpandableUserTableProps) {
   const renderExpandedContent = (user: Usuario) => {
@@ -129,7 +129,7 @@ export function ExpandableUserTable({
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() => onResetPassword(user)}
+                        onClick={() => onOpenResetPasswordModal(user)}
                         className="text-xs"
                       >
                         Resetar

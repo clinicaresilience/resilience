@@ -20,14 +20,14 @@ type Usuario = {
 interface UserMobileCardsProps {
   users: Usuario[];
   onToggleActive: (user: Usuario) => void;
-  onResetPassword: (user: Usuario) => void;
+  onOpenResetPasswordModal: (user: Usuario) => void;
   userType: "profissional" | "paciente";
 }
 
 export function UserMobileCards({
   users,
   onToggleActive,
-  onResetPassword,
+  onOpenResetPasswordModal,
   userType,
 }: UserMobileCardsProps) {
   return (
@@ -77,7 +77,7 @@ export function UserMobileCards({
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => onResetPassword(user)}
+              onClick={() => onOpenResetPasswordModal(user)}
               className="flex-1 text-xs"
             >
               Resetar

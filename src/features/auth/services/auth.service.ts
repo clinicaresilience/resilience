@@ -61,7 +61,7 @@ export async function signIn(email: string, password: string): Promise<{
 
     // Buscar dados completos do usuário no banco
     const userData = await UsersServiceClient.getCurrentUser();
-    
+
     if (!userData) {
       // Se não existir no banco, criar registro
       try {
@@ -93,6 +93,13 @@ export async function signIn(email: string, password: string): Promise<{
       }
     }
 
+    // Verificar se o usuário está ativo
+    if (userData && !userData.ativo) {
+      // Se o usuário não está ativo, fazer logout e retornar erro
+      await supabase.auth.signOut();
+      return { error: "Sua conta foi desativada. Entre em contato com o administrador." };
+    }
+
     return {
       user: {
         id: userData?.id || data.user.id,
@@ -100,7 +107,7 @@ export async function signIn(email: string, password: string): Promise<{
         nome: userData?.nome || data.user.user_metadata?.nome || "Usuário",
         tipo_usuario: (userData?.tipo_usuario || "comum") as Role,
         mustChangePassword: data.user.user_metadata?.mustChangePassword || false,
-        active: true,
+        active: userData?.ativo ?? true,
       }
     };
   } catch (error) {

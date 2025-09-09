@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/server';
+import { createAdminClient } from '@/lib/server-admin';
 
 function genPassword(): string {
   const part = Math.random().toString(36).slice(-6);
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userId } = body;
+    const { userId, password } = body;
 
     if (!userId) {
       return NextResponse.json(
@@ -38,11 +39,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate new password
-    const newPassword = genPassword();
+    // Use provided password or generate new one
+    const newPassword = password || genPassword();
+
+    // Create admin client for admin operations
+    const adminSupabase = createAdminClient();
 
     // Reset password using admin API
-    const { error: resetError } = await supabase.auth.admin.updateUserById(
+    const { error: resetError } = await adminSupabase.auth.admin.updateUserById(
       userId,
       { password: newPassword }
     );
@@ -55,9 +59,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ 
+    // Update primeiro_acesso to true
+    const { error: updateError } = await supabase
+      .from('usuarios')
+      .update({ primeiro_acesso: true })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('Error updating primeiro_acesso:', updateError);
+      // Don't fail the request if this update fails, just log it
+    }
+
+    return NextResponse.json({
       success: true,
-      newPassword 
+      newPassword
     });
 
   } catch (error) {
