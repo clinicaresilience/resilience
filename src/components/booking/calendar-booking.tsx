@@ -190,6 +190,16 @@ export function CalendarBooking({
     if (onBookingSelect) onBookingSelect(slot);
   };
 
+  // Função para verificar se um slot está no passado
+  const isSlotInPast = (slot: AgendaSlot) => {
+    if (!slot.data || !slot.hora_inicio) return false;
+
+    const slotDateTime = new Date(`${slot.data}T${slot.hora_inicio}`);
+    const now = new Date();
+
+    return slotDateTime <= now;
+  };
+
   const handleMobileDateSelect = (date: string, slots: AgendaSlot[]) => {
     setSelectedDate(new Date(date + "T00:00:00"));
     setAvailableSlots(slots);
@@ -224,17 +234,24 @@ export function CalendarBooking({
             <div className="space-y-4">
               {availableSlots.length > 0 ? (
                 <div className="grid grid-cols-2 gap-2">
-                  {availableSlots.map((slot) => (
-                    <Button
-                      key={slot.id}
-                      variant="outline"
-                      className="h-10 text-xs hover:bg-green-50 hover:border-green-500 font-medium"
-                      onClick={() => handleSlotSelect(slot)}
-                      disabled={!slot.disponivel}
-                    >
-                      {slot.hora ? slot.hora.slice(0, 5) : "--:--"}
-                    </Button>
-                  ))}
+                  {availableSlots.map((slot: AgendaSlot) => {
+                    const isPast = isSlotInPast(slot);
+                    return (
+                      <Button
+                        key={slot.id}
+                        variant="outline"
+                        className={`h-10 text-xs font-medium ${
+                          isPast
+                            ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed opacity-60'
+                            : 'hover:bg-green-50 hover:border-green-500'
+                        }`}
+                        onClick={() => !isPast && handleSlotSelect(slot)}
+                        disabled={!slot.disponivel || isPast}
+                      >
+                        {slot.hora ? slot.hora.slice(0, 5) : "--:--"}
+                      </Button>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-6">
@@ -318,17 +335,24 @@ export function CalendarBooking({
           <div className="space-y-4">
             {availableSlots.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-                {availableSlots.map((slot) => (
-                  <Button
-                    key={slot.id}
-                    variant="outline"
-                    className="h-10 sm:h-12 text-xs sm:text-sm hover:bg-green-50 hover:border-green-500 font-medium"
-                    onClick={() => handleSlotSelect(slot)}
-                    disabled={!slot.disponivel}
-                  >
-                    {slot.hora ? slot.hora.slice(0, 5) : "--:--"}
-                  </Button>
-                ))}
+                {availableSlots.map((slot: AgendaSlot) => {
+                  const isPast = isSlotInPast(slot);
+                  return (
+                    <Button
+                      key={slot.id}
+                      variant="outline"
+                      className={`h-10 sm:h-12 text-xs sm:text-sm font-medium ${
+                        isPast
+                          ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed opacity-60'
+                          : 'hover:bg-green-50 hover:border-green-500'
+                      }`}
+                      onClick={() => !isPast && handleSlotSelect(slot)}
+                      disabled={!slot.disponivel || isPast}
+                    >
+                      {slot.hora ? slot.hora.slice(0, 5) : "--:--"}
+                    </Button>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-6 sm:py-8">

@@ -38,6 +38,26 @@ export class AgendamentosService {
     try {
       console.log('Criando agendamento:', data);
 
+      // Validação: não permitir agendamentos para horários passados
+      const dataConsulta = new Date(data.data_consulta);
+      const agora = new Date();
+
+      // Se for hoje, verificar se o horário já passou
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      const dataConsultaInicioDia = new Date(dataConsulta);
+      dataConsultaInicioDia.setHours(0, 0, 0, 0);
+
+      if (dataConsultaInicioDia.getTime() === hoje.getTime()) {
+        // É hoje - verificar se o horário já passou
+        if (dataConsulta <= agora) {
+          throw new Error('Não é possível agendar consultas para horários que já passaram no dia atual');
+        }
+      } else if (dataConsulta < hoje) {
+        // É uma data passada
+        throw new Error('Não é possível agendar consultas para datas passadas');
+      }
+
       // Extrair data e horário do ISO datetime
       const dataObj = new Date(data.data_consulta);
       const dataSlot = dataObj.toISOString().split('T')[0]; // YYYY-MM-DD
