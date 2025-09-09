@@ -39,19 +39,19 @@ export default function AuthenticatedHeader() {
           </div>
 
           {/* Navegação Central */}
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-8">
             {tabs.map((tab) => (
               <Link
                 key={tab.id}
                 href={tab.path!}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                   activeTab === tab.id
                     ? "bg-azul-escuro text-white"
                     : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
                 }`}
               >
-                <tab.icon className="w-4 h-4" />
+                <tab.icon className="w-5 h-5" />
                 <span>{tab.label}</span>
               </Link>
             ))}
@@ -86,20 +86,20 @@ export default function AuthenticatedHeader() {
 
       {/* Fixed Mobile Navigation Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
-        <div className="flex justify-around items-center py-2">
+        <div className="flex justify-around items-center py-2 px-2">
           {tabs.map((tab) => (
             <Link
               key={tab.id}
               href={tab.path!}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
+              className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors flex-shrink-0 min-w-0 ${
                 activeTab === tab.id
                   ? "bg-azul-escuro text-white"
                   : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
               }`}
             >
               <tab.icon className="h-5 w-5" />
-              <span className="text-xs mt-1">{tab.label}</span>
+              <span className="text-xs mt-1 leading-tight">{tab.label}</span>
             </Link>
           ))}
         </div>

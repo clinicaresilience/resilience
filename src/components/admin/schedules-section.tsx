@@ -1,24 +1,51 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CalendarView } from "./calendar-view"
-import { generateMockAgendamentos, type Agendamento } from "@/lib/mocks/agendamentos"
-import { 
-  Calendar, 
-  Clock, 
-  Users, 
-  Filter, 
-  Search, 
+import {
+  Calendar,
+  Clock,
+  Users,
+  Filter,
+  Search,
   TrendingUp,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Loader2
 } from "lucide-react"
 
 type ViewMode = "calendar" | "list" | "statistics"
+
+type Agendamento = {
+  id: string
+  usuarioId: string
+  profissionalId: string
+  profissionalNome: string
+  especialidade?: string
+  dataISO: string
+  data_consulta: string
+  local: string
+  status: string
+  notas?: string
+  modalidade: string
+  pacienteNome: string
+  pacienteEmail?: string
+  pacienteTelefone?: string
+  paciente: {
+    id: string
+    nome: string
+    email?: string
+    telefone?: string
+  }
+  profissional: {
+    nome: string
+    especialidade?: string
+  }
+}
 
 export function SchedulesSection() {
   const [viewMode, setViewMode] = useState<ViewMode>("calendar")
@@ -26,9 +53,33 @@ export function SchedulesSection() {
   const [selectedStatus, setSelectedStatus] = useState("todos")
   const [searchTerm, setSearchTerm] = useState("")
   const [dateFilter, setDateFilter] = useState("todos") // hoje, semana, mes, todos
+  const [allAgendamentos, setAllAgendamentos] = useState<Agendamento[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Dados mock
-  const allAgendamentos = useMemo(() => generateMockAgendamentos(), [])
+  // Buscar dados reais do banco
+  useEffect(() => {
+    const fetchAgendamentos = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/admin/agendamentos')
+        const result = await response.json()
+
+        if (result.success) {
+          setAllAgendamentos(result.data)
+        } else {
+          setError(result.error || 'Erro ao carregar agendamentos')
+        }
+      } catch (err) {
+        setError('Erro ao conectar com o servidor')
+        console.error('Erro ao buscar agendamentos:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAgendamentos()
+  }, [])
 
   // Obter lista única de profissionais
   const profissionais = useMemo(() => {

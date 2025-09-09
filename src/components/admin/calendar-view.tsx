@@ -4,27 +4,61 @@ import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { generateMockAgendamentos, type Agendamento } from "@/lib/mocks/agendamentos"
-import { ChevronLeft, ChevronRight, Calendar, Clock, User, MapPin } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, User, MapPin } from "lucide-react"
+import { DayDetailsModal } from "./day-details-modal"
+import moment from "moment"
+import "moment/locale/pt-br"
+
+moment.locale("pt-br")
+
+type AgendamentoReal = {
+  id: string
+  usuarioId: string
+  profissionalId: string
+  profissionalNome: string
+  especialidade?: string
+  dataISO: string
+  data_consulta: string
+  local: string
+  status: string
+  notas?: string
+  modalidade: string
+  pacienteNome: string
+  pacienteEmail?: string
+  pacienteTelefone?: string
+  paciente: {
+    id: string
+    nome: string
+    email?: string
+    telefone?: string
+  }
+  profissional: {
+    nome: string
+    especialidade?: string
+  }
+}
 
 type CalendarViewProps = {
-  agendamentos?: Agendamento[]
+  agendamentos?: AgendamentoReal[]
   selectedProfessional?: string
   selectedStatus?: string
 }
 
-export function CalendarView({ 
-  agendamentos: externalAgendamentos, 
+export function CalendarView({
+  agendamentos: externalAgendamentos,
   selectedProfessional = "todos",
-  selectedStatus = "todos" 
+  selectedStatus = "todos"
 }: CalendarViewProps) {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [currentDate, setCurrentDate] = useState(moment())
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("month")
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   // Usar agendamentos externos ou gerar mock
-  const allAgendamentos = useMemo(() => 
-    externalAgendamentos || generateMockAgendamentos(), 
+  const allAgendamentos = useMemo(() =>
+    externalAgendamentos || generateMockAgendamentos(),
     [externalAgendamentos]
-  )
+  ) as AgendamentoReal[]
 
   // Filtrar agendamentos
   const filteredAgendamentos = useMemo(() => {
@@ -43,45 +77,24 @@ export function CalendarView({
 
   // Navegação do calendário
   const navigateMonth = (direction: "prev" | "next") => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev)
-      if (direction === "prev") {
-        newDate.setMonth(prev.getMonth() - 1)
-      } else {
-        newDate.setMonth(prev.getMonth() + 1)
-      }
-      return newDate
-    })
+    setCurrentDate(prev => prev.clone().add(direction === "prev" ? -1 : 1, 'month'))
   }
 
   const navigateWeek = (direction: "prev" | "next") => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev)
-      const days = direction === "prev" ? -7 : 7
-      newDate.setDate(prev.getDate() + days)
-      return newDate
-    })
+    setCurrentDate(prev => prev.clone().add(direction === "prev" ? -1 : 1, 'week'))
   }
 
   const navigateDay = (direction: "prev" | "next") => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev)
-      const days = direction === "prev" ? -1 : 1
-      newDate.setDate(prev.getDate() + days)
-      return newDate
-    })
+    setCurrentDate(prev => prev.clone().add(direction === "prev" ? -1 : 1, 'day'))
   }
 
   const goToToday = () => {
-    setCurrentDate(new Date())
+    setCurrentDate(moment())
   }
 
   // Funções de formatação
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR', {
-      year: 'numeric',
-      month: 'long'
-    })
+  const formatDate = (date: moment.Moment) => {
+    return date.format('MMMM YYYY')
   }
 
   const formatTime = (dateString: string) => {
@@ -99,47 +112,41 @@ export function CalendarView({
   }
 
   // Obter agendamentos para uma data específica
-  const getAgendamentosForDate = (date: Date) => {
-    const dateStr = date.toDateString()
+  const getAgendamentosForDate = (date: moment.Moment) => {
+    const dateStr = date.format('YYYY-MM-DD')
     return filteredAgendamentos.filter(ag => {
-      const agDate = new Date(ag.dataISO)
-      return agDate.toDateString() === dateStr
+      const agDate = moment(ag.dataISO).format('YYYY-MM-DD')
+      return agDate === dateStr
     }).sort((a, b) => new Date(a.dataISO).getTime() - new Date(b.dataISO).getTime())
   }
 
   // Gerar dias do mês para visualização mensal
   const getMonthDays = () => {
-    const year = currentDate.getFullYear()
-    const month = currentDate.getMonth()
-    
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    const startDate = new Date(firstDay)
-    startDate.setDate(startDate.getDate() - firstDay.getDay())
-    
+    const startOfMonth = currentDate.clone().startOf('month')
+    const endOfMonth = currentDate.clone().endOf('month')
+    const startOfWeek = startOfMonth.clone().startOf('week')
+    const endOfWeek = endOfMonth.clone().endOf('week')
+
     const days = []
-    const currentDateObj = new Date(startDate)
-    
+    const current = startOfWeek.clone()
+
     for (let i = 0; i < 42; i++) {
-      days.push(new Date(currentDateObj))
-      currentDateObj.setDate(currentDateObj.getDate() + 1)
+      days.push(current.clone())
+      current.add(1, 'day')
     }
-    
+
     return days
   }
 
   // Gerar dias da semana para visualização semanal
   const getWeekDays = () => {
-    const startOfWeek = new Date(currentDate)
-    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay())
-    
+    const startOfWeek = currentDate.clone().startOf('week')
+
     const days = []
     for (let i = 0; i < 7; i++) {
-      const day = new Date(startOfWeek)
-      day.setDate(startOfWeek.getDate() + i)
-      days.push(day)
+      days.push(startOfWeek.clone().add(i, 'day'))
     }
-    
+
     return days
   }
 
@@ -165,12 +172,7 @@ export function CalendarView({
           <h3 className="text-lg font-semibold text-azul-escuro">
             {viewMode === "month" && formatDate(currentDate)}
             {viewMode === "week" && `Semana de ${formatDateShort(weekDays[0]?.toISOString() || "")} - ${formatDateShort(weekDays[6]?.toISOString() || "")}`}
-            {viewMode === "day" && currentDate.toLocaleDateString('pt-BR', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
+            {viewMode === "day" && currentDate.format('dddd, DD [de] MMMM [de] YYYY')}
           </h3>
         </div>
 
@@ -241,60 +243,105 @@ export function CalendarView({
       {/* Visualização Mensal */}
       {viewMode === "month" && (
         <Card>
-          <CardContent className="p-4">
-            {/* Cabeçalho dos dias da semana */}
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5" />
+              Calendário de Agendamentos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            {/* Header do calendário */}
+            <div className="flex items-center justify-between mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateMonth("prev")}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <h3 className="text-base font-semibold">
+                {currentDate.format('MMMM YYYY')}
+              </h3>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateMonth("next")}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Dias da semana */}
             <div className="grid grid-cols-7 gap-1 mb-2">
-              {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(day => (
-                <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
+              {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
+                <div
+                  key={day}
+                  className="text-center text-xs font-medium text-gray-500 py-2"
+                >
                   {day}
                 </div>
               ))}
             </div>
 
-            {/* Grade do calendário */}
+            {/* Dias do mês */}
             <div className="grid grid-cols-7 gap-1">
               {monthDays.map((day, index) => {
                 const agendamentos = getAgendamentosForDate(day)
-                const isCurrentMonth = day.getMonth() === currentDate.getMonth()
-                const isToday = day.toDateString() === new Date().toDateString()
+                const isCurrentMonth = day.month() === currentDate.month()
+                const isToday = day.isSame(moment(), 'day')
+                const isPast = day.isBefore(moment(), 'day')
+                const hasAppointments = agendamentos.length > 0
+
+                const isClickable = !isPast && isCurrentMonth && hasAppointments
 
                 return (
-                  <div
+                  <button
                     key={index}
-                    className={`min-h-[100px] p-2 border rounded-lg ${
-                      isCurrentMonth ? "bg-white" : "bg-gray-50"
-                    } ${isToday ? "ring-2 ring-blue-500" : ""}`}
+                    onClick={() => {
+                      if (isClickable) {
+                        setSelectedDate(day.toDate())
+                        setIsModalOpen(true)
+                      }
+                    }}
+                    disabled={!isClickable}
+                    className={`
+                      relative h-12 text-sm rounded-md transition-colors
+                      ${!isCurrentMonth
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : isPast
+                          ? 'text-gray-400 cursor-not-allowed'
+                          : hasAppointments
+                            ? 'text-gray-900 hover:bg-green-50 hover:border-green-200 border border-transparent cursor-pointer'
+                            : 'text-gray-400 cursor-not-allowed'
+                      }
+                      ${isToday ? 'bg-blue-50 border-blue-200 border' : ''}
+                    `}
                   >
-                    <div className={`text-sm font-medium mb-1 ${
-                      isCurrentMonth ? "text-gray-900" : "text-gray-400"
-                    }`}>
-                      {day.getDate()}
-                    </div>
-                    
-                    <div className="space-y-1">
-                      {agendamentos.slice(0, 3).map((ag, agIndex) => (
-                        <div
-                          key={agIndex}
-                          className={`text-xs p-1 rounded border ${getStatusColor(ag.status)}`}
-                          title={`${formatTime(ag.dataISO)} - ${ag.profissionalNome}`}
-                        >
-                          <div className="truncate">
-                            {formatTime(ag.dataISO)}
-                          </div>
-                          <div className="truncate font-medium">
-                            {ag.profissionalNome}
-                          </div>
-                        </div>
-                      ))}
-                      {agendamentos.length > 3 && (
-                        <div className="text-xs text-gray-500 text-center">
-                          +{agendamentos.length - 3} mais
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
+                    <span className="block">{day.date()}</span>
+                    {hasAppointments && isCurrentMonth && !isPast && (
+                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      </div>
+                    )}
+                  </button>
+                );
               })}
+            </div>
+
+            {/* Legenda */}
+            <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-600">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Com agendamentos</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-blue-200 rounded-full"></div>
+                <span>Hoje</span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -307,7 +354,7 @@ export function CalendarView({
             <div className="grid grid-cols-7 gap-2">
               {weekDays.map((day, index) => {
                 const agendamentos = getAgendamentosForDate(day)
-                const isToday = day.toDateString() === new Date().toDateString()
+                const isToday = day.isSame(moment(), 'day')
 
                 return (
                   <div key={index} className="space-y-2">
@@ -315,10 +362,10 @@ export function CalendarView({
                       isToday ? "bg-blue-100 text-blue-800" : "bg-gray-50"
                     }`}>
                       <div className="text-xs text-gray-500">
-                        {day.toLocaleDateString('pt-BR', { weekday: 'short' })}
+                        {day.format('ddd')}
                       </div>
                       <div className="text-lg font-semibold">
-                        {day.getDate()}
+                        {day.date()}
                       </div>
                     </div>
 
@@ -351,7 +398,7 @@ export function CalendarView({
           <CardContent className="p-4">
             {dayAgendamentos.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <CalendarIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                 <p>Nenhum agendamento para este dia</p>
               </div>
             ) : (
@@ -398,6 +445,14 @@ export function CalendarView({
           </CardContent>
         </Card>
       )}
+
+      {/* Modal de Detalhes do Dia */}
+      <DayDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        selectedDate={selectedDate}
+        agendamentos={filteredAgendamentos}
+      />
     </div>
   )
 }
