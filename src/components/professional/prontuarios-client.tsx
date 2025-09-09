@@ -654,27 +654,7 @@ export function ProfessionalProntuariosClient({
                                 )}
                               </DialogDescription>
                             </div>
-                            <div className="flex space-x-2">
-                              {!modoEdicao ? (
-                                <Button onClick={() => iniciarEdicao(consulta)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Editar
-                                </Button>
-                              ) : (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => setModoEdicao(false)}
-                                  >
-                                    Cancelar
-                                  </Button>
-                                  <Button onClick={salvarEdicao}>
-                                    <Save className="h-4 w-4 mr-2" />
-                                    Salvar
-                                  </Button>
-                                </>
-                              )}
-                            </div>
+                            {/* Removed edit functionality - only PDF management needed */}
                           </div>
                         </DialogHeader>
 
@@ -702,142 +682,50 @@ export function ProfessionalProntuariosClient({
                               </div>
                             </div>
 
-                            {/* Campos Editáveis */}
+                            {/* Informações da Consulta (somente visualização) */}
                             <div className="space-y-4">
-                              <div>
-                                <Label
-                                  htmlFor="modalidadeEdit"
-                                  className="text-gray-800 font-medium"
-                                >
-                                  Modalidade
-                                </Label>
-                                {modoEdicao ? (
-                                  <Select
-                                    value={dadosEdicao.modalidade || ""}
-                                    onValueChange={(value) =>
-                                      setDadosEdicao({
-                                        ...dadosEdicao,
-                                        modalidade: value,
-                                      })
-                                    }
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Selecione a modalidade" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="presencial">
-                                        Presencial
-                                      </SelectItem>
-                                      <SelectItem value="online">
-                                        Online
-                                      </SelectItem>
-                                      <SelectItem value="domicilio">
-                                        Domicílio
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label className="text-gray-800 font-medium">
+                                    Modalidade
+                                  </Label>
                                   <p className="p-2 bg-gray-50 rounded text-gray-900">
                                     {prontuarioSelecionado.modalidade}
                                   </p>
-                                )}
-                              </div>
-
-                              <div>
-                                <Label
-                                  htmlFor="localEdit"
-                                  className="text-gray-800 font-medium"
-                                >
-                                  Local
-                                </Label>
-                                {modoEdicao ? (
-                                  <Input
-                                    id="localEdit"
-                                    value={dadosEdicao.local || ""}
-                                    onChange={(e) =>
-                                      setDadosEdicao({
-                                        ...dadosEdicao,
-                                        local: e.target.value,
-                                      })
-                                    }
-                                    placeholder="Local da consulta"
-                                  />
-                                ) : (
-                                  <p className="p-2 bg-gray-50 rounded text-gray-900">
-                                    {prontuarioSelecionado.local ||
-                                      "Não informado"}
-                                  </p>
-                                )}
-                              </div>
-
-                              <div>
-                                <Label
-                                  htmlFor="observacoesEdit"
-                                  className="text-gray-800 font-medium"
-                                >
-                                  Observações
-                                </Label>
-                                {modoEdicao ? (
-                                  <Textarea
-                                    id="observacoesEdit"
-                                    value={dadosEdicao.observacoes || ""}
-                                    onChange={(e) =>
-                                      setDadosEdicao({
-                                        ...dadosEdicao,
-                                        observacoes: e.target.value,
-                                      })
-                                    }
-                                    rows={4}
-                                    placeholder="Observações da consulta"
-                                  />
-                                ) : (
-                                  <p className="p-2 bg-gray-50 rounded whitespace-pre-wrap text-gray-900">
-                                    {prontuarioSelecionado.observacoes ||
-                                      "Nenhuma observação"}
-                                  </p>
-                                )}
-                              </div>
-
-                              <div>
-                                <Label
-                                  htmlFor="statusEdit"
-                                  className="text-gray-800 font-medium"
-                                >
-                                  Status
-                                </Label>
-                                {modoEdicao ? (
-                                  <Select
-                                    value={dadosEdicao.status || ""}
-                                    onValueChange={(value) =>
-                                      setDadosEdicao({
-                                        ...dadosEdicao,
-                                        status: value,
-                                      })
-                                    }
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Selecione o status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="agendado">
-                                        Agendado
-                                      </SelectItem>
-                                      <SelectItem value="concluido">
-                                        Concluído
-                                      </SelectItem>
-                                      <SelectItem value="cancelado">
-                                        Cancelado
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
+                                </div>
+                                <div>
+                                  <Label className="text-gray-800 font-medium">
+                                    Status
+                                  </Label>
                                   <div className="p-2">
                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                       {prontuarioSelecionado.status}
                                     </span>
                                   </div>
-                                )}
+                                </div>
                               </div>
+                              
+                              {prontuarioSelecionado.local && (
+                                <div>
+                                  <Label className="text-gray-800 font-medium">
+                                    Local
+                                  </Label>
+                                  <p className="p-2 bg-gray-50 rounded text-gray-900">
+                                    {prontuarioSelecionado.local}
+                                  </p>
+                                </div>
+                              )}
+                              
+                              {prontuarioSelecionado.observacoes && (
+                                <div>
+                                  <Label className="text-gray-800 font-medium">
+                                    Observações
+                                  </Label>
+                                  <p className="p-2 bg-gray-50 rounded whitespace-pre-wrap text-gray-900">
+                                    {prontuarioSelecionado.observacoes}
+                                  </p>
+                                </div>
+                              )}
                             </div>
 
                             {/* Prontuário PDF */}
@@ -881,185 +769,14 @@ export function ProfessionalProntuariosClient({
                                     </p>
                                   </div>
 
-                                  {/* Ações do PDF */}
-                                  {modoEdicao && (
-                                    <div className="space-y-3">
-                                      <div className="flex space-x-2">
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() => {
-                                            // Implementar substituição de PDF
-                                            const input =
-                                              document.createElement("input");
-                                            input.type = "file";
-                                            input.accept = ".pdf";
-                                            input.onchange = async (e) => {
-                                              const file = (
-                                                e.target as HTMLInputElement
-                                              ).files?.[0];
-                                              if (file) {
-                                                if (
-                                                  file.type !==
-                                                  "application/pdf"
-                                                ) {
-                                                  alert(
-                                                    "Apenas arquivos PDF são permitidos"
-                                                  );
-                                                  return;
-                                                }
-                                                if (
-                                                  file.size >
-                                                  10 * 1024 * 1024
-                                                ) {
-                                                  alert(
-                                                    "O arquivo deve ter no máximo 10MB"
-                                                  );
-                                                  return;
-                                                }
-
-                                                try {
-                                                  const formData =
-                                                    new FormData();
-                                                  // Use prontuario ID, not consulta ID
-                                                  const prontuarioId = prontuarioSelecionado.prontuario &&
-                                                    typeof prontuarioSelecionado.prontuario === 'object' &&
-                                                    'id' in prontuarioSelecionado.prontuario
-                                                      ? prontuarioSelecionado.prontuario.id
-                                                      : null;
-
-                                                  if (!prontuarioId) {
-                                                    alert("Erro: ID do prontuário não encontrado");
-                                                    return;
-                                                  }
-
-                                                  formData.append(
-                                                    "prontuarioId",
-                                                    prontuarioId
-                                                  );
-                                                  formData.append(
-                                                    "arquivo",
-                                                    file
-                                                  );
-
-                                                  const response = await fetch(
-                                                    "/api/agendamentos/prontuarios/substituir",
-                                                    {
-                                                      method: "PUT",
-                                                      body: formData,
-                                                    }
-                                                  );
-
-                                                  if (response.ok) {
-                                                    alert(
-                                                      "PDF substituído com sucesso!"
-                                                    );
-                                                    buscarProntuarios(); // Recarregar dados
-                                                  } else {
-                                                    alert(
-                                                      "Erro ao substituir PDF"
-                                                    );
-                                                  }
-                                                } catch (error) {
-                                                  console.error("Erro:", error);
-                                                  alert(
-                                                    "Erro ao substituir PDF"
-                                                  );
-                                                }
-                                              }
-                                            };
-                                            input.click();
-                                          }}
-                                        >
-                                          <Upload className="h-3 w-3 mr-1" />
-                                          Substituir PDF
-                                        </Button>
-
-                                        <Button
-                                          size="sm"
-                                          variant="destructive"
-                                          onClick={async () => {
-                                            if (
-                                              confirm(
-                                                "Tem certeza que deseja excluir o prontuário? Esta ação não pode ser desfeita."
-                                              )
-                                            ) {
-                                              try {
-                                                // Get the prontuario ID safely
-                                                const prontuarioId = prontuarioSelecionado.prontuario &&
-                                                  typeof prontuarioSelecionado.prontuario === 'object' &&
-                                                  'id' in prontuarioSelecionado.prontuario
-                                                    ? prontuarioSelecionado.prontuario.id
-                                                    : null;
-
-                                                if (!prontuarioId) {
-                                                  alert("Erro: ID do prontuário não encontrado");
-                                                  return;
-                                                }
-
-                                                console.log("Excluindo prontuario ID:", prontuarioId);
-
-                                                const response = await fetch(
-                                                  "/api/agendamentos/prontuarios/remover",
-                                                  {
-                                                    method: "DELETE",
-                                                    headers: {
-                                                      "Content-Type":
-                                                        "application/json",
-                                                    },
-                                                    body: JSON.stringify({
-                                                      prontuarioId: prontuarioId,
-                                                    }),
-                                                  }
-                                                );
-
-                                                if (response.ok) {
-                                                  alert(
-                                                    "Prontuário excluído com sucesso!"
-                                                  );
-                                                  buscarProntuarios(); // Recarregar dados
-                                                } else {
-                                                  const errorData = await response.json();
-                                                  console.error("Erro na resposta:", errorData);
-                                                  alert(`Erro ao excluir prontuário: ${errorData.error || 'Erro desconhecido'}`);
-                                                }
-                                              } catch (error) {
-                                                console.error("Erro:", error);
-                                                alert("Erro ao excluir prontuário");
-                                              }
-                                            }
-                                          }}
-                                        >
-                                          <X className="h-3 w-3 mr-1" />
-                                          Excluir Prontuário
-                                        </Button>
-                                      </div>
-                                      <p className="text-xs text-gray-500">
-                                        Você pode substituir o arquivo atual ou
-                                        removê-lo completamente.
-                                      </p>
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-md">
-                                  <div className="flex items-center space-x-2">
-                                    <AlertCircle className="h-4 w-4 text-orange-600" />
-                                    <span className="text-orange-700 font-medium">
-                                      Nenhum prontuário PDF
-                                    </span>
-                                  </div>
-                                  <p className="text-sm text-orange-600 mt-1">
-                                    Nenhum arquivo PDF foi anexado a esta
-                                    consulta ainda.
-                                  </p>
-
-                                  {/* Opção para adicionar PDF quando não existe */}
-                                  {modoEdicao && (
-                                    <div className="mt-3">
+                                  {/* Ações do PDF - sempre disponíveis */}
+                                  <div className="space-y-3">
+                                    <div className="flex space-x-2">
                                       <Button
                                         size="sm"
+                                        variant="outline"
                                         onClick={() => {
+                                          // Implementar substituição de PDF
                                           const input =
                                             document.createElement("input");
                                           input.type = "file";
@@ -1070,7 +787,8 @@ export function ProfessionalProntuariosClient({
                                             ).files?.[0];
                                             if (file) {
                                               if (
-                                                file.type !== "application/pdf"
+                                                file.type !==
+                                                "application/pdf"
                                               ) {
                                                 alert(
                                                   "Apenas arquivos PDF são permitidos"
@@ -1088,10 +806,23 @@ export function ProfessionalProntuariosClient({
                                               }
 
                                               try {
-                                                const formData = new FormData();
+                                                const formData =
+                                                  new FormData();
+                                                // Use prontuario ID, not consulta ID
+                                                const prontuarioId = prontuarioSelecionado.prontuario &&
+                                                  typeof prontuarioSelecionado.prontuario === 'object' &&
+                                                  'id' in prontuarioSelecionado.prontuario
+                                                    ? prontuarioSelecionado.prontuario.id
+                                                    : null;
+
+                                                if (!prontuarioId) {
+                                                  alert("Erro: ID do prontuário não encontrado");
+                                                  return;
+                                                }
+
                                                 formData.append(
-                                                  "consultaId",
-                                                  prontuarioSelecionado.id
+                                                  "prontuarioId",
+                                                  prontuarioId
                                                 );
                                                 formData.append(
                                                   "arquivo",
@@ -1099,26 +830,28 @@ export function ProfessionalProntuariosClient({
                                                 );
 
                                                 const response = await fetch(
-                                                  "/api/agendamentos/prontuarios/adicionar",
+                                                  "/api/agendamentos/prontuarios/substituir",
                                                   {
-                                                    method: "POST",
+                                                    method: "PUT",
                                                     body: formData,
                                                   }
                                                 );
 
                                                 if (response.ok) {
                                                   alert(
-                                                    "PDF adicionado com sucesso!"
+                                                    "PDF substituído com sucesso!"
                                                   );
                                                   buscarProntuarios(); // Recarregar dados
                                                 } else {
                                                   alert(
-                                                    "Erro ao adicionar PDF"
+                                                    "Erro ao substituir PDF"
                                                   );
                                                 }
                                               } catch (error) {
                                                 console.error("Erro:", error);
-                                                alert("Erro ao adicionar PDF");
+                                                alert(
+                                                  "Erro ao substituir PDF"
+                                                );
                                               }
                                             }
                                           };
@@ -1126,10 +859,161 @@ export function ProfessionalProntuariosClient({
                                         }}
                                       >
                                         <Upload className="h-3 w-3 mr-1" />
-                                        Adicionar PDF
+                                        Substituir PDF
+                                      </Button>
+
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={async () => {
+                                          if (
+                                            confirm(
+                                              "Tem certeza que deseja excluir o prontuário? Esta ação não pode ser desfeita."
+                                            )
+                                          ) {
+                                            try {
+                                              // Get the prontuario ID safely
+                                              const prontuarioId = prontuarioSelecionado.prontuario &&
+                                                typeof prontuarioSelecionado.prontuario === 'object' &&
+                                                'id' in prontuarioSelecionado.prontuario
+                                                  ? prontuarioSelecionado.prontuario.id
+                                                  : null;
+
+                                              if (!prontuarioId) {
+                                                alert("Erro: ID do prontuário não encontrado");
+                                                return;
+                                              }
+
+                                              console.log("Excluindo prontuario ID:", prontuarioId);
+
+                                              const response = await fetch(
+                                                "/api/agendamentos/prontuarios/remover",
+                                                {
+                                                  method: "DELETE",
+                                                  headers: {
+                                                    "Content-Type":
+                                                      "application/json",
+                                                  },
+                                                  body: JSON.stringify({
+                                                    prontuarioId: prontuarioId,
+                                                  }),
+                                                }
+                                              );
+
+                                              if (response.ok) {
+                                                alert(
+                                                  "Prontuário excluído com sucesso!"
+                                                );
+                                                buscarProntuarios(); // Recarregar dados
+                                              } else {
+                                                const errorData = await response.json();
+                                                console.error("Erro na resposta:", errorData);
+                                                alert(`Erro ao excluir prontuário: ${errorData.error || 'Erro desconhecido'}`);
+                                              }
+                                            } catch (error) {
+                                              console.error("Erro:", error);
+                                              alert("Erro ao excluir prontuário");
+                                            }
+                                          }
+                                        }}
+                                      >
+                                        <X className="h-3 w-3 mr-1" />
+                                        Excluir Prontuário
                                       </Button>
                                     </div>
-                                  )}
+                                    <p className="text-xs text-gray-500">
+                                      Você pode substituir o arquivo atual ou
+                                      removê-lo completamente.
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-md">
+                                  <div className="flex items-center space-x-2">
+                                    <AlertCircle className="h-4 w-4 text-orange-600" />
+                                    <span className="text-orange-700 font-medium">
+                                      Nenhum prontuário PDF
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-orange-600 mt-1">
+                                    Nenhum arquivo PDF foi anexado a esta
+                                    consulta ainda.
+                                  </p>
+
+                                  {/* Opção para adicionar PDF quando não existe - sempre disponível */}
+                                  <div className="mt-3">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        const input =
+                                          document.createElement("input");
+                                        input.type = "file";
+                                        input.accept = ".pdf";
+                                        input.onchange = async (e) => {
+                                          const file = (
+                                            e.target as HTMLInputElement
+                                          ).files?.[0];
+                                          if (file) {
+                                            if (
+                                              file.type !== "application/pdf"
+                                            ) {
+                                              alert(
+                                                "Apenas arquivos PDF são permitidos"
+                                              );
+                                              return;
+                                            }
+                                            if (
+                                              file.size >
+                                              10 * 1024 * 1024
+                                            ) {
+                                              alert(
+                                                "O arquivo deve ter no máximo 10MB"
+                                              );
+                                              return;
+                                            }
+
+                                            try {
+                                              const formData = new FormData();
+                                              formData.append(
+                                                "consultaId",
+                                                prontuarioSelecionado.id
+                                              );
+                                              formData.append(
+                                                "arquivo",
+                                                file
+                                              );
+
+                                              const response = await fetch(
+                                                "/api/agendamentos/prontuarios/adicionar",
+                                                {
+                                                  method: "POST",
+                                                  body: formData,
+                                                }
+                                              );
+
+                                              if (response.ok) {
+                                                alert(
+                                                  "PDF adicionado com sucesso!"
+                                                );
+                                                buscarProntuarios(); // Recarregar dados
+                                              } else {
+                                                alert(
+                                                  "Erro ao adicionar PDF"
+                                                );
+                                              }
+                                            } catch (error) {
+                                              console.error("Erro:", error);
+                                              alert("Erro ao adicionar PDF");
+                                            }
+                                          }
+                                        };
+                                        input.click();
+                                      }}
+                                    >
+                                      <Upload className="h-3 w-3 mr-1" />
+                                      Adicionar PDF
+                                    </Button>
+                                  </div>
                                 </div>
                               )}
                             </div>
