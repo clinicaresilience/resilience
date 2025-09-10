@@ -57,7 +57,7 @@ export default async function AgendamentosPage() {
           <h1 className="text-3xl font-bold text-azul-escuro-secundario text-center">
             Meus agendamentos
           </h1>
-          <p className="mt-2 text-lg text-center">
+          <p className="mt-2 text-lg text-center text-azul-escuro">
             Bem-vindo, <span className="font-semibold">{usuario.nome}</span>! Aqui
             você pode acompanhar seus agendamentos.
           </p>
