@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       .from('agenda_excecoes')
       .select('*')
       .eq('profissional_id', profissionalId)
-      .order('created_at', { ascending: false });
+      .order('criado_em', { ascending: false });
 
     if (error) {
       console.error('Erro ao buscar exceções:', error);
