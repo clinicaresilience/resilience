@@ -247,6 +247,20 @@ export async function POST(req: NextRequest) {
     }, { status: 201 });
   } catch (error) {
     console.error("Erro ao criar agendamento:", error);
-    return NextResponse.json({ error: "Erro ao criar agendamento", detail: error instanceof Error ? error.message : "Erro desconhecido" }, { status: 500 });
+    
+    // Se for um erro de validação (como o limite de 1 agendamento por dia), retornar com status 400
+    if (error instanceof Error) {
+      // Verificar se é um erro de validação específico
+      const errorMessage = error.message;
+      if (errorMessage.includes('já possui um agendamento para o dia') ||
+          errorMessage.includes('apenas um agendamento por dia') ||
+          errorMessage.includes('não é possível agendar consultas')) {
+        return NextResponse.json({ error: errorMessage }, { status: 400 });
+      }
+    }
+    
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : "Erro ao criar agendamento" 
+    }, { status: 500 });
   }
 }

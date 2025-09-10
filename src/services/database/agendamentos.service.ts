@@ -58,6 +58,34 @@ export class AgendamentosService {
         throw new Error('Não é possível agendar consultas para datas passadas');
       }
 
+      // Validação: verificar se o paciente já tem agendamento no mesmo dia
+      const dataConsultaSemHorario = dataConsulta.toISOString().split('T')[0]; // YYYY-MM-DD
+      const inicioDataConsulta = `${dataConsultaSemHorario}T00:00:00.000Z`;
+      const fimDataConsulta = `${dataConsultaSemHorario}T23:59:59.999Z`;
+
+      const { data: agendamentoExistente, error: existingAppointmentError } = await supabase
+        .from('agendamentos')
+        .select('id')
+        .eq('paciente_id', data.usuario_id)
+        .gte('data_consulta', inicioDataConsulta)
+        .lte('data_consulta', fimDataConsulta)
+        .in('status', ['confirmado', 'pendente']) // Não contar agendamentos cancelados
+        .limit(1);
+
+      if (existingAppointmentError) {
+        console.error('Erro ao verificar agendamento existente:', existingAppointmentError);
+        throw new Error('Erro interno ao validar disponibilidade');
+      }
+
+      if (agendamentoExistente && agendamentoExistente.length > 0) {
+        const dataFormatada = dataConsulta.toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+        throw new Error(`Você já possui um agendamento para o dia ${dataFormatada}. Cada paciente pode ter apenas um agendamento por dia.`);
+      }
+
       // Extrair data e horário do ISO datetime
       const dataObj = new Date(data.data_consulta);
       const dataSlot = dataObj.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -85,7 +113,7 @@ export class AgendamentosService {
 
       // 2️⃣ Criar agendamento e consulta em sequência para evitar trigger problems
       let agendamentoBasico;
-      let agendamentoError;
+      let createAppointmentError;
 
       try {
         // Primeiro, criar o agendamento
@@ -103,18 +131,18 @@ export class AgendamentosService {
           .single();
 
         agendamentoBasico = result.data;
-        agendamentoError = result.error;
+        createAppointmentError = result.error;
 
         // Nota: Removido código que criava consulta correspondente
         // pois a tabela consultas não existe mais
 
       } catch (err) {
-        agendamentoError = err;
+        createAppointmentError = err;
       }
 
-      if (agendamentoError) {
-        console.error('Erro ao criar agendamento:', agendamentoError);
-        throw agendamentoError;
+      if (createAppointmentError) {
+        console.error('Erro ao criar agendamento:', createAppointmentError);
+        throw createAppointmentError;
       }
 
       // Buscar dados completos do agendamento criado
