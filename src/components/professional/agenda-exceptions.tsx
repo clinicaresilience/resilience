@@ -26,17 +26,17 @@ import { Clock, Calendar, X, Plus, Edit2, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface AgendaException {
-  id?: string;
-  profissional_id: string;
-  tipo: "recorrente" | "pontual" | "feriado";
-  motivo: string;
-  data_excecao?: string;
-  data_fim?: string;
-  hora_inicio?: string;
-  hora_fim?: string;
-  disponivel: boolean;
-  criado_em?: string;
-  atualizado_em?: string;
+  id?: string
+  profissional_id: string
+  tipo: 'recorrente' | 'pontual' | 'feriado'
+  motivo: string
+  data_excecao?: string
+  data_fim?: string
+  hora_inicio?: string
+  hora_fim?: string
+  disponivel: boolean
+  criado_em?: string
+  atualizado_em?: string
 }
 
 interface AgendaExceptionsProps {
@@ -158,7 +158,7 @@ export function AgendaExceptions({ profissionalId }: AgendaExceptionsProps) {
       // Map frontend form data to API expected format
       const apiData = {
         ...formData,
-        data: formData.data_excecao, // Map data_excecao to data for API
+        data: formData.data_excecao // Map data_excecao to data for API
       };
 
       const response = await fetch(url, {
@@ -240,28 +240,53 @@ export function AgendaExceptions({ profissionalId }: AgendaExceptionsProps) {
     switch (exception.tipo) {
       case "recorrente":
         if (exception.hora_inicio && exception.hora_fim) {
-          return `${exception.hora_inicio} às ${exception.hora_fim} (todos os dias)`;
+          // Extrair hora corretamente considerando timezone do Brasil
+          const horaInicio = new Date(exception.hora_inicio).toLocaleTimeString('pt-BR', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false,
+            timeZone: 'America/Sao_Paulo'
+          });
+          const horaFim = new Date(exception.hora_fim).toLocaleTimeString('pt-BR', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false,
+            timeZone: 'America/Sao_Paulo'
+          });
+          return `${horaInicio} às ${horaFim} (todos os dias)`;
         }
         return "Configuração incompleta";
-
       case "pontual":
         if (exception.data_excecao) {
+          const dataFormatada = new Date(exception.data_excecao).toLocaleDateString('pt-BR');
           if (exception.hora_inicio && exception.hora_fim) {
-            return `${exception.data_excecao} - ${exception.hora_inicio} às ${exception.hora_fim}`;
+            const horaInicio = new Date(exception.hora_inicio).toLocaleTimeString('pt-BR', { 
+              hour: '2-digit', 
+              minute: '2-digit', 
+              hour12: false,
+              timeZone: 'America/Sao_Paulo'
+            });
+            const horaFim = new Date(exception.hora_fim).toLocaleTimeString('pt-BR', { 
+              hour: '2-digit', 
+              minute: '2-digit', 
+              hour12: false,
+              timeZone: 'America/Sao_Paulo'
+            });
+            return `${dataFormatada} - ${horaInicio} às ${horaFim}`;
           }
-          return exception.data_excecao;
+          return dataFormatada;
         }
         return "Data não informada";
-
       case "feriado":
         if (exception.data_excecao) {
+          const dataInicio = new Date(exception.data_excecao).toLocaleDateString('pt-BR');
           if (exception.data_fim) {
-            return `${exception.data_excecao} a ${exception.data_fim}`;
+            const dataFim = new Date(exception.data_fim).toLocaleDateString('pt-BR');
+            return `${dataInicio} a ${dataFim}`;
           }
-          return exception.data_excecao;
+          return dataInicio;
         }
         return "Data não informada";
-
       default:
         return "Configuração inválida";
     }
