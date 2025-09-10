@@ -5,12 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  getCompaniesClient,
-  addCompanyClient,
-  updateCompanyClient,
-  type Company,
-} from "@/lib/mocks/companies"
+
+interface Company {
+  id: string;
+  nome: string;
+  codigo: string;
+  ativa: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export function CompaniesManagement() {
   const [items, setItems] = useState<Company[]>([])
@@ -23,15 +26,26 @@ export function CompaniesManagement() {
   const [success, setSuccess] = useState<string | null>(null)
 
   useEffect(() => {
-    setItems(getCompaniesClient())
-    setLoading(false)
+    fetchCompanies()
   }, [])
 
-  function refresh() {
-    setItems(getCompaniesClient())
+  async function fetchCompanies() {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/companies')
+      if (!response.ok) {
+        throw new Error('Erro ao buscar empresas')
+      }
+      const companies = await response.json()
+      setItems(companies)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao carregar empresas")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const totalAtivas = useMemo(() => items.filter(i => i.active).length, [items])
+  const totalAtivas = useMemo(() => items.filter(i => i.ativa).length, [items])
 
   function resetForm() {
     setName("")
@@ -40,37 +54,65 @@ export function CompaniesManagement() {
     setSuccess(null)
   }
 
-  function normalizeCode(v: string) {
-    return v.toUpperCase().trim()
-  }
-
-  function onToggleActive(code: string) {
+  async function onToggleActive(companyId: string) {
     try {
-      const current = getCompaniesClient()
-      const target = current.find(c => c.code === code)
-      updateCompanyClient(code, { active: !(target?.active ?? true) })
-      refresh()
-    } catch (e: any) {
-      setError(e?.message ?? "Falha ao atualizar empresa")
+      const company = items.find(c => c.id === companyId)
+      if (!company) return
+
+      const response = await fetch(`/api/companies/${companyId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ativa: !company.ativa
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro ao atualizar empresa')
+      }
+
+      await fetchCompanies() // Refresh list
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Falha ao atualizar empresa")
     }
   }
 
-  function onAddCompany(e: React.FormEvent) {
+  async function onAddCompany(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setSuccess(null)
+    
     if (!name.trim() || !code.trim()) {
       setError("Informe Nome e Código da empresa.")
       return
     }
+
     try {
-      addCompanyClient({ name: name.trim(), code: normalizeCode(code) })
+      const response = await fetch('/api/companies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nome: name.trim(),
+          codigo: code.toUpperCase().trim()
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro ao criar empresa')
+      }
+
       setSuccess("Empresa adicionada com sucesso.")
-      refresh()
+      await fetchCompanies() // Refresh list
       setName("")
       setCode("")
-    } catch (e: any) {
-      setError(e?.message ?? "Falha ao adicionar empresa")
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Falha ao adicionar empresa")
     }
   }
 
@@ -129,26 +171,22 @@ export function CompaniesManagement() {
                 <tbody className="divide-y divide-gray-100">
                   {items.map((c) => (
                     <tr key={c.id}>
-                      <td className="py-2 pr-3">{c.name}</td>
-                      <td className="py-2 pr-3 font-mono">{c.code}</td>
+                      <td className="py-2 pr-3">{c.nome}</td>
+                      <td className="py-2 pr-3 font-mono">{c.codigo}</td>
                       <td className="py-2 pr-3">
-                        <span className={`px-2 py-1 rounded text-xs ${c.active ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-700"}`}>
-                          {c.active ? "Ativa" : "Inativa"}
+                        <span className={`px-2 py-1 rounded text-xs ${c.ativa ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-700"}`}>
+                          {c.ativa ? "Ativa" : "Inativa"}
                         </span>
                       </td>
                       <td className="py-2 pr-3 space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => onToggleActive(c.code)}>
-                          {c.active ? "Desativar" : "Ativar"}
+                        <Button size="sm" variant="outline" onClick={() => onToggleActive(c.id)}>
+                          {c.ativa ? "Desativar" : "Ativar"}
                         </Button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <p className="text-xs text-gray-500 mt-2">
-                Observação: por se tratar de um mock, as empresas padrão (seed) estão sempre disponíveis no lado do servidor.
-                As empresas criadas aqui ficam no localStorage do navegador.
-              </p>
             </div>
           )}
         </CardContent>
