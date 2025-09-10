@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { AgendamentosService } from "@/services/database/agendamentos.service";
+import { CompaniesService } from "@/services/database/companies.service";
 import { createClient } from "@/lib/server";
 
 export async function PATCH(
@@ -167,10 +168,23 @@ export async function POST(req: NextRequest) {
     if (userError || !user) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    const { profissional_id, slot_id, data_consulta, modalidade, notas } = body || {};
+    const { profissional_id, slot_id, data_consulta, modalidade, notas, codigo_empresa } = body || {};
 
     if (!profissional_id || (!slot_id && !data_consulta)) {
       return NextResponse.json({ error: "Campos obrigatórios ausentes", required: ["profissional_id", "slot_id ou data_consulta"] }, { status: 400 });
+    }
+
+    // Validar código da empresa obrigatório
+    if (!codigo_empresa?.trim()) {
+      return NextResponse.json({ error: "Código da empresa é obrigatório para agendamentos" }, { status: 400 });
+    }
+
+    // Verificar se o código da empresa é válido (existe e está ativa)
+    const isValidCompanyCode = await CompaniesService.isValidCompanyCode(codigo_empresa.trim());
+    if (!isValidCompanyCode) {
+      return NextResponse.json({ 
+        error: "Código da empresa inválido ou empresa inativa. Verifique com sua empresa o código correto." 
+      }, { status: 400 });
     }
 
     const validModalidade = modalidade || 'presencial';

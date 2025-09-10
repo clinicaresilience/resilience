@@ -129,6 +129,12 @@ export function BookingConfirmation({
         return;
       }
 
+      // Validar código da empresa antes de enviar
+      if (!codigoEmpresa.trim()) {
+        setError("Código da empresa é obrigatório");
+        return;
+      }
+
       // ✅ USAR NOVO MÉTODO: Enviar slot_id para usar o novo sistema
       const response = await fetch("/api/agendamentos", {
         method: "POST",
@@ -138,6 +144,7 @@ export function BookingConfirmation({
           slot_id: slot.id, // ✅ Usar slot_id específico
           modalidade,
           notas: notas.trim() || undefined,
+          codigo_empresa: codigoEmpresa.trim(),
         }),
       });
 

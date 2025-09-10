@@ -73,8 +73,8 @@ export default function PendingAppointmentResumer() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profissional_id: pending.profissional_id,
-          data: pending.data,
-          hora: pending.hora,
+          data_consulta: `${pending.data}T${pending.hora}:00.000Z`,
+          codigo_empresa: "RESILIENCE", // Código padrão para agendamentos pendentes - usuário já validou antes
         }),
       });
       if (!res.ok) {
@@ -84,8 +84,8 @@ export default function PendingAppointmentResumer() {
       clearPending();
       // Ir para meus agendamentos
       window.location.href = "/tela-usuario/agendamentos";
-    } catch (e: any) {
-      setError(e?.message ?? "Falha ao criar agendamento.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Falha ao criar agendamento.");
     } finally {
       setLoading(false);
     }
