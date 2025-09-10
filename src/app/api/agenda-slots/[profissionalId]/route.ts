@@ -40,7 +40,7 @@ export async function GET(
 
     // Buscar exceções/paradas do profissional
     const { data: excessoes, error: excessoesError } = await supabase
-      .from('agenda_excessoes')
+      .from('agenda_excecoes')
       .select('*')
       .eq('profissional_id', profissionalId)
       .eq('disponivel', false);
@@ -54,32 +54,58 @@ export async function GET(
       if (!excessoes) return false;
 
       const slotDateStr = slotDate.toISOString().split('T')[0]; // YYYY-MM-DD
-      const slotDiaSemana = slotDate.getDay(); // 0 = domingo, 1 = segunda, etc.
 
       for (const excecao of excessoes) {
-        // Tipo pontual: bloquear dia e horário específico
-        if (excecao.tipo === 'pontual') {
-          if (excecao.data === slotDateStr && 
-              excecao.hora_inicio && excecao.hora_fim &&
-              slotHoraInicio >= excecao.hora_inicio && 
-              slotHoraFim <= excecao.hora_fim) {
-            return true;
+        // Tipo recorrente (almoço): bloquear horário em todos os dias
+        if (excecao.tipo === 'recorrente') {
+          if (excecao.hora_inicio && excecao.hora_fim) {
+            // Extrair apenas a hora dos timestamps, considerando o timezone local
+            const excecaoHoraInicio = new Date(excecao.hora_inicio).toLocaleTimeString('pt-BR', { 
+              hour: '2-digit', 
+              minute: '2-digit', 
+              hour12: false,
+              timeZone: 'America/Sao_Paulo'
+            });
+            const excecaoHoraFim = new Date(excecao.hora_fim).toLocaleTimeString('pt-BR', { 
+              hour: '2-digit', 
+              minute: '2-digit', 
+              hour12: false,
+              timeZone: 'America/Sao_Paulo'
+            });
+            
+            console.log(`Comparando slot ${slotHoraInicio}-${slotHoraFim} com exceção recorrente ${excecaoHoraInicio}-${excecaoHoraFim}`);
+            console.log(`Exceção timestamps originais: inicio=${excecao.hora_inicio}, fim=${excecao.hora_fim}`);
+            
+            // Verificar se há sobreposição de horários
+            if (!(slotHoraFim <= excecaoHoraInicio || slotHoraInicio >= excecaoHoraFim)) {
+              return true;
+            }
           }
         }
         
-        // Tipo recorrente (almoço): bloquear horário em todos os dias
-        else if (excecao.tipo === 'recorrente') {
-          if (excecao.hora_inicio && excecao.hora_fim &&
-              slotHoraInicio >= excecao.hora_inicio && 
-              slotHoraFim <= excecao.hora_fim) {
-            return true;
+        // Tipo pontual: bloquear dia e horário específico
+        else if (excecao.tipo === 'pontual') {
+          const excecaoDataStr = new Date(excecao.data_excecao).toISOString().split('T')[0];
+          if (excecaoDataStr === slotDateStr) {
+            // Se não tem horário específico, bloqueia o dia todo
+            if (!excecao.hora_inicio || !excecao.hora_fim) {
+              return true;
+            }
+            // Se tem horário específico, verifica sobreposição
+            const excecaoHoraInicio = new Date(excecao.hora_inicio).toISOString().split('T')[1].substring(0, 5);
+            const excecaoHoraFim = new Date(excecao.hora_fim).toISOString().split('T')[1].substring(0, 5);
+            
+            if (!(slotHoraFim <= excecaoHoraInicio || slotHoraInicio >= excecaoHoraFim)) {
+              return true;
+            }
           }
         }
         
         // Tipo feriado/férias: bloquear período inteiro de dias
         else if (excecao.tipo === 'feriado') {
-          const dataFim = excecao.data_fim || excecao.data;
-          if (slotDateStr >= excecao.data && slotDateStr <= dataFim) {
+          const excecaoDataInicio = new Date(excecao.data_excecao).toISOString().split('T')[0];
+          const excecaoDataFim = excecao.data_fim || excecaoDataInicio;
+          if (slotDateStr >= excecaoDataInicio && slotDateStr <= excecaoDataFim) {
             return true;
           }
         }
@@ -92,8 +118,20 @@ export async function GET(
     const slotsDisponiveis = (slots || []).filter(slot => {
       const dataHoraInicio = new Date(slot.data_hora_inicio);
       const dataHoraFim = new Date(slot.data_hora_fim);
-      const horaInicio = dataHoraInicio.toISOString().split('T')[1].substring(0, 5);
-      const horaFim = dataHoraFim.toISOString().split('T')[1].substring(0, 5);
+      
+      // Usar o mesmo formato de hora que usamos na comparação de exceções
+      const horaInicio = dataHoraInicio.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: false,
+        timeZone: 'America/Sao_Paulo'
+      });
+      const horaFim = dataHoraFim.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: false,
+        timeZone: 'America/Sao_Paulo'
+      });
       
       return !isSlotBlocked(dataHoraInicio, horaInicio, horaFim);
     });

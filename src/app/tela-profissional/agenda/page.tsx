@@ -3,8 +3,9 @@ import { createClient } from "@/lib/server";
 import { BackButton } from "@/components/ui/back-button";
 import { AgendaCalendar } from "@/components/professional/agenda-calendar";
 import AgendamentosProfissional from "@/components/professional/agendamentos-profissional";
+import { AgendaExceptions } from "@/components/professional/agenda-exceptions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, List, Clock } from "lucide-react";
+import { Calendar, List, Clock, Settings } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -97,7 +98,7 @@ export default async function AgendaPage() {
       </div>
 
       <Tabs defaultValue="calendario" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="calendario" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Calendário
@@ -105,6 +106,10 @@ export default async function AgendaPage() {
           <TabsTrigger value="lista" className="flex items-center gap-2">
             <List className="h-4 w-4" />
             Lista
+          </TabsTrigger>
+          <TabsTrigger value="excecoes" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Exceções
           </TabsTrigger>
         </TabsList>
 
@@ -117,6 +122,10 @@ export default async function AgendaPage() {
             profissionalId={user.id}
             initialAgendamentos={formattedAgendamentos} 
           />
+        </TabsContent>
+
+        <TabsContent value="excecoes" className="mt-6">
+          <AgendaExceptions profissionalId={user.id} />
         </TabsContent>
       </Tabs>
     </div>
