@@ -41,6 +41,8 @@ import {
 } from "lucide-react";
 import { ProntuarioCompleto } from "@/services/database/prontuarios.service";
 import { PacienteAtendido } from "@/services/database/consultas.service";
+import { CarimboDigital } from "./carimbo-digital";
+import { exportarProntuarioPDF } from "./exportar-prontuario-pdf";
 
 interface NovoProntuarioClientV2Props {
   profissionalNome: string;
@@ -190,260 +192,9 @@ export function NovoProntuarioClient({
     });
   };
 
-  const exportarProntuarioPDF = async (prontuario: ProntuarioCompleto) => {
-    try {
-      // Importar dinamicamente as bibliotecas
-      const jsPDF = (await import("jspdf")).default;
-
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 20;
-      const lineHeight = 6;
-      let yPosition = margin;
-
-      // Função para adicionar nova página se necessário
-      const checkPageBreak = (neededHeight: number) => {
-        if (yPosition + neededHeight > pageHeight - margin) {
-          doc.addPage();
-          yPosition = margin;
-        }
-      };
-
-      // Cabeçalho do documento
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.text("PRONTUÁRIO MÉDICO", pageWidth / 2, yPosition, {
-        align: "center",
-      });
-      yPosition += lineHeight * 2;
-
-      // Linha separadora
-      doc.setLineWidth(0.5);
-      doc.line(margin, yPosition, pageWidth - margin, yPosition);
-      yPosition += lineHeight;
-
-      // Informações do paciente
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("DADOS DO PACIENTE", margin, yPosition);
-      yPosition += lineHeight;
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Nome: ${prontuario.paciente.nome}`, margin, yPosition);
-      yPosition += lineHeight * 0.8;
-      doc.text(`Email: ${prontuario.paciente.email}`, margin, yPosition);
-      yPosition += lineHeight * 0.8;
-      doc.text(
-        `Data de Criação: ${formatarData(prontuario.criado_em)}`,
-        margin,
-        yPosition
-      );
-      yPosition += lineHeight * 0.8;
-      doc.text(
-        `Última Atualização: ${formatarData(prontuario.atualizado_em)}`,
-        margin,
-        yPosition
-      );
-      yPosition += lineHeight * 1.5;
-
-      // Linha separadora
-      doc.line(margin, yPosition, pageWidth - margin, yPosition);
-      yPosition += lineHeight;
-
-      // Registros médicos
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("REGISTROS MÉDICOS", margin, yPosition);
-      yPosition += lineHeight;
-
-      if (prontuario.registros.length === 0) {
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "italic");
-        doc.text("Nenhum registro encontrado.", margin, yPosition);
-      } else {
-        prontuario.registros.forEach((registro, index) => {
-          checkPageBreak(lineHeight * 8); // Verificar espaço para o registro
-
-          // Resetar cores para preto no início de cada registro
-          doc.setTextColor(0, 0, 0); // Preto
-
-          // Cabeçalho do registro
-          doc.setFontSize(12);
-          doc.setFont("helvetica", "bold");
-          doc.text(
-            `Registro #${prontuario.registros.length - index}`,
-            margin,
-            yPosition
-          );
-          yPosition += lineHeight * 0.8;
-
-          doc.setFontSize(9);
-          doc.setFont("helvetica", "normal");
-          doc.text(
-            `Data: ${formatarData(registro.criado_em)}`,
-            margin,
-            yPosition
-          );
-          yPosition += lineHeight * 1.2;
-
-          // Conteúdo do registro
-          doc.setFontSize(10);
-          doc.setFont("helvetica", "normal");
-          const textoLinhas = doc.splitTextToSize(
-            registro.texto,
-            pageWidth - margin * 2
-          );
-
-          for (const linha of textoLinhas) {
-            checkPageBreak(lineHeight);
-            doc.text(linha, margin, yPosition);
-            yPosition += lineHeight * 0.8;
-          }
-          yPosition += lineHeight * 0.5;
-
-          // Assinatura digital idêntica à visualização
-          checkPageBreak(lineHeight * 6);
-
-          // Título da assinatura
-          doc.setFontSize(9);
-          doc.setFont("helvetica", "bold");
-          doc.setTextColor(0, 0, 0);
-          doc.text("Assinatura Digital Médica", margin, yPosition);
-          yPosition += lineHeight;
-
-          // Informações detalhadas à esquerda
-          doc.setFontSize(8);
-          doc.setFont("helvetica", "normal");
-          doc.setTextColor(100, 100, 100);
-
-          doc.setFont("helvetica", "bold");
-          doc.text("Profissional: ", margin, yPosition);
-          doc.setFont("helvetica", "normal");
-          doc.text(registro.assinatura_digital.nome, margin + 20, yPosition);
-          yPosition += lineHeight * 0.7;
-
-          doc.setFont("helvetica", "bold");
-          doc.text("CPF: ", margin, yPosition);
-          doc.setFont("helvetica", "normal");
-          doc.text(registro.assinatura_digital.cpf, margin + 12, yPosition);
-          yPosition += lineHeight * 0.7;
-
-          doc.setFont("helvetica", "bold");
-          doc.text("CRP: ", margin, yPosition);
-          doc.setFont("helvetica", "normal");
-          doc.text(registro.assinatura_digital.crp, margin + 12, yPosition);
-          yPosition += lineHeight * 0.7;
-
-          doc.setFont("helvetica", "bold");
-          doc.text("Data/Hora: ", margin, yPosition);
-          doc.setFont("helvetica", "normal");
-          doc.text(
-            formatarData(registro.assinatura_digital.data),
-            margin + 20,
-            yPosition
-          );
-
-          // Carimbo compacto à direita (similar ao layout web)
-          const carimboX = pageWidth - margin - 30;
-          const carimboY = yPosition - lineHeight * 3;
-          const carimboWidth = 25;
-          const carimboHeight = 16;
-
-          // Fundo do carimbo (gradiente simulado com cor sólida)
-          doc.setFillColor(219, 234, 254); // Azul claro similar ao gradiente
-          doc.setDrawColor(147, 197, 253); // Borda azul
-          doc.setLineWidth(0.5);
-          doc.roundedRect(
-            carimboX,
-            carimboY,
-            carimboWidth,
-            carimboHeight,
-            2,
-            2,
-            "FD"
-          );
-
-          // Texto do carimbo
-          doc.setTextColor(30, 64, 175); // Azul escuro
-          doc.setFontSize(5);
-          doc.setFont("helvetica", "bold");
-          doc.text(
-            "CLÍNICA RESILIENCE",
-            carimboX + carimboWidth / 2,
-            carimboY + 4,
-            { align: "center" }
-          );
-
-          doc.setFontSize(4);
-          doc.setFont("helvetica", "normal");
-          doc.text(
-            "Assinatura Digital",
-            carimboX + carimboWidth / 2,
-            carimboY + 7,
-            { align: "center" }
-          );
-
-          // Linha separadora no carimbo
-          doc.setDrawColor(147, 197, 253);
-          doc.setLineWidth(0.2);
-          doc.line(
-            carimboX + 2,
-            carimboY + 9,
-            carimboX + carimboWidth - 2,
-            carimboY + 9
-          );
-
-          // Data no carimbo
-          doc.setTextColor(37, 99, 235); // Azul médio
-          doc.setFontSize(4);
-          doc.setFont("helvetica", "bold");
-          const dataCarimbo = formatarData(
-            registro.assinatura_digital.data
-          ).split(" ")[0];
-          doc.text(dataCarimbo, carimboX + carimboWidth / 2, carimboY + 13, {
-            align: "center",
-          });
-
-          yPosition += lineHeight * 1.5;
-
-          // Linha separadora entre registros (se não for o último)
-          if (index < prontuario.registros.length - 1) {
-            checkPageBreak(lineHeight);
-            doc.setLineWidth(0.2);
-            doc.line(margin, yPosition, pageWidth - margin, yPosition);
-            yPosition += lineHeight;
-          }
-        });
-      }
-
-      // Rodapé
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "normal");
-        doc.text(
-          `Página ${i} de ${totalPages} - Gerado em ${formatarData(
-            new Date().toISOString()
-          )}`,
-          pageWidth / 2,
-          pageHeight - 10,
-          { align: "center" }
-        );
-      }
-
-      // Salvar o PDF
-      const nomeArquivo = `Prontuario_${prontuario.paciente.nome.replace(
-        /\s+/g,
-        "_"
-      )}_${new Date().toISOString().split("T")[0]}.pdf`;
-      doc.save(nomeArquivo);
-    } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
-      alert("Erro ao gerar PDF. Tente novamente.");
-    }
+  // Função para lidar com exportação de PDF
+  const handleExportarPDF = (prontuario: ProntuarioCompleto) => {
+    exportarProntuarioPDF({ prontuario, formatarData });
   };
 
   // Filtrar prontuários
@@ -900,7 +651,7 @@ export function NovoProntuarioClient({
                       variant="outline"
                       size="sm"
                       onClick={() =>
-                        exportarProntuarioPDF(prontuarioSelecionado)
+                        handleExportarPDF(prontuarioSelecionado)
                       }
                       className="flex items-center gap-2"
                     >
@@ -976,36 +727,10 @@ export function NovoProntuarioClient({
                                   </div>
                                 </div>
 
-                                {/* Carimbo Compacto */}
-                                <div className="flex-shrink-0 w-24 h-16 bg-gradient-to-br from-blue-100 to-teal-100 border-2 border-blue-300 rounded-lg flex flex-col items-center justify-center p-2 shadow-sm">
-                                  {/* Logo pequena */}
-                                  <div className="w-4 h-4 mb-1 opacity-20">
-                                    <img
-                                      src="/logoResilience.png"
-                                      alt="Logo"
-                                      className="w-full h-full object-contain"
-                                    />
-                                  </div>
-
-                                  {/* Texto do carimbo */}
-                                  <div className="text-center">
-                                    <p className="text-blue-800 text-[8px] font-bold leading-tight">
-                                      CLÍNICA RESILIENCE
-                                    </p>
-                                    <p className="text-blue-700 text-[6px] leading-tight">
-                                      Assinatura Digital
-                                    </p>
-                                    <div className="w-full border-t border-blue-300 mt-1 pt-1">
-                                      <p className="text-blue-600 text-[6px] font-medium">
-                                        {
-                                          formatarData(
-                                            registro.assinatura_digital.data
-                                          ).split(" ")[0]
-                                        }
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
+                                <CarimboDigital 
+                                  assinaturaDigital={registro.assinatura_digital} 
+                                  formatarData={formatarData} 
+                                />
                               </div>
                             </div>
                           </div>
