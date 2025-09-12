@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/server';
+import { TimezoneUtils } from '@/utils/timezone';
 
 export async function GET(
   request: NextRequest,
@@ -19,9 +20,9 @@ export async function GET(
     const dataInicio = searchParams.get('dataInicio');
     const dataFim = searchParams.get('dataFim');
 
-    const hoje = new Date();
-    const inicioDate = dataInicio || hoje.toISOString();
-    const fimDate = dataFim || new Date(hoje.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const hoje = TimezoneUtils.now();
+    const inicioDate = dataInicio || hoje;
+    const fimDate = dataFim || TimezoneUtils.addTime(hoje, 30, 'days');
 
     // Buscar slots usando timestamptz
     const { data: slots, error } = await supabase
@@ -50,31 +51,23 @@ export async function GET(
     }
 
     // Função para verificar se um slot deve ser bloqueado por exceções
-    const isSlotBlocked = (slotDate: Date, slotHoraInicio: string, slotHoraFim: string) => {
+    const isSlotBlocked = (slotDataHoraInicioUTC: string, slotDataHoraFimUTC: string) => {
       if (!excessoes) return false;
 
-      const slotDateStr = slotDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const slotDateStr = TimezoneUtils.extractDate(slotDataHoraInicioUTC);
+      const slotHoraInicio = TimezoneUtils.extractTime(slotDataHoraInicioUTC);
+      const slotHoraFim = TimezoneUtils.extractTime(slotDataHoraFimUTC);
 
       for (const excecao of excessoes) {
         // Tipo recorrente (almoço): bloquear horário em todos os dias
         if (excecao.tipo === 'recorrente') {
           if (excecao.hora_inicio && excecao.hora_fim) {
-            // Extrair apenas a hora dos timestamps, considerando o timezone local
-            const excecaoHoraInicio = new Date(excecao.hora_inicio).toLocaleTimeString('pt-BR', { 
-              hour: '2-digit', 
-              minute: '2-digit', 
-              hour12: false,
-              timeZone: 'America/Sao_Paulo'
-            });
-            const excecaoHoraFim = new Date(excecao.hora_fim).toLocaleTimeString('pt-BR', { 
-              hour: '2-digit', 
-              minute: '2-digit', 
-              hour12: false,
-              timeZone: 'America/Sao_Paulo'
-            });
+            const excecaoHoraInicioUTC = TimezoneUtils.dbTimestampToUTC(excecao.hora_inicio);
+            const excecaoHoraFimUTC = TimezoneUtils.dbTimestampToUTC(excecao.hora_fim);
+            const excecaoHoraInicio = TimezoneUtils.extractTime(excecaoHoraInicioUTC);
+            const excecaoHoraFim = TimezoneUtils.extractTime(excecaoHoraFimUTC);
             
             console.log(`Comparando slot ${slotHoraInicio}-${slotHoraFim} com exceção recorrente ${excecaoHoraInicio}-${excecaoHoraFim}`);
-            console.log(`Exceção timestamps originais: inicio=${excecao.hora_inicio}, fim=${excecao.hora_fim}`);
             
             // Verificar se há sobreposição de horários
             if (!(slotHoraFim <= excecaoHoraInicio || slotHoraInicio >= excecaoHoraFim)) {
@@ -85,15 +78,18 @@ export async function GET(
         
         // Tipo pontual: bloquear dia e horário específico
         else if (excecao.tipo === 'pontual') {
-          const excecaoDataStr = new Date(excecao.data_excecao).toISOString().split('T')[0];
+          const excecaoDataUTC = TimezoneUtils.dbTimestampToUTC(excecao.data_excecao);
+          const excecaoDataStr = TimezoneUtils.extractDate(excecaoDataUTC);
           if (excecaoDataStr === slotDateStr) {
             // Se não tem horário específico, bloqueia o dia todo
             if (!excecao.hora_inicio || !excecao.hora_fim) {
               return true;
             }
             // Se tem horário específico, verifica sobreposição
-            const excecaoHoraInicio = new Date(excecao.hora_inicio).toISOString().split('T')[1].substring(0, 5);
-            const excecaoHoraFim = new Date(excecao.hora_fim).toISOString().split('T')[1].substring(0, 5);
+            const excecaoHoraInicioUTC = TimezoneUtils.dbTimestampToUTC(excecao.hora_inicio);
+            const excecaoHoraFimUTC = TimezoneUtils.dbTimestampToUTC(excecao.hora_fim);
+            const excecaoHoraInicio = TimezoneUtils.extractTime(excecaoHoraInicioUTC);
+            const excecaoHoraFim = TimezoneUtils.extractTime(excecaoHoraFimUTC);
             
             if (!(slotHoraFim <= excecaoHoraInicio || slotHoraInicio >= excecaoHoraFim)) {
               return true;
@@ -103,8 +99,9 @@ export async function GET(
         
         // Tipo feriado/férias: bloquear período inteiro de dias
         else if (excecao.tipo === 'feriado') {
-          const excecaoDataInicio = new Date(excecao.data_excecao).toISOString().split('T')[0];
-          const excecaoDataFim = excecao.data_fim || excecaoDataInicio;
+          const excecaoDataInicioUTC = TimezoneUtils.dbTimestampToUTC(excecao.data_excecao);
+          const excecaoDataInicio = TimezoneUtils.extractDate(excecaoDataInicioUTC);
+          const excecaoDataFim = excecao.data_fim ? TimezoneUtils.extractDate(TimezoneUtils.dbTimestampToUTC(excecao.data_fim)) : excecaoDataInicio;
           if (slotDateStr >= excecaoDataInicio && slotDateStr <= excecaoDataFim) {
             return true;
           }
@@ -116,45 +113,35 @@ export async function GET(
 
     // Filtrar slots que não estão bloqueados por exceções
     const slotsDisponiveis = (slots || []).filter(slot => {
-      const dataHoraInicio = new Date(slot.data_hora_inicio);
-      const dataHoraFim = new Date(slot.data_hora_fim);
+      const dataHoraInicioUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_inicio);
+      const dataHoraFimUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_fim);
       
-      // Usar o mesmo formato de hora que usamos na comparação de exceções
-      const horaInicio = dataHoraInicio.toLocaleTimeString('pt-BR', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false,
-        timeZone: 'America/Sao_Paulo'
-      });
-      const horaFim = dataHoraFim.toLocaleTimeString('pt-BR', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false,
-        timeZone: 'America/Sao_Paulo'
-      });
-      
-      return !isSlotBlocked(dataHoraInicio, horaInicio, horaFim);
+      return !isSlotBlocked(dataHoraInicioUTC, dataHoraFimUTC);
     });
 
     // Mapear para frontend com formato correto
     const slotsFormatted = slotsDisponiveis.map(slot => {
-      const dataHoraInicio = new Date(slot.data_hora_inicio);
-      const dataHoraFim = new Date(slot.data_hora_fim);
+      const dataHoraInicioUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_inicio);
+      const dataHoraFimUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_fim);
       
       return {
         id: slot.id,
         profissional_id: slot.profissional_id,
-        // Separar data e hora para compatibilidade com frontend
-        data: dataHoraInicio.toISOString().split('T')[0], // YYYY-MM-DD
-        hora: dataHoraInicio.toISOString().split('T')[1].substring(0, 5), // HH:mm
-        hora_inicio: dataHoraInicio.toISOString().split('T')[1].substring(0, 5), // HH:mm
-        hora_fim: dataHoraFim.toISOString().split('T')[1].substring(0, 5), // HH:mm
+        // Separar data e hora para compatibilidade com frontend (convertido para timezone local)
+        data: TimezoneUtils.extractDate(dataHoraInicioUTC),
+        hora: TimezoneUtils.extractTime(dataHoraInicioUTC),
+        hora_inicio: TimezoneUtils.extractTime(dataHoraInicioUTC),
+        hora_fim: TimezoneUtils.extractTime(dataHoraFimUTC),
         // Campos adicionais para compatibilidade
-        horario: dataHoraInicio.toISOString().split('T')[1].substring(0, 5), // HH:mm
-        data_hora_inicio: slot.data_hora_inicio, // Timestamp completo
-        data_hora_fim: slot.data_hora_fim, // Timestamp completo
+        horario: TimezoneUtils.extractTime(dataHoraInicioUTC),
+        data_hora_inicio: dataHoraInicioUTC, // Timestamp UTC
+        data_hora_fim: dataHoraFimUTC, // Timestamp UTC
         disponivel: slot.status === 'livre',
-        status: slot.status
+        status: slot.status,
+        // Campos formatados para exibição
+        dataFormatada: TimezoneUtils.formatForDisplay(dataHoraInicioUTC, undefined, 'date'),
+        horaFormatada: TimezoneUtils.formatForDisplay(dataHoraInicioUTC, undefined, 'time'),
+        dataHoraFormatada: TimezoneUtils.formatForDisplay(dataHoraInicioUTC)
       };
     });
 
@@ -199,15 +186,15 @@ export async function POST(
       return NextResponse.json({ error: 'Slot não disponível' }, { status: 400 });
     }
 
-    // Criar agendamento usando data_hora_inicio
-    const dataConsulta = new Date(slot.data_hora_inicio).toISOString();
+    // Criar agendamento usando data_hora_inicio convertido para UTC
+    const dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_inicio);
 
     const { data: agendamento, error: agendamentoError } = await supabase
       .from('agendamentos')
       .insert({
         paciente_id: user.id,
         profissional_id: profissionalId,
-        data_consulta: dataConsulta,
+        data_consulta: dataConsultaUTC,
         status: 'confirmado',
         modalidade: modalidade || 'presencial',
         notas: notas
@@ -226,7 +213,7 @@ export async function POST(
       .update({
         status: 'ocupado',
         paciente_id: user.id,
-        atualizado_em: new Date().toISOString()
+        atualizado_em: TimezoneUtils.now()
       })
       .eq('id', slotId);
 

@@ -5,6 +5,7 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { StatusAgendamento, type UiAgendamento } from "@/types/agendamento";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { TimezoneUtils, formatarDataHora } from "@/utils/timezone";
 import {
   Card,
   CardContent,
@@ -49,17 +50,7 @@ const statusOptions: { label: string; value: StatusFiltro }[] = [
   { label: "Concluídos", value: "concluido" },
 ];
 
-function formatarDataHora(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleString("pt-BR", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+// Função removida - usando TimezoneUtils.formatForDisplay() do utils/timezone.ts
 
 export default function AgendamentosList({
   userId,
@@ -82,8 +73,6 @@ export default function AgendamentosList({
     useState("");
   const [loadingCancelamento, setLoadingCancelamento] = useState(false);
 
-  const agora = Date.now();
-
   const listagem = useMemo(() => {
     const buscaLower = busca.toLowerCase();
     const byTerm = (a: UiAgendamento) =>
@@ -96,15 +85,19 @@ export default function AgendamentosList({
         ? () => true
         : (a: UiAgendamento) => a.status === statusFiltro;
 
-    const sorted = [...agendamentos].sort(
-      (a, b) => +new Date(a.dataISO) - +new Date(b.dataISO)
-    );
+    // Usar Luxon para ordenação de datas
+    const sorted = [...agendamentos].sort((a, b) => {
+      const dateA = TimezoneUtils.dbTimestampToUTC(a.dataISO);
+      const dateB = TimezoneUtils.dbTimestampToUTC(b.dataISO);
+      return dateA.localeCompare(dateB);
+    });
 
     return sorted.filter((a) => byTerm(a) && byStatus(a));
   }, [agendamentos, busca, statusFiltro]);
 
   function podeCancelar(a: UiAgendamento) {
-    const ehPassado = +new Date(a.dataISO) < agora;
+    // Usar Luxon para verificar se está no passado
+    const ehPassado = TimezoneUtils.isPast(TimezoneUtils.dbTimestampToUTC(a.dataISO));
     return a.status !== "cancelado" && a.status !== "concluido" && !ehPassado;
   }
 
@@ -237,8 +230,7 @@ export default function AgendamentosList({
         )}
 
         {listagem.map((a) => {
-          const data = new Date(a.dataISO);
-          const ehPassado = +data < agora;
+          const ehPassado = TimezoneUtils.isPast(TimezoneUtils.dbTimestampToUTC(a.dataISO));
           return (
             <Card key={a.id} className="border-muted">
               <CardHeader className="flex-row items-start justify-between gap-4">
@@ -266,7 +258,7 @@ export default function AgendamentosList({
                 <div className="text-sm">
                   <span className="text-muted-foreground">Data/Hora: </span>
                   <span className="font-medium">
-                    {formatarDataHora(a.dataISO)}
+                    {TimezoneUtils.formatForDisplay(TimezoneUtils.dbTimestampToUTC(a.dataISO), undefined, 'full')}
                   </span>
                 </div>
                 {a.notas ? (
@@ -313,7 +305,7 @@ export default function AgendamentosList({
                       </div>
                       <div>
                         <span className="text-muted-foreground">Quando: </span>
-                        <span>{formatarDataHora(a.dataISO)}</span>
+                        <span>{TimezoneUtils.formatForDisplay(TimezoneUtils.dbTimestampToUTC(a.dataISO), undefined, 'full')}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground">Status: </span>

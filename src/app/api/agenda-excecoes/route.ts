@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/server';
+import { TimezoneUtils } from '@/utils/timezone';
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,9 +31,43 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Formatar as exceções com dados de exibição usando Luxon
+    const excecoesFormatadas = (excecoes || []).map(excecao => {
+      const dataExcecaoUTC = TimezoneUtils.dbTimestampToUTC(excecao.data_excecao);
+      
+      const resultado: any = {
+        ...excecao,
+        data_excecao: dataExcecaoUTC,
+        // Campos formatados para exibição
+        dataFormatada: TimezoneUtils.formatForDisplay(dataExcecaoUTC, undefined, 'date'),
+      };
+      
+      // Formatar horários se existirem
+      if (excecao.hora_inicio) {
+        const horaInicioUTC = TimezoneUtils.dbTimestampToUTC(excecao.hora_inicio);
+        resultado.hora_inicio = horaInicioUTC;
+        resultado.horaInicioFormatada = TimezoneUtils.formatForDisplay(horaInicioUTC, undefined, 'time');
+      }
+      
+      if (excecao.hora_fim) {
+        const horaFimUTC = TimezoneUtils.dbTimestampToUTC(excecao.hora_fim);
+        resultado.hora_fim = horaFimUTC;
+        resultado.horaFimFormatada = TimezoneUtils.formatForDisplay(horaFimUTC, undefined, 'time');
+      }
+      
+      // Formatar data fim se existir (para feriados/férias)
+      if (excecao.data_fim) {
+        const dataFimUTC = TimezoneUtils.dbTimestampToUTC(excecao.data_fim);
+        resultado.data_fim = dataFimUTC;
+        resultado.dataFimFormatada = TimezoneUtils.formatForDisplay(dataFimUTC, undefined, 'date');
+      }
+      
+      return resultado;
+    });
+
     return NextResponse.json({
       success: true,
-      excecoes: excecoes || []
+      excecoes: excecoesFormatadas
     });
 
   } catch (error) {
@@ -99,23 +134,23 @@ export async function POST(request: NextRequest) {
       disponivel
     };
 
-    // Configurar data_excecao baseado no tipo - usando timezone local do Brasil
+    // Configurar data_excecao baseado no tipo - usando Luxon para conversão UTC
     if (tipo === 'recorrente') {
       // Para recorrentes, usar uma data padrão (hoje) mas com horários específicos
-      const today = new Date().toISOString().split('T')[0];
-      insertData.data_excecao = `${today}T00:00:00-03:00`;
-      insertData.hora_inicio = `${today}T${hora_inicio}:00-03:00`;
-      insertData.hora_fim = `${today}T${hora_fim}:00-03:00`;
+      const today = TimezoneUtils.extractDate(TimezoneUtils.now());
+      insertData.data_excecao = TimezoneUtils.createDateTime(today, '00:00');
+      insertData.hora_inicio = TimezoneUtils.createDateTime(today, hora_inicio);
+      insertData.hora_fim = TimezoneUtils.createDateTime(today, hora_fim);
     } else if (tipo === 'pontual') {
-      insertData.data_excecao = `${data}T00:00:00-03:00`;
+      insertData.data_excecao = TimezoneUtils.createDateTime(data, '00:00');
       if (hora_inicio && hora_fim) {
-        insertData.hora_inicio = `${data}T${hora_inicio}:00-03:00`;
-        insertData.hora_fim = `${data}T${hora_fim}:00-03:00`;
+        insertData.hora_inicio = TimezoneUtils.createDateTime(data, hora_inicio);
+        insertData.hora_fim = TimezoneUtils.createDateTime(data, hora_fim);
       }
     } else if (tipo === 'feriado') {
-      insertData.data_excecao = `${data}T00:00:00-03:00`;
+      insertData.data_excecao = TimezoneUtils.createDateTime(data, '00:00');
       if (data_fim) {
-        insertData.data_fim = data_fim;
+        insertData.data_fim = TimezoneUtils.createDateTime(data_fim, '23:59');
       }
     }
 
@@ -146,9 +181,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
+    // Formatar a exceção criada com dados de exibição
+    const excecaoFormatada: any = {
+      ...excecao,
+      // Garantir que timestamps estão em UTC
+      data_excecao: TimezoneUtils.dbTimestampToUTC(excecao.data_excecao),
+      dataFormatada: TimezoneUtils.formatForDisplay(TimezoneUtils.dbTimestampToUTC(excecao.data_excecao), undefined, 'date'),
+    };
+    
+    if (excecao.hora_inicio) {
+      const horaInicioUTC = TimezoneUtils.dbTimestampToUTC(excecao.hora_inicio);
+      excecaoFormatada.hora_inicio = horaInicioUTC;
+      excecaoFormatada.horaInicioFormatada = TimezoneUtils.formatForDisplay(horaInicioUTC, undefined, 'time');
+    }
+    
+    if (excecao.hora_fim) {
+      const horaFimUTC = TimezoneUtils.dbTimestampToUTC(excecao.hora_fim);
+      excecaoFormatada.hora_fim = horaFimUTC;
+      excecaoFormatada.horaFimFormatada = TimezoneUtils.formatForDisplay(horaFimUTC, undefined, 'time');
+    }
+    
+    if (excecao.data_fim) {
+      const dataFimUTC = TimezoneUtils.dbTimestampToUTC(excecao.data_fim);
+      excecaoFormatada.data_fim = dataFimUTC;
+      excecaoFormatada.dataFimFormatada = TimezoneUtils.formatForDisplay(dataFimUTC, undefined, 'date');
+    }
+
     return NextResponse.json({
       success: true,
-      excecao,
+      excecao: excecaoFormatada,
       message: 'Exceção criada com sucesso!'
     });
 

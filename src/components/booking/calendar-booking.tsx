@@ -7,6 +7,7 @@ import "moment/locale/pt-br";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "@/styles/calendar.css";
 import "@/styles/calendar-mobile.css";
+import { TimezoneUtils, formatarDataHora } from "@/utils/timezone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, Clock, LogIn } from "lucide-react";
@@ -92,44 +93,36 @@ export function CalendarBooking({
   const fetchAgenda = async () => {
     setLoading(true);
     try {
-      // Buscar slots dos próximos 3 meses para performance
-      const hoje = new Date();
-      const dataInicio = hoje.toISOString().split('T')[0];
-      const dataFim = new Date(hoje.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      // Buscar slots dos próximos 3 meses para performance usando Luxon
+      const hoje = TimezoneUtils.now();
+      const dataInicio = TimezoneUtils.extractDate(hoje);
+      const dataFim = TimezoneUtils.extractDate(TimezoneUtils.addTime(hoje, 90, 'days'));
       
       const res = await fetch(
-        `/api/profissionais/agenda?profissionalId=${profissionalId}&dataInicio=${dataInicio}&dataFim=${dataFim}`
+        `/api/agenda-slots/${profissionalId}?dataInicio=${dataInicio}&dataFim=${dataFim}`
       );
       
       if (res.ok) {
-        const data = await res.json();
+        const slotsFromAPI = await res.json();
         
-        // A API agora retorna slots já prontos com datas específicas
-        const slotsFromAPI = (data.slots || []).map((slot: {
-          id: string;
-          profissional_id: string;
-          data: string;
-          horaInicio: string;
-          horaFim: string;
-          status: 'livre' | 'ocupado' | 'cancelado';
-          paciente_id?: string;
-        }): AgendaSlot => ({
+        // A nova API já retorna slots formatados com Luxon
+        const slotsProcessados = (slotsFromAPI || []).map((slot: any): AgendaSlot => ({
           id: slot.id,
           profissional_id: slot.profissional_id,
-          data: slot.data,
-          hora_inicio: slot.horaInicio,
-          hora_fim: slot.horaFim,
+          data: slot.data, // Já convertido para timezone local pela API
+          hora_inicio: slot.hora_inicio, // Já convertido para timezone local
+          hora_fim: slot.hora_fim, // Já convertido para timezone local
           status: slot.status,
           paciente_id: slot.paciente_id,
           // Campos de compatibilidade para não quebrar a interface
-          hora: slot.horaInicio,
-          horaInicio: slot.horaInicio,
-          disponivel: slot.status === 'livre',
-          diaSemana: new Date(slot.data + 'T00:00:00').getDay(),
+          hora: slot.hora_inicio,
+          horaInicio: slot.hora_inicio,
+          disponivel: slot.disponivel,
+          diaSemana: TimezoneUtils.fromUTC(slot.data_hora_inicio).weekday % 7, // Luxon weekday (1=segunda) -> JS (0=domingo)
         }));
         
-        // Filtrar apenas slots disponíveis (status 'livre')
-        const slotsDisponiveis = slotsFromAPI.filter(slot => slot.status === 'livre');
+        // Filtrar apenas slots disponíveis
+        const slotsDisponiveis = slotsProcessados.filter(slot => slot.disponivel);
         
         setAgendaSlots(slotsDisponiveis);
       }
@@ -190,14 +183,12 @@ export function CalendarBooking({
     if (onBookingSelect) onBookingSelect(slot);
   };
 
-  // Função para verificar se um slot está no passado
+  // Função para verificar se um slot está no passado usando Luxon
   const isSlotInPast = (slot: AgendaSlot) => {
     if (!slot.data || !slot.hora_inicio) return false;
 
-    const slotDateTime = new Date(`${slot.data}T${slot.hora_inicio}`);
-    const now = new Date();
-
-    return slotDateTime <= now;
+    const slotDateTimeUTC = TimezoneUtils.createDateTime(slot.data, slot.hora_inicio);
+    return TimezoneUtils.isPast(slotDateTimeUTC);
   };
 
   const handleMobileDateSelect = (date: string, slots: AgendaSlot[]) => {
@@ -206,8 +197,11 @@ export function CalendarBooking({
     setIsModalOpen(true);
   };
 
-  const formatDate = (date: Date) =>
-    moment(date).format("dddd, DD [de] MMMM [de] YYYY");
+  const formatDate = (date: Date) => {
+    // Converter Date para timestamp UTC e formatar usando Luxon
+    const utcTimestamp = TimezoneUtils.toUTC(date.toISOString());
+    return TimezoneUtils.formatForDisplay(utcTimestamp, undefined, 'full').replace(/,/, ',');
+  };
 
   // Renderizar calendário mobile ou desktop baseado no tamanho da tela
   if (isMobile) {

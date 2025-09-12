@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { StatusAgendamento, type UiAgendamento } from "@/types/agendamento";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { TimezoneUtils } from "@/utils/timezone";
 import {
   Card,
   CardContent,
@@ -72,29 +73,7 @@ interface SlotDisponivel {
   disponivel: boolean;
 }
 
-function formatarDataHora(iso: string) {
-  // Verificar se a string ISO é válida
-  if (!iso || iso.trim() === '') {
-    return 'Data não informada';
-  }
-  
-  const d = new Date(iso);
-  
-  // Verificar se a data é válida
-  if (isNaN(d.getTime())) {
-    return 'Data inválida';
-  }
-  
-  return d.toLocaleString("pt-BR", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "America/Sao_Paulo"
-  });
-}
+// Função removida - usando TimezoneUtils.formatForDisplay() do utils/timezone.ts
 
 export default function AgendamentosProfissional({
   profissionalId,
@@ -123,8 +102,6 @@ export default function AgendamentosProfissional({
   const [slotsDisponiveis, setSlotsDisponiveis] = useState<SlotDisponivel[]>([]);
   const [dataEscolhida, setDataEscolhida] = useState("");
   const [horarioEscolhido, setHorarioEscolhido] = useState("");
-
-  const agora = Date.now();
 
   // Carregar agendamentos do profissional
   useEffect(() => {
@@ -202,22 +179,25 @@ export default function AgendamentosProfissional({
         ? () => true
         : (a: AgendamentoPaciente) => a.status === statusFiltro;
 
-    const sorted = [...agendamentos].sort(
-      (a, b) => +new Date(a.dataISO) - +new Date(b.dataISO)
-    );
+    // Usar Luxon para ordenação de datas
+    const sorted = [...agendamentos].sort((a, b) => {
+      const dateA = TimezoneUtils.dbTimestampToUTC(a.dataISO);
+      const dateB = TimezoneUtils.dbTimestampToUTC(b.dataISO);
+      return dateA.localeCompare(dateB);
+    });
 
     return sorted.filter((a) => byTerm(a) && byStatus(a));
   }, [agendamentos, busca, statusFiltro]);
 
   function podeCancelar(a: AgendamentoPaciente) {
-    const agendamentoDate = new Date(a.dataISO);
-    const ehPassado = agendamentoDate.getTime() < agora;
+    // Usar Luxon para verificar se está no passado
+    const ehPassado = TimezoneUtils.isPast(TimezoneUtils.dbTimestampToUTC(a.dataISO));
     return a.status !== "cancelado" && a.status !== "concluido" && !ehPassado;
   }
 
   function podeReagendar(a: AgendamentoPaciente) {
-    const agendamentoDate = new Date(a.dataISO);
-    const ehPassado = agendamentoDate.getTime() < agora;
+    // Usar Luxon para verificar se está no passado
+    const ehPassado = TimezoneUtils.isPast(TimezoneUtils.dbTimestampToUTC(a.dataISO));
     return a.status !== "cancelado" && a.status !== "concluido" && !ehPassado;
   }
 
@@ -308,7 +288,7 @@ export default function AgendamentosProfissional({
     }
 
     try {
-      const novaDataHora = new Date(`${dataEscolhida}T${horarioEscolhido}`);
+      const novaDataHoraUTC = TimezoneUtils.createDateTime(dataEscolhida, horarioEscolhido);
       
       const res = await fetch(
         `/api/agendamentos/${reagendamentoModal.agendamento.id}`,
@@ -316,8 +296,8 @@ export default function AgendamentosProfissional({
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            data_consulta: novaDataHora.toISOString(),
-            notas: `Reagendado pelo profissional para ${formatarDataHora(novaDataHora.toISOString())}`,
+            data_consulta: novaDataHoraUTC,
+            notas: `Reagendado pelo profissional para ${TimezoneUtils.formatForDisplay(novaDataHoraUTC, undefined, 'full')}`,
           }),
         }
       );
@@ -333,8 +313,8 @@ export default function AgendamentosProfissional({
           a.id === reagendamentoModal.agendamento!.id
             ? {
                 ...a,
-                dataISO: novaDataHora.toISOString(),
-                notas: `Reagendado pelo profissional para ${formatarDataHora(novaDataHora.toISOString())}`,
+                dataISO: novaDataHoraUTC,
+                notas: `Reagendado pelo profissional para ${TimezoneUtils.formatForDisplay(novaDataHoraUTC, undefined, 'full')}`,
               }
             : a
         )
@@ -419,8 +399,7 @@ export default function AgendamentosProfissional({
         )}
 
         {listagem.map((a) => {
-          const data = new Date(a.dataISO);
-          const ehPassado = data.getTime() < agora;
+          const ehPassado = TimezoneUtils.isPast(TimezoneUtils.dbTimestampToUTC(a.dataISO));
           return (
             <Card key={a.id} className="border-muted">
               <CardHeader className="flex-row items-start justify-between gap-4">
@@ -453,7 +432,7 @@ export default function AgendamentosProfissional({
                 <div className="text-sm">
                   <span className="text-muted-foreground">Data/Hora: </span>
                   <span className="font-medium">
-                    {formatarDataHora(a.dataISO)}
+                    {TimezoneUtils.formatForDisplay(TimezoneUtils.dbTimestampToUTC(a.dataISO), undefined, 'full')}
                   </span>
                 </div>
                 {a.notas ? (
@@ -508,7 +487,7 @@ export default function AgendamentosProfissional({
                       </div>
                       <div>
                         <span className="text-muted-foreground">Quando: </span>
-                        <span>{formatarDataHora(a.dataISO)}</span>
+                        <span>{TimezoneUtils.formatForDisplay(TimezoneUtils.dbTimestampToUTC(a.dataISO), undefined, 'full')}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground">Status: </span>
@@ -577,7 +556,7 @@ export default function AgendamentosProfissional({
                 type="date"
                 value={dataEscolhida}
                 onChange={(e) => setDataEscolhida(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+                min={TimezoneUtils.extractDate(TimezoneUtils.now())}
               />
             </div>
 

@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { AgendamentosService } from "@/services/database/agendamentos.service";
 import { CompaniesService } from "@/services/database/companies.service";
 import { createClient } from "@/lib/server";
+import { TimezoneUtils } from "@/utils/timezone";
 
 export async function PATCH(
   req: NextRequest,
@@ -85,26 +86,28 @@ export async function GET() {
     const agendamentosComSlots = await Promise.all(
       (agendamentos || []).map(async (ag) => {
         try {
-          const dataConsultaISO = new Date(ag.data_consulta).toISOString();
+          const dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(ag.data_consulta);
           
           const { data: slot } = await supabase
             .from('agendamento_slot')
             .select('data_hora_inicio, data_hora_fim')
             .eq('profissional_id', ag.profissional_id)
-            .eq('data_hora_inicio', dataConsultaISO)
+            .eq('data_hora_inicio', dataConsultaUTC)
             .eq('paciente_id', ag.paciente_id)
             .single();
 
+          const dataConsultaFormatted = TimezoneUtils.formatForDisplay(dataConsultaUTC);
+          
           return {
             id: ag.id,
             usuarioId: ag.paciente_id,
             profissionalId: ag.profissional_id,
             profissionalNome: ag.profissional?.nome || "Profissional",
             especialidade: ag.profissional?.especialidade || "",
-            dataISO: ag.data_consulta,
-            data_consulta: ag.data_consulta,
-            data_hora_inicio: slot?.data_hora_inicio || ag.data_consulta,
-            data_hora_fim: slot?.data_hora_fim,
+            dataISO: dataConsultaUTC,
+            data_consulta: dataConsultaUTC,
+            data_hora_inicio: slot?.data_hora_inicio ? TimezoneUtils.dbTimestampToUTC(slot.data_hora_inicio) : dataConsultaUTC,
+            data_hora_fim: slot?.data_hora_fim ? TimezoneUtils.dbTimestampToUTC(slot.data_hora_fim) : undefined,
             local: "Clínica Resilience",
             status: ag.status,
             notas: ag.notas,
@@ -121,18 +124,24 @@ export async function GET() {
             profissional: {
               nome: ag.profissional?.nome || "Profissional",
             },
+            // Adicionar campos formatados para exibição
+            dataFormatada: dataConsultaFormatted,
+            horaFormatada: TimezoneUtils.formatForDisplay(dataConsultaUTC, undefined, 'time'),
           };
         } catch (error) {
           console.warn('Erro ao buscar slot para agendamento:', ag.id, error);
           // Retornar agendamento sem dados de slot em caso de erro
+          const dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(ag.data_consulta);
+          const dataConsultaFormatted = TimezoneUtils.formatForDisplay(dataConsultaUTC);
+          
           return {
             id: ag.id,
             usuarioId: ag.paciente_id,
             profissionalId: ag.profissional_id,
             profissionalNome: ag.profissional?.nome || "Profissional",
             especialidade: ag.profissional?.especialidade || "",
-            dataISO: ag.data_consulta,
-            data_consulta: ag.data_consulta,
+            dataISO: dataConsultaUTC,
+            data_consulta: dataConsultaUTC,
             local: "Clínica Resilience",
             status: ag.status,
             notas: ag.notas,
@@ -149,6 +158,9 @@ export async function GET() {
             profissional: {
               nome: ag.profissional?.nome || "Profissional",
             },
+            // Adicionar campos formatados para exibição
+            dataFormatada: dataConsultaFormatted,
+            horaFormatada: TimezoneUtils.formatForDisplay(dataConsultaUTC, undefined, 'time'),
           };
         }
       })
@@ -206,30 +218,42 @@ export async function POST(req: NextRequest) {
 
       if (slotError || !slot) return NextResponse.json({ error: "Slot não disponível ou não encontrado" }, { status: 409 });
 
-      // Criar agendamento usando timestamptz do slot
-      const dataConsulta = new Date(slot.data_hora_inicio).toISOString();
+      // Criar agendamento usando timestamptz do slot convertido para UTC
+      const dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_inicio);
       agendamento = await AgendamentosService.createAgendamento({
         usuario_id: user.id,
         profissional_id,
-        data_consulta: dataConsulta,
+        data_consulta: dataConsultaUTC,
         modalidade: validModalidade,
         notas,
       });
 
     } else {
-      // Agendamento usando data_consulta
-      const isAvailable = await AgendamentosService.checkAvailability(profissional_id, data_consulta);
+      // Agendamento usando data_consulta - garantir que está em UTC
+      let dataConsultaUTC: string;
+      
+      // Se data_consulta contém informação de timezone, converter para UTC
+      if (data_consulta.includes('T') && (data_consulta.includes('+') || data_consulta.includes('-') || data_consulta.includes('Z'))) {
+        dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(data_consulta);
+      } else {
+        // Se não tem timezone, assumir que é horário local do Brasil
+        dataConsultaUTC = TimezoneUtils.toUTC(data_consulta);
+      }
+      
+      const isAvailable = await AgendamentosService.checkAvailability(profissional_id, dataConsultaUTC);
       if (!isAvailable) return NextResponse.json({ error: "Horário não disponível" }, { status: 409 });
 
       agendamento = await AgendamentosService.createAgendamento({
         usuario_id: user.id,
         profissional_id,
-        data_consulta,
+        data_consulta: dataConsultaUTC,
         modalidade: validModalidade,
         notas,
       });
     }
 
+    const dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(agendamento.data_consulta);
+    
     return NextResponse.json({
       success: true,
       data: {
@@ -238,10 +262,13 @@ export async function POST(req: NextRequest) {
         profissionalId: agendamento.profissional_id,
         profissionalNome: agendamento.profissional?.nome || "Profissional",
         especialidade: agendamento.profissional?.especialidade || "",
-        dataISO: agendamento.data_consulta,
+        dataISO: dataConsultaUTC,
         status: agendamento.status,
         notas: agendamento.notas,
         modalidade: agendamento.modalidade,
+        // Campos formatados para exibição
+        dataFormatada: TimezoneUtils.formatForDisplay(dataConsultaUTC),
+        horaFormatada: TimezoneUtils.formatForDisplay(dataConsultaUTC, undefined, 'time'),
       },
       message: "Agendamento criado com sucesso!"
     }, { status: 201 });
