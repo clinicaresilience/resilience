@@ -297,7 +297,7 @@ export function NovoProntuarioClient({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Prontuários Médicos</CardTitle>
+            <CardTitle>Prontuários </CardTitle>
             <Dialog
               open={mostrarNovoRegistro}
               onOpenChange={setMostrarNovoRegistro}
@@ -317,7 +317,7 @@ export function NovoProntuarioClient({
                 <DialogHeader>
                   <DialogTitle>Criar Novo Registro de Prontuário</DialogTitle>
                   <DialogDescription>
-                    Selecione um paciente e escreva o registro médico
+                    Selecione um paciente e escreva o registro 
                   </DialogDescription>
                 </DialogHeader>
 
@@ -365,7 +365,7 @@ export function NovoProntuarioClient({
                     <Label htmlFor="texto">Texto do Registro *</Label>
                     <Textarea
                       id="texto"
-                      placeholder="Digite o registro médico..."
+                      placeholder="Digite o registro ..."
                       value={textoRegistro}
                       onChange={(e) => setTextoRegistro(e.target.value)}
                       className="min-h-[120px]"
@@ -609,7 +609,7 @@ export function NovoProntuarioClient({
               Prontuário - {prontuarioSelecionado?.paciente?.nome}
             </DialogTitle>
             <DialogDescription>
-              Histórico completo de registros médicos
+              Histórico completo de registros 
             </DialogDescription>
           </DialogHeader>
 
@@ -667,7 +667,7 @@ export function NovoProntuarioClient({
                     </p>
                   ) : (
                     <div className="space-y-4">
-                      {prontuarioSelecionado.registros.map(
+                      {prontuarioSelecionado.registros.slice().reverse().map(
                         (registro, index) => (
                           <div
                             key={registro.id}
@@ -703,7 +703,7 @@ export function NovoProntuarioClient({
                               <div className="flex items-start justify-between">
                                 <div className="flex-1 pr-4">
                                   <p className="text-xs text-gray-600 mb-2">
-                                    <strong>Assinatura Digital Médica</strong>
+                                    <strong>Assinatura Digital </strong>
                                   </p>
                                   <div className="text-xs text-gray-500 space-y-1">
                                     <p>

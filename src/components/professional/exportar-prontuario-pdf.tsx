@@ -64,7 +64,7 @@ export const exportarProntuarioPDF = async ({ prontuario, formatarData }: Export
     pdf.text("PRONTUÁRIO MÉDICO", pageWidth / 2, currentY, {
       align: "center",
     });
-    currentY += 15;
+      currentY += 15;
 
     // Linha separadora
     pdf.setDrawColor(37, 99, 235);
@@ -194,7 +194,7 @@ export const exportarProntuarioPDF = async ({ prontuario, formatarData }: Export
 
       // === Carimbo no canto direito alinhado com assinatura digital ===
       const carimboX = pageWidth - margin - 45; // alinhado à direita
-      const carimboY = currentY - 20; // mais embaixo, alinhado com a base da assinatura digital
+      const carimboY = currentY - 15; // fixo ao final do registro
 
       // Fundo arredondado (simulando gradient com cor intermediária)
       pdf.setFillColor(224, 242, 254); // azul-claro-teal (#E0F2FE)
@@ -204,11 +204,11 @@ export const exportarProntuarioPDF = async ({ prontuario, formatarData }: Export
 
       // Logo pequena (precisa já estar carregada como base64)
       try {
-        pdf.addImage("/logoResilience.png", "PNG", carimboX + 16, carimboY + 2, 8, 8);
+        pdf.addImage("/logocomprimida.png", "PNG", carimboX + 17.2, carimboY + 2.5, 5.6, 4.2);
       } catch (e) {
         // fallback: circulo transparente
         pdf.setFillColor(180, 220, 255);
-        pdf.circle(carimboX + 20, carimboY + 6, 2, "F");
+        pdf.circle(carimboX + 20, carimboY + 4.5, 1.4, "F");
       }
 
       // "Assinatura Digital"
@@ -263,7 +263,7 @@ export const exportarProntuarioPDF = async ({ prontuario, formatarData }: Export
       const dataCarimbo = formatarData(registro.assinatura_digital.data).split(" ")[0];
       pdf.text(dataCarimbo, carimboX + 20, carimboY + 27, { align: "center" });
 
-      currentY += 15;
+      currentY += 20; // mais espaço para acomodar o carimbo
     });
 
     // Rodapé
