@@ -1,299 +1,1024 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Upload, FileText, User, Calendar, AlertCircle, CheckCircle } from "lucide-react"
-import { PacienteAtendido } from "@/services/database/consultas.service"
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  FileText,
+  Plus,
+  User,
+  Stethoscope,
+  AlertCircle,
+  CheckCircle,
+  Edit3,
+  UserCheck,
+  Clock,
+  Download,
+} from "lucide-react";
+import { ProntuarioCompleto } from "@/services/database/prontuarios.service";
+import { PacienteAtendido } from "@/services/database/consultas.service";
 
-interface NovoProntuarioClientProps {
-  profissionalNome: string
-  profissionalId: string
+interface NovoProntuarioClientV2Props {
+  profissionalNome: string;
+  profissionalId: string;
 }
 
-export function NovoProntuarioClient({ profissionalNome, profissionalId }: NovoProntuarioClientProps) {
-  const router = useRouter()
-  const [pacientesAtendidos, setPacientesAtendidos] = useState<PacienteAtendido[]>([])
-  const [pacienteSelecionado, setPacienteSelecionado] = useState<string>("")
-  const [arquivo, setArquivo] = useState<File | null>(null)
-  const [carregandoPacientes, setCarregandoPacientes] = useState(true)
-  const [enviando, setEnviando] = useState(false)
-  const [erro, setErro] = useState<string>("")
-  const [sucesso, setSucesso] = useState<string>("")
+export function NovoProntuarioClient({
+  profissionalNome,
+  profissionalId,
+}: NovoProntuarioClientV2Props) {
+  const [busca, setBusca] = useState("");
+  const [prontuarios, setProntuarios] = useState<ProntuarioCompleto[]>([]);
+  const [carregandoProntuarios, setCarregandoProntuarios] = useState(true);
+  const [erro, setErro] = useState<string>("");
 
-  // Buscar pacientes atendidos ao carregar o componente
+  // Estados para novo registro
+  const [mostrarNovoRegistro, setMostrarNovoRegistro] = useState(false);
+  const [pacientesAtendidos, setPacientesAtendidos] = useState<
+    PacienteAtendido[]
+  >([]);
+  const [pacienteSelecionado, setPacienteSelecionado] = useState<string>("");
+  const [textoRegistro, setTextoRegistro] = useState<string>("");
+  const [cpfProfissional, setCpfProfissional] = useState<string>("");
+  const [carregandoPacientes, setCarregandoPacientes] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [erroModal, setErroModal] = useState<string>("");
+  const [sucesso, setSucesso] = useState<string>("");
+
+  // Estados para visualizar prontuário
+  const [prontuarioSelecionado, setProntuarioSelecionado] =
+    useState<ProntuarioCompleto | null>(null);
+  const [mostrarProntuario, setMostrarProntuario] = useState(false);
+
+  // Buscar prontuários
   useEffect(() => {
-    buscarPacientesAtendidos()
-  }, [])
+    buscarProntuarios();
+  }, [profissionalId]);
+
+  const buscarProntuarios = async () => {
+    try {
+      setCarregandoProntuarios(true);
+      setErro("");
+      const response = await fetch("/api/prontuarios");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao buscar prontuários");
+      }
+
+      setProntuarios(data.data || []);
+    } catch (error) {
+      console.error(error);
+      setErro("Erro ao carregar prontuários");
+    } finally {
+      setCarregandoProntuarios(false);
+    }
+  };
 
   const buscarPacientesAtendidos = async () => {
     try {
-      setCarregandoPacientes(true)
-      const response = await fetch('/api/agendamentos/pacientes-atendidos')
-      const data = await response.json()
-
+      setCarregandoPacientes(true);
+      const response = await fetch("/api/agendamentos/pacientes-atendidos");
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao buscar pacientes')
+        throw new Error(data.error || "Erro ao buscar pacientes");
       }
-
-      setPacientesAtendidos(data.data || [])
+      setPacientesAtendidos(data.data || []);
     } catch (error) {
-      console.error('Erro ao buscar pacientes atendidos:', error)
-      setErro('Erro ao carregar lista de pacientes atendidos')
+      console.error(error);
+      setErroModal("Erro ao carregar lista de pacientes atendidos");
     } finally {
-      setCarregandoPacientes(false)
+      setCarregandoPacientes(false);
     }
-  }
+  };
 
-  const handleArquivoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    setErro("")
-    setSucesso("")
-
-    if (file) {
-      // Verificar se é PDF
-      if (file.type !== 'application/pdf') {
-        setErro('Apenas arquivos PDF são permitidos')
-        setArquivo(null)
-        return
-      }
-
-      // Verificar tamanho (máximo 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        setErro('O arquivo deve ter no máximo 10MB')
-        setArquivo(null)
-        return
-      }
-
-      setArquivo(file)
-    }
-  }
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    
-    if (!pacienteSelecionado) {
-      setErro('Selecione um paciente')
-      return
+  const handleCriarRegistro = async () => {
+    if (!pacienteSelecionado || !textoRegistro.trim()) {
+      setErroModal("Selecione o paciente e escreva o texto do registro");
+      return;
     }
 
-    if (!arquivo) {
-      setErro('Selecione um arquivo PDF')
-      return
+    if (!cpfProfissional.trim()) {
+      setErroModal("Digite seu CPF para assinatura digital");
+      return;
     }
 
     try {
-      setEnviando(true)
-      setErro("")
-      setSucesso("")
+      setEnviando(true);
+      setErroModal("");
 
-      const formData = new FormData()
-      formData.append('pacienteId', pacienteSelecionado)
-      formData.append('arquivo', arquivo)
+      const response = await fetch("/api/prontuarios", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          paciente_id: pacienteSelecionado,
+          texto: textoRegistro,
+          cpf_profissional: cpfProfissional,
+        }),
+      });
 
-      const response = await fetch('/api/agendamentos/prontuarios', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao criar prontuário')
+        throw new Error(data.error || "Erro ao criar registro");
       }
 
-      setSucesso('Prontuário criado com sucesso!')
-      
-      // Limpar formulário
-      setPacienteSelecionado("")
-      setArquivo(null)
-      
-      // Redirecionar após 2 segundos
-      setTimeout(() => {
-        router.push('/tela-profissional/prontuarios')
-      }, 2000)
+      setSucesso("Registro criado com sucesso!");
+      setTextoRegistro("");
+      setPacienteSelecionado("");
+      setCpfProfissional("");
+      buscarProntuarios();
 
+      // Fechar modal após 2 segundos
+      setTimeout(() => {
+        setMostrarNovoRegistro(false);
+        resetarFormulario();
+      }, 2000);
     } catch (error) {
-      console.error('Erro ao criar prontuário:', error)
-      setErro(error instanceof Error ? error.message : 'Erro ao criar prontuário')
+      console.error(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      setErroModal(errorMessage);
     } finally {
-      setEnviando(false)
+      setEnviando(false);
     }
-  }
+  };
+
+  const resetarFormulario = () => {
+    setPacienteSelecionado("");
+    setTextoRegistro("");
+    setCpfProfissional("");
+    setErroModal("");
+    setSucesso("");
+    setPacientesAtendidos([]);
+  };
 
   const formatarData = (dataISO: string) => {
-    const data = new Date(dataISO)
-    return data.toLocaleDateString('pt-BR')
-  }
+    const data = new Date(dataISO);
+    return data.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
-  const pacienteInfo = pacientesAtendidos.find(p => p.id === pacienteSelecionado)
+  const exportarProntuarioPDF = async (prontuario: ProntuarioCompleto) => {
+    try {
+      // Importar dinamicamente as bibliotecas
+      const jsPDF = (await import("jspdf")).default;
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const lineHeight = 6;
+      let yPosition = margin;
+
+      // Função para adicionar nova página se necessário
+      const checkPageBreak = (neededHeight: number) => {
+        if (yPosition + neededHeight > pageHeight - margin) {
+          doc.addPage();
+          yPosition = margin;
+        }
+      };
+
+      // Cabeçalho do documento
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("PRONTUÁRIO MÉDICO", pageWidth / 2, yPosition, {
+        align: "center",
+      });
+      yPosition += lineHeight * 2;
+
+      // Linha separadora
+      doc.setLineWidth(0.5);
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += lineHeight;
+
+      // Informações do paciente
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("DADOS DO PACIENTE", margin, yPosition);
+      yPosition += lineHeight;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Nome: ${prontuario.paciente.nome}`, margin, yPosition);
+      yPosition += lineHeight * 0.8;
+      doc.text(`Email: ${prontuario.paciente.email}`, margin, yPosition);
+      yPosition += lineHeight * 0.8;
+      doc.text(
+        `Data de Criação: ${formatarData(prontuario.criado_em)}`,
+        margin,
+        yPosition
+      );
+      yPosition += lineHeight * 0.8;
+      doc.text(
+        `Última Atualização: ${formatarData(prontuario.atualizado_em)}`,
+        margin,
+        yPosition
+      );
+      yPosition += lineHeight * 1.5;
+
+      // Linha separadora
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += lineHeight;
+
+      // Registros médicos
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("REGISTROS MÉDICOS", margin, yPosition);
+      yPosition += lineHeight;
+
+      if (prontuario.registros.length === 0) {
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "italic");
+        doc.text("Nenhum registro encontrado.", margin, yPosition);
+      } else {
+        prontuario.registros.forEach((registro, index) => {
+          checkPageBreak(lineHeight * 8); // Verificar espaço para o registro
+
+          // Resetar cores para preto no início de cada registro
+          doc.setTextColor(0, 0, 0); // Preto
+
+          // Cabeçalho do registro
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.text(
+            `Registro #${prontuario.registros.length - index}`,
+            margin,
+            yPosition
+          );
+          yPosition += lineHeight * 0.8;
+
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          doc.text(
+            `Data: ${formatarData(registro.criado_em)}`,
+            margin,
+            yPosition
+          );
+          yPosition += lineHeight * 1.2;
+
+          // Conteúdo do registro
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+          const textoLinhas = doc.splitTextToSize(
+            registro.texto,
+            pageWidth - margin * 2
+          );
+
+          for (const linha of textoLinhas) {
+            checkPageBreak(lineHeight);
+            doc.text(linha, margin, yPosition);
+            yPosition += lineHeight * 0.8;
+          }
+          yPosition += lineHeight * 0.5;
+
+          // Assinatura digital idêntica à visualização
+          checkPageBreak(lineHeight * 6);
+
+          // Título da assinatura
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(0, 0, 0);
+          doc.text("Assinatura Digital Médica", margin, yPosition);
+          yPosition += lineHeight;
+
+          // Informações detalhadas à esquerda
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(100, 100, 100);
+
+          doc.setFont("helvetica", "bold");
+          doc.text("Profissional: ", margin, yPosition);
+          doc.setFont("helvetica", "normal");
+          doc.text(registro.assinatura_digital.nome, margin + 20, yPosition);
+          yPosition += lineHeight * 0.7;
+
+          doc.setFont("helvetica", "bold");
+          doc.text("CPF: ", margin, yPosition);
+          doc.setFont("helvetica", "normal");
+          doc.text(registro.assinatura_digital.cpf, margin + 12, yPosition);
+          yPosition += lineHeight * 0.7;
+
+          doc.setFont("helvetica", "bold");
+          doc.text("CRP: ", margin, yPosition);
+          doc.setFont("helvetica", "normal");
+          doc.text(registro.assinatura_digital.crp, margin + 12, yPosition);
+          yPosition += lineHeight * 0.7;
+
+          doc.setFont("helvetica", "bold");
+          doc.text("Data/Hora: ", margin, yPosition);
+          doc.setFont("helvetica", "normal");
+          doc.text(
+            formatarData(registro.assinatura_digital.data),
+            margin + 20,
+            yPosition
+          );
+
+          // Carimbo compacto à direita (similar ao layout web)
+          const carimboX = pageWidth - margin - 30;
+          const carimboY = yPosition - lineHeight * 3;
+          const carimboWidth = 25;
+          const carimboHeight = 16;
+
+          // Fundo do carimbo (gradiente simulado com cor sólida)
+          doc.setFillColor(219, 234, 254); // Azul claro similar ao gradiente
+          doc.setDrawColor(147, 197, 253); // Borda azul
+          doc.setLineWidth(0.5);
+          doc.roundedRect(
+            carimboX,
+            carimboY,
+            carimboWidth,
+            carimboHeight,
+            2,
+            2,
+            "FD"
+          );
+
+          // Texto do carimbo
+          doc.setTextColor(30, 64, 175); // Azul escuro
+          doc.setFontSize(5);
+          doc.setFont("helvetica", "bold");
+          doc.text(
+            "CLÍNICA RESILIENCE",
+            carimboX + carimboWidth / 2,
+            carimboY + 4,
+            { align: "center" }
+          );
+
+          doc.setFontSize(4);
+          doc.setFont("helvetica", "normal");
+          doc.text(
+            "Assinatura Digital",
+            carimboX + carimboWidth / 2,
+            carimboY + 7,
+            { align: "center" }
+          );
+
+          // Linha separadora no carimbo
+          doc.setDrawColor(147, 197, 253);
+          doc.setLineWidth(0.2);
+          doc.line(
+            carimboX + 2,
+            carimboY + 9,
+            carimboX + carimboWidth - 2,
+            carimboY + 9
+          );
+
+          // Data no carimbo
+          doc.setTextColor(37, 99, 235); // Azul médio
+          doc.setFontSize(4);
+          doc.setFont("helvetica", "bold");
+          const dataCarimbo = formatarData(
+            registro.assinatura_digital.data
+          ).split(" ")[0];
+          doc.text(dataCarimbo, carimboX + carimboWidth / 2, carimboY + 13, {
+            align: "center",
+          });
+
+          yPosition += lineHeight * 1.5;
+
+          // Linha separadora entre registros (se não for o último)
+          if (index < prontuario.registros.length - 1) {
+            checkPageBreak(lineHeight);
+            doc.setLineWidth(0.2);
+            doc.line(margin, yPosition, pageWidth - margin, yPosition);
+            yPosition += lineHeight;
+          }
+        });
+      }
+
+      // Rodapé
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.text(
+          `Página ${i} de ${totalPages} - Gerado em ${formatarData(
+            new Date().toISOString()
+          )}`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: "center" }
+        );
+      }
+
+      // Salvar o PDF
+      const nomeArquivo = `Prontuario_${prontuario.paciente.nome.replace(
+        /\s+/g,
+        "_"
+      )}_${new Date().toISOString().split("T")[0]}.pdf`;
+      doc.save(nomeArquivo);
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      alert("Erro ao gerar PDF. Tente novamente.");
+    }
+  };
+
+  // Filtrar prontuários
+  const prontuariosFiltrados = prontuarios.filter((p) => {
+    if (!busca.trim()) return true;
+    const termo = busca.toLowerCase();
+    return (
+      p.paciente?.nome.toLowerCase().includes(termo) ||
+      p.registros.some((r) => r.texto.toLowerCase().includes(termo))
+    );
+  });
+
+  // Estatísticas
+  const estatisticas = {
+    totalProntuarios: prontuarios.length,
+    totalRegistros: prontuarios.reduce((acc, p) => acc + p.registros.length, 0),
+    pacientesAtivos: prontuarios.filter(
+      (p) => p.profissional_atual_id === profissionalId
+    ).length,
+    ultimosRegistros: prontuarios.filter((p) => {
+      const ultimoRegistro = p.registros[p.registros.length - 1];
+      if (!ultimoRegistro) return false;
+      const diasAtras =
+        (new Date().getTime() - new Date(ultimoRegistro.criado_em).getTime()) /
+        (1000 * 60 * 60 * 24);
+      return diasAtras <= 7;
+    }).length,
+  };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Informações do Profissional */}
+    <div className="space-y-6">
+      {/* Mensagem de Erro Global */}
+      {erro && (
+        <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-md">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <span className="text-red-700">{erro}</span>
+        </div>
+      )}
+
+      {/* Estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="text-sm text-gray-600">Prontuários</p>
+                <p className="text-2xl font-bold">
+                  {estatisticas.totalProntuarios}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Edit3 className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm text-gray-600">Registros</p>
+                <p className="text-2xl font-bold">
+                  {estatisticas.totalRegistros}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <UserCheck className="h-5 w-5 text-purple-600" />
+              <div>
+                <p className="text-sm text-gray-600">Pacientes Ativos</p>
+                <p className="text-2xl font-bold">
+                  {estatisticas.pacientesAtivos}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-5 w-5 text-orange-600" />
+              <div>
+                <p className="text-sm text-gray-600">Recentes (7d)</p>
+                <p className="text-2xl font-bold">
+                  {estatisticas.ultimosRegistros}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Cabeçalho com Busca e Novo Registro */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <User className="h-5 w-5 text-blue-600" />
-            <span>Informações do Profissional</span>
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Prontuários Médicos</CardTitle>
+            <Dialog
+              open={mostrarNovoRegistro}
+              onOpenChange={setMostrarNovoRegistro}
+            >
+              <DialogTrigger asChild>
+                <Button
+                  onClick={() => {
+                    setMostrarNovoRegistro(true);
+                    buscarPacientesAtendidos();
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Registro
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-[95vw] sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Criar Novo Registro de Prontuário</DialogTitle>
+                  <DialogDescription>
+                    Selecione um paciente e escreva o registro médico
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                  {/* Seleção de Paciente */}
+                  <div>
+                    <Label htmlFor="paciente">Paciente *</Label>
+                    {carregandoPacientes ? (
+                      <div className="p-3 text-center text-gray-500">
+                        Carregando pacientes...
+                      </div>
+                    ) : pacientesAtendidos.length === 0 ? (
+                      <div className="p-3 text-center text-gray-500 bg-gray-50 rounded-md">
+                        Nenhum paciente atendido encontrado.
+                      </div>
+                    ) : (
+                      <Select
+                        value={pacienteSelecionado}
+                        onValueChange={setPacienteSelecionado}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um paciente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pacientesAtendidos.map((paciente) => (
+                            <SelectItem key={paciente.id} value={paciente.id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {paciente.nome}
+                                </span>
+                                <span className="text-sm text-gray-500">
+                                  {paciente.totalConsultas} consulta
+                                  {paciente.totalConsultas > 1 ? "s" : ""}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {/* Texto do Registro */}
+                  <div>
+                    <Label htmlFor="texto">Texto do Registro *</Label>
+                    <Textarea
+                      id="texto"
+                      placeholder="Digite o registro médico..."
+                      value={textoRegistro}
+                      onChange={(e) => setTextoRegistro(e.target.value)}
+                      className="min-h-[120px]"
+                    />
+                    <p className="mt-1 text-sm text-gray-500">
+                      Descreva detalhadamente o atendimento, diagnóstico,
+                      tratamento, etc.
+                    </p>
+                  </div>
+
+                  {/* CPF do Profissional */}
+                  <div>
+                    <Label htmlFor="cpf">
+                      Seu CPF (para assinatura digital) *
+                    </Label>
+                    <Input
+                      id="cpf"
+                      placeholder="000.000.000-00"
+                      value={cpfProfissional}
+                      onChange={(e) => {
+                        let value = e.target.value.replace(/\D/g, "");
+                        if (value.length > 11) value = value.slice(0, 11);
+                        value = value.replace(/(\d{3})(\d)/, "$1.$2");
+                        value = value.replace(/(\d{3})(\d)/, "$1.$2");
+                        value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+                        setCpfProfissional(value);
+                      }}
+                      maxLength={14}
+                    />
+                    <p className="mt-1 text-sm text-gray-500">
+                      Necessário para a assinatura digital do registro
+                    </p>
+                  </div>
+
+                  {/* Informações do Profissional */}
+                  <Card className="bg-blue-50 border-blue-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Stethoscope className="h-4 w-4 text-blue-600" />
+                        <span className="font-medium text-blue-900">
+                          Assinatura Digital
+                        </span>
+                      </div>
+                      <p className="text-sm text-blue-800">
+                        O registro será automaticamente assinado digitalmente
+                        com seus dados profissionais.
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Mensagens */}
+                  {erroModal && (
+                    <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                      <span className="text-red-700">{erroModal}</span>
+                    </div>
+                  )}
+
+                  {sucesso && (
+                    <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="text-green-700">{sucesso}</span>
+                    </div>
+                  )}
+
+                  {/* Botões */}
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setMostrarNovoRegistro(false);
+                        resetarFormulario();
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={handleCriarRegistro}
+                      disabled={
+                        !pacienteSelecionado ||
+                        !textoRegistro.trim() ||
+                        !cpfProfissional.trim() ||
+                        enviando ||
+                        pacientesAtendidos.length === 0
+                      }
+                      className="flex items-center space-x-2"
+                    >
+                      {enviando ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Criando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Edit3 className="h-4 w-4" />
+                          <span>Criar Registro</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
-          <p className="text-lg font-medium text-gray-900">{profissionalNome}</p>
-          <p className="text-sm text-gray-600">ID: {profissionalId}</p>
-        </CardContent>
-      </Card>
-
-      {/* Formulário de Upload */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <FileText className="h-5 w-5 text-green-600" />
-            <span>Criar Prontuário</span>
-          </CardTitle>
-          <CardDescription>
-            Selecione um paciente que já foi atendido e faça upload do prontuário em PDF
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Seleção de Paciente */}
-            <div>
-              <Label htmlFor="paciente">Paciente *</Label>
-              {carregandoPacientes ? (
-                <div className="p-3 text-center text-gray-500">
-                  Carregando pacientes...
-                </div>
-              ) : pacientesAtendidos.length === 0 ? (
-                <div className="p-3 text-center text-gray-500 bg-gray-50 rounded-md">
-                  Nenhum paciente atendido encontrado.
-                  <br />
-                  <span className="text-sm">Apenas pacientes com consultas concluídas podem ter prontuários.</span>
-                </div>
-              ) : (
-                <Select value={pacienteSelecionado} onValueChange={setPacienteSelecionado}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um paciente atendido" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {pacientesAtendidos.map((paciente) => (
-                      <SelectItem key={paciente.id} value={paciente.id}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{paciente.nome}</span>
-                          <span className="text-sm text-gray-500">
-                            Última consulta: {formatarData(paciente.ultimaConsulta)} • 
-                            {paciente.totalConsultas} consulta{paciente.totalConsultas > 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+          <div className="flex items-center space-x-4">
+            <div className="flex-1">
+              <Label htmlFor="busca">Buscar</Label>
+              <Input
+                id="busca"
+                placeholder="Buscar por paciente ou texto do registro..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+              />
             </div>
-
-            {/* Informações do Paciente Selecionado */}
-            {pacienteInfo && (
-              <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <User className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium text-blue-900">Paciente Selecionado</span>
-                  </div>
-                  <div className="space-y-1 text-sm">
-                    <p><strong>Nome:</strong> {pacienteInfo.nome}</p>
-                    <p><strong>Email:</strong> {pacienteInfo.email}</p>
-                    <p><strong>Última consulta:</strong> {formatarData(pacienteInfo.ultimaConsulta)}</p>
-                    <p><strong>Total de consultas:</strong> {pacienteInfo.totalConsultas}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Upload de Arquivo */}
-            <div>
-              <Label htmlFor="arquivo">Arquivo PDF do Prontuário *</Label>
-              <div className="mt-1">
-                <Input
-                  id="arquivo"
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleArquivoChange}
-                  className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
-              </div>
-              <p className="mt-1 text-sm text-gray-500">
-                Apenas arquivos PDF são aceitos. Tamanho máximo: 10MB
-              </p>
-            </div>
-
-            {/* Informações do Arquivo */}
-            {arquivo && (
-              <Card className="bg-green-50 border-green-200">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <FileText className="h-4 w-4 text-green-600" />
-                    <span className="font-medium text-green-900">Arquivo Selecionado</span>
-                  </div>
-                  <div className="space-y-1 text-sm">
-                    <p><strong>Nome:</strong> {arquivo.name}</p>
-                    <p><strong>Tamanho:</strong> {(arquivo.size / 1024 / 1024).toFixed(2)} MB</p>
-                    <p><strong>Tipo:</strong> {arquivo.type}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Mensagens de Erro e Sucesso */}
-            {erro && (
-              <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <span className="text-red-700">{erro}</span>
-              </div>
-            )}
-
-            {sucesso && (
-              <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-md">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-green-700">{sucesso}</span>
-              </div>
-            )}
-
-            {/* Botões */}
-            <div className="flex space-x-4">
+            <div className="flex items-end">
               <Button
-                type="button"
                 variant="outline"
-                onClick={() => router.push('/tela-profissional/prontuarios')}
-                disabled={enviando}
+                onClick={() => {
+                  setBusca("");
+                  buscarProntuarios();
+                }}
               >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={!pacienteSelecionado || !arquivo || enviando || pacientesAtendidos.length === 0}
-                className="flex items-center space-x-2"
-              >
-                {enviando ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Enviando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4" />
-                    <span>Criar Prontuário</span>
-                  </>
-                )}
+                Limpar
               </Button>
             </div>
-          </form>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Lista de Prontuários */}
+      {carregandoProntuarios ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando prontuários...</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4">
+            {prontuariosFiltrados.map((prontuario) => (
+              <Card
+                key={prontuario.id}
+                className="hover:shadow-md transition-shadow"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        {prontuario.paciente?.nome ||
+                          "Paciente não identificado"}
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        {prontuario.registros.length} registro
+                        {prontuario.registros.length !== 1 ? "s" : ""} • Criado
+                        em {formatarData(prontuario.criado_em)}
+                      </CardDescription>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {prontuario.profissional_atual_id === profissionalId ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Responsável Atual
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Acesso de Leitura
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* Último registro */}
+                  {prontuario.registros.length > 0 && (
+                    <div className="p-3 bg-gray-50 rounded-md">
+                      <p className="text-sm font-medium text-gray-700 mb-1">
+                        Último registro:
+                      </p>
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {prontuario.registros[
+                          prontuario.registros.length - 1
+                        ].texto.substring(0, 150)}
+                        {prontuario.registros[prontuario.registros.length - 1]
+                          .texto.length > 150
+                          ? "..."
+                          : ""}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {formatarData(
+                          prontuario.registros[prontuario.registros.length - 1]
+                            .criado_em
+                        )}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setProntuarioSelecionado(prontuario);
+                        setMostrarProntuario(true);
+                      }}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Ver Completo
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {prontuariosFiltrados.length === 0 && (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Nenhum prontuário encontrado
+                </h3>
+                <p className="text-gray-600">
+                  {busca.trim()
+                    ? "Não há prontuários que correspondam à sua busca."
+                    : "Você ainda não tem prontuários cadastrados."}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* Modal de Visualização do Prontuário */}
+      <Dialog open={mostrarProntuario} onOpenChange={setMostrarProntuario}>
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Prontuário - {prontuarioSelecionado?.paciente?.nome}
+            </DialogTitle>
+            <DialogDescription>
+              Histórico completo de registros médicos
+            </DialogDescription>
+          </DialogHeader>
+
+          {prontuarioSelecionado && (
+            <div className="space-y-6">
+              {/* Informações do Paciente */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Informações do Paciente
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-700">Nome</Label>
+                      <p className="font-medium">
+                        {prontuarioSelecionado.paciente.nome}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-gray-700">Email</Label>
+                      <p className="font-medium">
+                        {prontuarioSelecionado.paciente.email}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Registros */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">
+                      Registros ({prontuarioSelecionado.registros.length})
+                    </CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        exportarProntuarioPDF(prontuarioSelecionado)
+                      }
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Exportar PDF
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {prontuarioSelecionado.registros.length === 0 ? (
+                    <p className="text-gray-500 text-center py-4">
+                      Nenhum registro encontrado
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {prontuarioSelecionado.registros.map(
+                        (registro, index) => (
+                          <div
+                            key={registro.id}
+                            className="p-4 border rounded-lg bg-white"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-600">
+                                  Registro #
+                                  {prontuarioSelecionado.registros.length -
+                                    index}
+                                </span>
+                                {registro.profissional_id ===
+                                  profissionalId && (
+                                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                                    Seu registro
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-sm text-gray-500">
+                                {formatarData(registro.criado_em)}
+                              </span>
+                            </div>
+
+                            <div className="prose prose-sm max-w-none">
+                              <p className="text-gray-800 whitespace-pre-wrap">
+                                {registro.texto}
+                              </p>
+                            </div>
+
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                              {/* Carimbo Digital Redesenhado */}
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 pr-4">
+                                  <p className="text-xs text-gray-600 mb-2">
+                                    <strong>Assinatura Digital Médica</strong>
+                                  </p>
+                                  <div className="text-xs text-gray-500 space-y-1">
+                                    <p>
+                                      <strong>Profissional:</strong>{" "}
+                                      {registro.assinatura_digital.nome}
+                                    </p>
+                                    <p>
+                                      <strong>CPF:</strong>{" "}
+                                      {registro.assinatura_digital.cpf}
+                                    </p>
+                                    <p>
+                                      <strong>CRP:</strong>{" "}
+                                      {registro.assinatura_digital.crp}
+                                    </p>
+                                    <p>
+                                      <strong>Data/Hora:</strong>{" "}
+                                      {formatarData(
+                                        registro.assinatura_digital.data
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Carimbo Compacto */}
+                                <div className="flex-shrink-0 w-24 h-16 bg-gradient-to-br from-blue-100 to-teal-100 border-2 border-blue-300 rounded-lg flex flex-col items-center justify-center p-2 shadow-sm">
+                                  {/* Logo pequena */}
+                                  <div className="w-4 h-4 mb-1 opacity-20">
+                                    <img
+                                      src="/logoResilience.png"
+                                      alt="Logo"
+                                      className="w-full h-full object-contain"
+                                    />
+                                  </div>
+
+                                  {/* Texto do carimbo */}
+                                  <div className="text-center">
+                                    <p className="text-blue-800 text-[8px] font-bold leading-tight">
+                                      CLÍNICA RESILIENCE
+                                    </p>
+                                    <p className="text-blue-700 text-[6px] leading-tight">
+                                      Assinatura Digital
+                                    </p>
+                                    <div className="w-full border-t border-blue-300 mt-1 pt-1">
+                                      <p className="text-blue-600 text-[6px] font-medium">
+                                        {
+                                          formatarData(
+                                            registro.assinatura_digital.data
+                                          ).split(" ")[0]
+                                        }
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
-  )
+  );
 }

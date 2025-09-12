@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import { BackButton } from "@/components/ui/back-button";
-import { ProfessionalProntuariosClient } from "@/components/professional/prontuarios-client";
+import { NovoProntuarioClient } from "@/components/professional/novo-prontuario-client";
 
 export default async function ProntuariosProfissionalPage() {
   const supabase = await createClient();
@@ -34,9 +34,12 @@ export default async function ProntuariosProfissionalPage() {
   return (
     <div>
       <div className="mb-4">
-        <BackButton href="/tela-profissional" texto="Voltar para Área do Profissional" />
+        <BackButton
+          href="/tela-profissional"
+          texto="Voltar para Área do Profissional"
+        />
       </div>
-      
+
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-azul-escuro">
           Prontuários Médicos
@@ -46,7 +49,7 @@ export default async function ProntuariosProfissionalPage() {
         </p>
       </div>
 
-      <ProfessionalProntuariosClient 
+      <NovoProntuarioClient
         profissionalNome={`Dr(a). ${usuario.nome}`}
         profissionalId={user.id}
       />
