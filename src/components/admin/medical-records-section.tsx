@@ -1,646 +1,211 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, FileText, User, Calendar, Filter, Eye } from "lucide-react";
-import { StatusBadge, type GenericStatus } from "@/components/ui/status-badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { ArrowRightLeft, AlertTriangle, FileText } from "lucide-react";
+import { NovoProntuarioClient } from "@/components/professional/novo-prontuario-client";
 
-type ViewMode = "prontuarios" | "historico";
-
-type ConsultaComProntuario = {
+interface Professional {
   id: string;
-  data_consulta: string;
-  modalidade: string;
-  status: string;
-  notas: string | null;
+  nome: string;
+  especialidade: string;
+  tipo_usuario: string;
+}
+
+interface Prontuario {
+  id: string;
+  paciente_id: string;
+  profissional_atual_id: string;
+  criado_em: string;
+  atualizado_em: string;
   paciente: {
     id: string;
     nome: string;
     email: string;
   };
-  profissional: {
+  registros: Array<{
     id: string;
-    nome: string;
-    especialidade: string;
-  };
-  prontuario: {
-    id: string;
-    arquivo: string;
-  } | null;
-};
+    texto: string;
+    criado_em: string;
+    profissional_id: string;
+    assinatura_digital: {
+      nome: string;
+      cpf: string;
+      crp: string;
+      data: string;
+    };
+  }>;
+}
 
-export function MedicalRecordsSection() {
-  const [viewMode, setViewMode] = useState<ViewMode>("prontuarios");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("todos");
-  const [consultas, setConsultas] = useState<ConsultaComProntuario[]>([]);
-  const [loading, setLoading] = useState(true);
+// Wrapper do componente profissional com funcionalidades de admin
+function AdminProntuariosWrapper() {
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [transferModal, setTransferModal] = useState<{ prontuario: Prontuario; newProfessionalId: string } | null>(null);
+  const [transferring, setTransferring] = useState<string | null>(null);
 
-  // Buscar consultas com prontuários do banco
   useEffect(() => {
-    const fetchConsultas = async () => {
+    const fetchProfessionals = async () => {
       try {
-        const response = await fetch("/api/agendamentos/prontuarios");
+        const response = await fetch("/api/profissionais");
         if (response.ok) {
           const data = await response.json();
-          setConsultas(data.data || []);
+          setProfessionals(data.filter((p: Professional) => p.tipo_usuario === 'profissional') || []);
         }
       } catch (error) {
-        console.error("Erro ao buscar consultas:", error);
-      } finally {
-        setLoading(false);
+        console.error("Erro ao buscar profissionais:", error);
       }
     };
-
-    fetchConsultas();
+    
+    fetchProfessionals();
   }, []);
 
-  // Processar dados para formato de prontuários
-  const allProntuarios = useMemo(() => {
-    return consultas
-      .filter((consulta) => consulta.prontuario) // Apenas consultas com prontuário
-      .map((consulta) => ({
-        id: consulta.prontuario!.id,
-        pacienteId: consulta.paciente.id,
-        pacienteNome: consulta.paciente.nome,
-        profissionalId: consulta.profissional.id,
-        profissionalNome: consulta.profissional.nome,
-        dataConsulta: consulta.data_consulta,
-        tipoConsulta: `${consulta.modalidade} - ${consulta.profissional.especialidade}`,
-        observacoes: consulta.notas || "Sem observações",
-        status: consulta.status as "ativo" | "arquivado" | "em_andamento",
-        criadoEm: consulta.data_consulta,
-        atualizadoEm: consulta.data_consulta,
-        diagnostico: "", // Campo opcional do mock
-        proximaConsulta: undefined, // Campo opcional do mock
-        prescricoes: [] as string[], // Campo opcional do mock
-      }));
-  }, [consultas]);
+  // Transferir paciente para novo profissional
+  const transferPatient = async (prontuarioId: string, newProfessionalId: string) => {
+    if (transferring) return;
 
-  // Histórico por paciente
-  const historicoPacientes = useMemo(() => {
-    const historicoPorPaciente = new Map<
-      string,
-      {
-        pacienteId: string;
-        pacienteNome: string;
-        totalConsultas: number;
-        ultimaConsulta: string;
-        profissionaisAtendentes: string[];
-        statusAtual: "ativo" | "inativo" | "alta";
-        proximaConsulta?: string;
-        observacoesGerais?: string;
+    try {
+      setTransferring(prontuarioId);
+      
+      const response = await fetch('/api/prontuarios/alterar-profissional', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prontuario_id: prontuarioId,
+          novo_profissional_id: newProfessionalId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setTransferModal(null);
+        alert('Paciente transferido com sucesso!');
+        // Recarregar a página para atualizar os dados
+        window.location.reload();
+      } else {
+        alert(result.error || 'Erro ao transferir paciente');
       }
-    >();
-
-    consultas.forEach((consulta) => {
-      const pacienteId = consulta.paciente.id;
-
-      if (!historicoPorPaciente.has(pacienteId)) {
-        historicoPorPaciente.set(pacienteId, {
-          pacienteId,
-          pacienteNome: consulta.paciente.nome,
-          totalConsultas: 0,
-          ultimaConsulta: consulta.data_consulta,
-          profissionaisAtendentes: [],
-          statusAtual: "ativo" as const,
-        });
-      }
-
-      const historico = historicoPorPaciente.get(pacienteId);
-      if (historico) {
-        historico.totalConsultas += 1;
-
-        if (
-          new Date(consulta.data_consulta) > new Date(historico.ultimaConsulta)
-        ) {
-          historico.ultimaConsulta = consulta.data_consulta;
-        }
-
-        if (
-          !historico.profissionaisAtendentes.includes(
-            consulta.profissional.nome
-          )
-        ) {
-          historico.profissionaisAtendentes.push(consulta.profissional.nome);
-        }
-      }
-    });
-
-    return Array.from(historicoPorPaciente.values()).sort(
-      (a, b) =>
-        new Date(b.ultimaConsulta).getTime() -
-        new Date(a.ultimaConsulta).getTime()
-    );
-  }, [consultas]);
-
-  // Filtros aplicados
-  const filteredProntuarios = useMemo(() => {
-    let filtered = allProntuarios;
-
-    // Filtro por busca
-    if (searchTerm.trim()) {
-      const termoLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (pront) =>
-          pront.pacienteNome.toLowerCase().includes(termoLower) ||
-          pront.profissionalNome.toLowerCase().includes(termoLower) ||
-          pront.tipoConsulta.toLowerCase().includes(termoLower) ||
-          pront.observacoes.toLowerCase().includes(termoLower)
-      );
+    } catch (error) {
+      console.error('Erro ao transferir paciente:', error);
+      alert('Erro ao transferir paciente');
+    } finally {
+      setTransferring(null);
     }
-
-    // Filtro por status
-    if (statusFilter !== "todos") {
-      filtered = filtered.filter((pront) => pront.status === statusFilter);
-    }
-
-    return filtered.sort(
-      (a, b) =>
-        new Date(b.dataConsulta).getTime() - new Date(a.dataConsulta).getTime()
-    );
-  }, [allProntuarios, searchTerm, statusFilter]);
-
-  const filteredHistorico = useMemo(() => {
-    if (!searchTerm.trim()) return historicoPacientes;
-    const termoLower = searchTerm.toLowerCase();
-    return historicoPacientes.filter(
-      (hist) =>
-        hist.pacienteNome.toLowerCase().includes(termoLower) ||
-        hist.profissionaisAtendentes.some((prof: string) =>
-          prof.toLowerCase().includes(termoLower)
-        )
-    );
-  }, [historicoPacientes, searchTerm]);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
   };
 
   return (
     <div className="w-full space-y-6">
-      {/* Cabeçalho com gradiente */}
+      {/* Cabeçalho especial para admin */}
       <div className="bg-gradient-to-r from-azul-escuro to-blue-600 rounded-xl p-6 text-white shadow-lg">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 bg-white/20 rounded-lg">
             <FileText className="h-6 w-6" />
           </div>
-          <h2 className="text-2xl font-bold">Prontuários e Histórico Médico</h2>
+          <h2 className="text-2xl font-bold">Gerenciamento de Prontuários - Administrador</h2>
         </div>
         <p className="text-blue-100 text-sm">
-          Gerencie prontuários médicos e acompanhe o histórico de pacientes
+          Como administrador, você tem acesso completo a todos os prontuários e pode transferir pacientes entre profissionais
         </p>
+        <div className="mt-4 flex flex-wrap gap-4 text-sm">
+          <span className="bg-white/10 px-3 py-1 rounded-full">
+            ✓ Visualizar todos os prontuários
+          </span>
+          <span className="bg-white/10 px-3 py-1 rounded-full">
+            ✓ Gerenciar PDFs
+          </span>
+          <span className="bg-white/10 px-3 py-1 rounded-full">
+            ✓ Transferir pacientes
+          </span>
+        </div>
       </div>
 
-      {/* Controles - Card estilizado */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        {/* Botões de modo - Estilizados */}
-        <div className="flex flex-wrap gap-3 mb-6">
-          <Button
-            variant={viewMode === "prontuarios" ? "default" : "outline"}
-            onClick={() => setViewMode("prontuarios")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              viewMode === "prontuarios"
-                ? "bg-azul-escuro hover:bg-azul-escuro/90 text-white shadow-md"
-                : "border-2 border-azul-escuro/20 text-azul-escuro hover:bg-azul-escuro/5 hover:border-azul-escuro/30"
-            }`}
-          >
-            <FileText className="h-4 w-4" />
-            Prontuários
-          </Button>
-          <Button
-            variant={viewMode === "historico" ? "default" : "outline"}
-            onClick={() => setViewMode("historico")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              viewMode === "historico"
-                ? "bg-azul-escuro hover:bg-azul-escuro/90 text-white shadow-md"
-                : "border-2 border-azul-escuro/20 text-azul-escuro hover:bg-azul-escuro/5 hover:border-azul-escuro/30"
-            }`}
-          >
-            <User className="h-4 w-4" />
-            Histórico por Paciente
-          </Button>
-        </div>
+      {/* Componente de prontuários com funcionalidades completas */}
+      <NovoProntuarioClient 
+        profissionalNome="Administrador" 
+        profissionalId="admin" 
+        isAdmin={true}
+      />
 
-        {/* Busca e Filtros - Layout responsivo melhorado */}
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Busca com estilo aprimorado */}
-          <div className="flex-1 relative min-w-0">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-azul-escuro/60" />
-            </div>
-            <Input
-              placeholder={
-                viewMode === "prontuarios"
-                  ? "Buscar por paciente, profissional, diagnóstico..."
-                  : "Buscar por paciente ou profissional..."
-              }
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 h-12 border-2 border-gray-200 rounded-lg focus:border-azul-escuro focus:ring-2 focus:ring-azul-escuro/20 text-gray-900 placeholder-gray-500 font-medium"
-            />
-          </div>
-
-          {/* Filtro de status com design melhorado */}
-          {viewMode === "prontuarios" && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 min-w-0">
-              <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-azul-escuro/10 to-blue-50 rounded-lg border border-azul-escuro/20 shadow-sm">
-                <Filter className="h-4 w-4 text-azul-escuro" />
-                <span className="text-sm font-semibold text-azul-escuro whitespace-nowrap">
-                  Status
-                </span>
+      {/* Modal de transferência (mantido para funcionalidade admin) */}
+      {transferModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                <h3 className="text-xl font-bold">Transferir Paciente</h3>
               </div>
-              <div className="relative w-full sm:w-auto">
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  <strong>Paciente:</strong> {transferModal.prontuario.paciente.nome}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Profissional atual:</strong> {professionals.find(p => p.id === transferModal.prontuario.profissional_atual_id)?.nome || 'Nome não encontrado'}
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Novo profissional:</label>
                 <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="appearance-none bg-white border-2 border-gray-200 rounded-lg px-4 py-3 pr-12 text-sm font-semibold text-gray-900 shadow-sm hover:border-azul-escuro/40 hover:bg-azul-escuro/5 focus:border-azul-escuro focus:ring-2 focus:ring-azul-escuro/20 focus:outline-none transition-all duration-200 cursor-pointer w-full min-w-[160px] h-12"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-azul-escuro focus:border-transparent text-sm"
+                  value={transferModal.newProfessionalId}
+                  onChange={(e) => setTransferModal({ ...transferModal, newProfessionalId: e.target.value })}
                 >
-                  <option value="todos" className="text-gray-900 font-medium">
-                    Todos os Status
-                  </option>
-                  <option value="ativo" className="text-green-700 font-medium">
-                    Ativo
-                  </option>
-                  <option
-                    value="em_andamento"
-                    className="text-yellow-700 font-medium"
-                  >
-                    Em Andamento
-                  </option>
-                  <option
-                    value="arquivado"
-                    className="text-gray-600 font-medium"
-                  >
-                    Arquivado
-                  </option>
+                  <option value="">Selecione um profissional</option>
+                  {professionals
+                    .filter(prof => prof.id !== transferModal.prontuario.profissional_atual_id)
+                    .map((professional) => (
+                    <option key={professional.id} value={professional.id}>
+                      {professional.nome} - {professional.especialidade}
+                    </option>
+                  ))}
                 </select>
-                <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-                  <svg
-                    className="w-5 h-5 text-azul-escuro/60"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+              </div>
+
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-orange-700">
+                    <p className="font-medium mb-2">Atenção:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>O prontuário será transferido para o novo profissional</li>
+                      <li>O profissional anterior manterá acesso aos registros já criados</li>
+                      <li>Apenas o novo profissional poderá adicionar novos registros</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Cards de Prontuários */}
-      {viewMode === "prontuarios" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProntuarios.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">
-                  Nenhum prontuário encontrado com os filtros aplicados.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredProntuarios.map((prontuario) => (
-              <Card
-                key={prontuario.id}
-                className="flex flex-col hover:shadow-xl hover:shadow-azul-escuro/10 transition-all duration-300 h-full overflow-hidden border-0 shadow-lg bg-gradient-to-br from-white to-gray-50/50"
+            
+            <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setTransferModal(null)}
+                disabled={transferring === transferModal.prontuario.id}
               >
-                <CardHeader className="pb-4 bg-gradient-to-r from-azul-escuro/5 to-blue-50/50 rounded-t-xl">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-xl text-azul-escuro font-bold truncate flex items-center gap-2">
-                          <div className="w-2 h-2 bg-azul-escuro rounded-full"></div>
-                          {prontuario.pacienteNome}
-                        </CardTitle>
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 mt-2">
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            <span className="truncate max-w-[140px]">
-                              Dr(a). {prontuario.profissionalNome}
-                            </span>
-                          </div>
-                          <span className="hidden sm:inline text-gray-400">
-                            •
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span>{formatDate(prontuario.dataConsulta)}</span>
-                          </div>
-                          <span className="hidden sm:inline text-gray-400">
-                            •
-                          </span>
-                          <span className="truncate max-w-[120px] bg-gray-100 px-2 py-1 rounded text-xs">
-                            {prontuario.tipoConsulta}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex-shrink-0">
-                        <StatusBadge
-                          status={prontuario.status as GenericStatus}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="flex-1 flex flex-col overflow-hidden p-6">
-                  <div className="flex-1 space-y-4">
-                    {prontuario.diagnostico && (
-                      <div className="bg-red-50 border border-red-100 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                          <strong className="text-sm text-red-800 font-semibold">
-                            Diagnóstico
-                          </strong>
-                        </div>
-                        <p className="text-sm text-red-700 break-words line-clamp-2 leading-relaxed">
-                          {prontuario.diagnostico}
-                        </p>
-                      </div>
-                    )}
-                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <strong className="text-sm text-blue-800 font-semibold">
-                          Observações
-                        </strong>
-                      </div>
-                      <p className="text-sm text-blue-700 break-words line-clamp-2 leading-relaxed">
-                        {prontuario.observacoes}
-                      </p>
-                    </div>
-                    {prontuario.proximaConsulta && (
-                      <div className="bg-green-50 border border-green-100 rounded-lg p-3">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-green-600" />
-                          <span className="text-sm text-green-800 font-medium">
-                            Próxima consulta:{" "}
-                            {formatDate(prontuario.proximaConsulta)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Botão Ver Detalhes */}
-                  <div className="mt-auto pt-6">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full flex items-center gap-2 justify-center bg-azul-escuro hover:bg-azul-escuro/90 text-white border-azul-escuro hover:border-azul-escuro/90 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span>Ver Detalhes Completos</span>
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle className="text-azul-escuro">
-                            Detalhes do Prontuário
-                          </DialogTitle>
-                        </DialogHeader>
-
-                        <div className="space-y-4">
-                          <div>
-                            <strong className="text-sm text-gray-800 font-medium">
-                              Paciente:
-                            </strong>
-                            <p className="mt-1 text-gray-900 break-words">
-                              {prontuario.pacienteNome}
-                            </p>
-                          </div>
-
-                          <div>
-                            <strong className="text-sm text-gray-800 font-medium">
-                              Profissional:
-                            </strong>
-                            <p className="mt-1 text-gray-900 break-words">
-                              {prontuario.profissionalNome}
-                            </p>
-                          </div>
-
-                          <div>
-                            <strong className="text-sm text-gray-800 font-medium">
-                              Tipo de Consulta:
-                            </strong>
-                            <p className="mt-1 text-gray-900">
-                              {prontuario.tipoConsulta}
-                            </p>
-                          </div>
-
-                          {prontuario.diagnostico && (
-                            <div>
-                              <strong className="text-sm text-gray-800 font-medium">
-                                Diagnóstico:
-                              </strong>
-                              <p className="mt-1 text-gray-900 break-words">
-                                {prontuario.diagnostico}
-                              </p>
-                            </div>
-                          )}
-
-                          <div>
-                            <strong className="text-sm text-gray-800 font-medium">
-                              Observações:
-                            </strong>
-                            <p className="mt-1 text-gray-900 whitespace-pre-wrap break-words">
-                              {prontuario.observacoes}
-                            </p>
-                          </div>
-
-                          {prontuario.prescricoes &&
-                            prontuario.prescricoes.length > 0 && (
-                              <div>
-                                <strong className="text-sm text-gray-800 font-medium">
-                                  Prescrições/Recomendações:
-                                </strong>
-                                <ul className="mt-1 list-disc list-inside space-y-1">
-                                  {prontuario.prescricoes.map(
-                                    (prescricao, index) => (
-                                      <li
-                                        key={index}
-                                        className="text-sm text-gray-900 break-words"
-                                      >
-                                        {prescricao}
-                                      </li>
-                                    )
-                                  )}
-                                </ul>
-                              </div>
-                            )}
-
-                          {prontuario.proximaConsulta && (
-                            <div>
-                              <strong className="text-sm text-gray-800 font-medium">
-                                Próxima Consulta:
-                              </strong>
-                              <p className="mt-1 text-gray-900">
-                                {formatDate(prontuario.proximaConsulta)}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* PDF Viewing Section */}
-                          <div className="pt-4 border-t border-gray-200">
-                            <strong className="text-sm text-gray-800 font-medium">
-                              Arquivo PDF:
-                            </strong>
-                            <div className="mt-2">
-                              <Button
-                                onClick={() => {
-                                  // Open PDF in new tab using the visualizar endpoint
-                                  const pdfUrl = `/api/agendamentos/prontuarios/visualizar?prontuarioId=${prontuario.id}`;
-
-                                  window.open(pdfUrl, "_blank");
-                                }}
-                                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
-                              >
-                                <FileText className="h-4 w-4" />
-                                <span>Ver PDF do Prontuário</span>
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between text-xs text-gray-600 pt-4 border-t border-gray-200">
-                            <span>
-                              Criado em: {formatDate(prontuario.criadoEm)}
-                            </span>
-                            <span>
-                              Atualizado em:{" "}
-                              {formatDate(prontuario.atualizadoEm)}
-                            </span>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* Histórico por Paciente */}
-      {viewMode === "historico" && (
-        <div className="grid gap-4">
-          {filteredHistorico.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">
-                  Nenhum histórico encontrado com os filtros aplicados.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredHistorico.map((historico) => (
-              <Card
-                key={historico.pacienteId}
-                className="hover:shadow-xl hover:shadow-azul-escuro/10 transition-all duration-300 border-0 shadow-lg bg-gradient-to-br from-white to-gray-50/50"
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => transferPatient(transferModal.prontuario.id, transferModal.newProfessionalId)}
+                disabled={!transferModal.newProfessionalId || transferring === transferModal.prontuario.id}
+                className="bg-azul-escuro hover:bg-azul-escuro/90"
               >
-                <CardHeader className="pb-4 bg-gradient-to-r from-azul-escuro/5 to-blue-50/50 rounded-t-xl">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="min-w-0 flex-1">
-                      <CardTitle className="text-xl text-azul-escuro font-bold truncate flex items-center gap-2">
-                        <div className="w-2 h-2 bg-azul-escuro rounded-full"></div>
-                        {historico.pacienteNome}
-                      </CardTitle>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mt-3">
-                        <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-full">
-                          <FileText className="h-3 w-3 text-blue-600" />
-                          <span className="font-medium">
-                            {historico.totalConsultas} consulta(s)
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-full">
-                          <Calendar className="h-3 w-3 text-green-600" />
-                          <span>
-                            Última: {formatDate(historico.ultimaConsulta)}
-                          </span>
-                        </div>
-                        {historico.proximaConsulta && (
-                          <div className="flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-full">
-                            <Calendar className="h-3 w-3 text-orange-600" />
-                            <span>
-                              Próxima: {formatDate(historico.proximaConsulta)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <StatusBadge
-                        status={historico.statusAtual as GenericStatus}
-                      />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      <strong className="text-sm text-purple-800 font-semibold">
-                        Profissionais Atendentes
-                      </strong>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {historico.profissionaisAtendentes.map(
-                        (prof: string, index: number) => (
-                          <span
-                            key={index}
-                            className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 px-3 py-1 rounded-full text-xs font-medium truncate border border-purple-200"
-                          >
-                            {prof}
-                          </span>
-                        )
-                      )}
-                    </div>
-                  </div>
-                  {historico.observacoesGerais && (
-                    <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                        <strong className="text-sm text-indigo-800 font-semibold">
-                          Observações Gerais
-                        </strong>
-                      </div>
-                      <p className="text-sm text-indigo-700 break-words leading-relaxed">
-                        {historico.observacoesGerais}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))
-          )}
+                {transferring === transferModal.prontuario.id ? 'Transferindo...' : 'Confirmar Transferência'}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
+}
+
+export function MedicalRecordsSection() {
+  return <AdminProntuariosWrapper />;
 }

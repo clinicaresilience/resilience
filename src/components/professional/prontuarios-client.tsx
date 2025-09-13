@@ -39,6 +39,7 @@ import {
   AlertCircle,
   CheckCircle,
   X,
+  ArrowRightLeft,
 } from "lucide-react";
 import {
   PacienteAtendido,
@@ -48,11 +49,13 @@ import {
 interface ProfessionalProntuariosClientProps {
   profissionalNome: string;
   profissionalId: string;
+  isAdmin?: boolean;
 }
 
 export function ProfessionalProntuariosClient({
   profissionalNome,
   profissionalId,
+  isAdmin = false,
 }: ProfessionalProntuariosClientProps) {
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
@@ -66,6 +69,11 @@ export function ProfessionalProntuariosClient({
   const [erro, setErro] = useState<string>("");
 
   const [dadosEdicao, setDadosEdicao] = useState<Partial<Consulta>>({});
+  
+  // Estados para funcionalidade admin de transferência
+  const [professionals, setProfessionals] = useState<any[]>([]);
+  const [transferModal, setTransferModal] = useState<{ consulta: Consulta; newProfessionalId: string } | null>(null);
+  const [transferring, setTransferring] = useState<string | null>(null);
 
   const [pacientesAtendidos, setPacientesAtendidos] = useState<
     PacienteAtendido[]
@@ -80,23 +88,102 @@ export function ProfessionalProntuariosClient({
   // Buscar prontuários
   useEffect(() => {
     buscarProntuarios();
-  }, [profissionalId]);
+    if (isAdmin) {
+      fetchProfessionals();
+    }
+  }, [profissionalId, isAdmin]);
 
   const buscarProntuarios = async () => {
     try {
       setCarregandoProntuarios(true);
       setErro("");
-      const response = await fetch("/api/agendamentos/prontuarios");
+      
+      // Se for admin, usar API de prontuários, senão usar API de agendamentos
+      const endpoint = isAdmin ? "/api/prontuarios" : "/api/agendamentos/prontuarios";
+      const response = await fetch(endpoint);
       const data = await response.json();
 
       if (!response.ok)
         throw new Error(data.error || "Erro ao buscar prontuários");
-      setProntuarios(data.data || []);
+      
+      // Se for admin, transformar dados do formato de prontuários para formato de consultas
+      if (isAdmin) {
+        const prontuariosTransformados = data.data?.map((pront: any) => ({
+          id: pront.id,
+          paciente_id: pront.paciente_id,
+          profissional_id: pront.profissional_atual_id,
+          data_consulta: pront.atualizado_em,
+          modalidade: "Prontuário Médico",
+          status: "concluido",
+          local: "",
+          observacoes: `${pront.registros?.length || 0} registro(s) no prontuário`,
+          paciente: pront.paciente,
+          profissional: {
+            id: pront.profissional_atual_id,
+            nome: "Profissional",
+            especialidade: "Especialidade"
+          },
+          prontuario: pront.registros?.length > 0 ? { id: pront.id, arquivo: "disponivel" } : null
+        })) || [];
+        setProntuarios(prontuariosTransformados);
+      } else {
+        setProntuarios(data.data || []);
+      }
     } catch (error) {
       console.error(error);
       setErro("Erro ao carregar prontuários");
     } finally {
       setCarregandoProntuarios(false);
+    }
+  };
+
+  // Buscar profissionais para funcionalidade de transferência (admin apenas)
+  const fetchProfessionals = async () => {
+    if (!isAdmin) return;
+    
+    try {
+      const response = await fetch("/api/profissionais");
+      if (response.ok) {
+        const data = await response.json();
+        setProfessionals(data.filter((p: any) => p.tipo_usuario === 'profissional') || []);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar profissionais:", error);
+    }
+  };
+
+  // Transferir paciente para novo profissional (admin apenas)
+  const transferPatient = async (consultaId: string, newProfessionalId: string) => {
+    if (transferring || !isAdmin) return;
+
+    try {
+      setTransferring(consultaId);
+      
+      const response = await fetch('/api/prontuarios/alterar-profissional', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prontuario_id: consultaId,
+          novo_profissional_id: newProfessionalId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setTransferModal(null);
+        alert('Paciente transferido com sucesso!');
+        buscarProntuarios(); // Recarregar os dados
+      } else {
+        alert(result.error || 'Erro ao transferir paciente');
+      }
+    } catch (error) {
+      console.error('Erro ao transferir paciente:', error);
+      alert('Erro ao transferir paciente');
+    } finally {
+      setTransferring(null);
     }
   };
 

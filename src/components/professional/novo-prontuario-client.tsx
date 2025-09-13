@@ -38,6 +38,10 @@ import {
   UserCheck,
   Clock,
   Download,
+  ArrowRightLeft,
+  Trash2,
+  Save,
+  X,
 } from "lucide-react";
 import { ProntuarioCompleto } from "@/services/database/prontuarios.service";
 import { PacienteAtendido } from "@/services/database/consultas.service";
@@ -47,11 +51,13 @@ import { exportarProntuarioPDF } from "./exportar-prontuario-pdf";
 interface NovoProntuarioClientV2Props {
   profissionalNome: string;
   profissionalId: string;
+  isAdmin?: boolean;
 }
 
 export function NovoProntuarioClient({
   profissionalNome,
   profissionalId,
+  isAdmin = false,
 }: NovoProntuarioClientV2Props) {
   const [busca, setBusca] = useState("");
   const [prontuarios, setProntuarios] = useState<ProntuarioCompleto[]>([]);
@@ -75,6 +81,11 @@ export function NovoProntuarioClient({
   const [prontuarioSelecionado, setProntuarioSelecionado] =
     useState<ProntuarioCompleto | null>(null);
   const [mostrarProntuario, setMostrarProntuario] = useState(false);
+
+  // Estados para edição (admin apenas)
+  const [editandoRegistro, setEditandoRegistro] = useState<string | null>(null);
+  const [textoEdicao, setTextoEdicao] = useState<string>("");
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   // Buscar prontuários
   useEffect(() => {
@@ -195,6 +206,138 @@ export function NovoProntuarioClient({
   // Função para lidar com exportação de PDF
   const handleExportarPDF = (prontuario: ProntuarioCompleto) => {
     exportarProntuarioPDF({ prontuario, formatarData });
+  };
+
+  // Funções de edição (admin apenas)
+  const iniciarEdicaoRegistro = (registroId: string, textoAtual: string) => {
+    if (!isAdmin) return;
+    setEditandoRegistro(registroId);
+    setTextoEdicao(textoAtual);
+  };
+
+  const cancelarEdicao = () => {
+    setEditandoRegistro(null);
+    setTextoEdicao("");
+  };
+
+  const salvarEdicaoRegistro = async (registroId: string) => {
+    if (!isAdmin || !textoEdicao.trim()) return;
+
+    try {
+      setSalvandoEdicao(true);
+      const response = await fetch(`/api/prontuarios/registro/${registroId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          texto: textoEdicao.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao salvar edição');
+      }
+
+      // Recarregar prontuários primeiro
+      await buscarProntuarios();
+      
+      // Atualizar prontuário selecionado se estiver aberto
+      if (prontuarioSelecionado) {
+        // Buscar dados atualizados do prontuário
+        try {
+          const response = await fetch("/api/prontuarios");
+          const data = await response.json();
+          if (response.ok && data.data) {
+            const prontuarioAtualizado = data.data.find((p: any) => p.id === prontuarioSelecionado.id);
+            if (prontuarioAtualizado) {
+              setProntuarioSelecionado(prontuarioAtualizado);
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao atualizar prontuário selecionado:', error);
+        }
+      }
+
+      setEditandoRegistro(null);
+      setTextoEdicao("");
+      alert('Registro editado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar edição:', error);
+      alert('Erro ao salvar edição do registro');
+    } finally {
+      setSalvandoEdicao(false);
+    }
+  };
+
+  const excluirRegistro = async (registroId: string, prontuarioId: string) => {
+    if (!isAdmin) return;
+
+    if (!confirm('Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/prontuarios/registro/${registroId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao excluir registro');
+      }
+
+      // Recarregar prontuários
+      await buscarProntuarios();
+      
+      // Atualizar prontuário selecionado se estiver aberto
+      if (prontuarioSelecionado && prontuarioSelecionado.id === prontuarioId) {
+        const prontuarioAtualizado = prontuarios.find(p => p.id === prontuarioId);
+        if (prontuarioAtualizado) {
+          setProntuarioSelecionado(prontuarioAtualizado);
+        } else {
+          // Se prontuário não existe mais, fechar modal
+          setMostrarProntuario(false);
+          setProntuarioSelecionado(null);
+        }
+      }
+
+      alert('Registro excluído com sucesso!');
+    } catch (error) {
+      console.error('Erro ao excluir registro:', error);
+      alert('Erro ao excluir registro');
+    }
+  };
+
+  const excluirProntuario = async (prontuarioId: string) => {
+    if (!isAdmin) return;
+
+    if (!confirm('Tem certeza que deseja excluir este prontuário inteiro? Todos os registros serão perdidos e esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/prontuarios/${prontuarioId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao excluir prontuário');
+      }
+
+      // Recarregar prontuários
+      await buscarProntuarios();
+      
+      // Fechar modal se estava aberto
+      if (prontuarioSelecionado && prontuarioSelecionado.id === prontuarioId) {
+        setMostrarProntuario(false);
+        setProntuarioSelecionado(null);
+      }
+
+      alert('Prontuário excluído com sucesso!');
+    } catch (error) {
+      console.error('Erro ao excluir prontuário:', error);
+      alert('Erro ao excluir prontuário');
+    }
   };
 
   // Filtrar prontuários
@@ -687,15 +830,77 @@ export function NovoProntuarioClient({
                                   </span>
                                 )}
                               </div>
-                              <span className="text-sm text-gray-500">
-                                {formatarData(registro.criado_em)}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-500">
+                                  {formatarData(registro.criado_em)}
+                                </span>
+                                
+                                {/* Botões de edição (admin apenas) */}
+                                {isAdmin && (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => iniciarEdicaoRegistro(registro.id, registro.texto)}
+                                      className="h-7 px-2 border-blue-300 text-blue-600 hover:bg-blue-50"
+                                      disabled={editandoRegistro === registro.id}
+                                    >
+                                      <Edit3 className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => excluirRegistro(registro.id, prontuarioSelecionado.id)}
+                                      className="h-7 px-2 border-red-300 text-red-600 hover:bg-red-50"
+                                      disabled={editandoRegistro === registro.id}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
 
-                            <div className="prose prose-sm max-w-none">
-                              <p className="text-gray-800 whitespace-pre-wrap">
-                                {registro.texto}
-                              </p>
+                            {/* Conteúdo do registro - editável se admin */}
+                            <div className="prose prose-sm max-w-none mb-3">
+                              {isAdmin && editandoRegistro === registro.id ? (
+                                <div className="space-y-3">
+                                  <Textarea
+                                    value={textoEdicao}
+                                    onChange={(e) => setTextoEdicao(e.target.value)}
+                                    className="min-h-[120px] text-gray-800"
+                                    placeholder="Edite o texto do registro..."
+                                  />
+                                  <div className="flex gap-2 justify-end">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={cancelarEdicao}
+                                      disabled={salvandoEdicao}
+                                    >
+                                      <X className="h-3 w-3 mr-1" />
+                                      Cancelar
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => salvarEdicaoRegistro(registro.id)}
+                                      disabled={salvandoEdicao || !textoEdicao.trim()}
+                                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    >
+                                      {salvandoEdicao ? (
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                      ) : (
+                                        <Save className="h-3 w-3 mr-1" />
+                                      )}
+                                      {salvandoEdicao ? 'Salvando...' : 'Salvar'}
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-gray-800 whitespace-pre-wrap">
+                                  {registro.texto}
+                                </p>
+                              )}
                             </div>
 
                             <div className="mt-3 pt-3 border-t border-gray-100">
