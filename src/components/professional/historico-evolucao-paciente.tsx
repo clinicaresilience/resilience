@@ -288,34 +288,551 @@ export function HistoricoEvolucaoPaciente({
     return anos.sort((a, b) => b - a);
   }, [evolucoes]);
 
-  // Exportar relatório
+  // Exportar relatório em PDF
   const exportarRelatorio = () => {
-    const relatorio = {
-      paciente: pacienteNome,
-      prontuario_id: prontuarioId,
-      data_relatorio: new Date().toISOString(),
-      periodo: {
-        primeira_evolucao: metricas.primeiraEvolucao,
-        ultima_evolucao: metricas.ultimaEvolucao,
-      },
-      metricas,
-      evolucoes: evolucoesFiltradas.map(e => ({
-        data: e.data_evolucao,
-        tipo: e.tipo_evolucao,
-        profissional: e.profissional.nome,
-        texto: e.texto,
-      })),
-    };
+    // Criar uma nova janela para o PDF
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
 
-    const blob = new Blob([JSON.stringify(relatorio, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `historico-evolucao-${pacienteNome.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Gerar HTML para o PDF
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Histórico de Evolução - ${pacienteNome}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            padding: 20px;
+            background: #fff;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #2563eb;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .info-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #2563eb;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            color: #1f2937;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 5px;
+        }
+        
+        .distribution-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f9fafb;
+            border-radius: 6px;
+            border-left: 4px solid #2563eb;
+        }
+        
+        .professional-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #fef7ff;
+            border-radius: 6px;
+            border-left: 4px solid #8b5cf6;
+        }
+        
+        .timeline-item {
+            background: #f0f9ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #0ea5e9;
+        }
+        
+        .evolution-item {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+        
+        .evolution-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #f3f4f6;
+            padding-bottom: 10px;
+        }
+        
+        .evolution-type {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .evolution-date {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .evolution-text {
+            color: #374151;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+        
+        .evolution-professional {
+            font-size: 12px;
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
+            padding: 40px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        
+        @media print {
+            body { padding: 10px; }
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Histórico e Métricas de Evolução</h1>
+        <p><strong>Paciente:</strong> ${pacienteNome}</p>
+        <p><strong>Relatório gerado em:</strong> ${formatarData(new Date().toISOString())}</p>
+    </div>
+
+    <div class="info-section">
+        <h2>Informações Gerais</h2>
+        <div class="stats-row">
+            <div class="stat-item">
+                <strong>ID do Prontuário:</strong><br>${prontuarioId}
+            </div>
+            <div class="stat-item">
+                <strong>Período:</strong><br>
+                ${metricas.primeiraEvolucao ? formatarDataSimples(metricas.primeiraEvolucao) : 'N/A'} - 
+                ${metricas.ultimaEvolucao ? formatarDataSimples(metricas.ultimaEvolucao) : 'N/A'}
+            </div>
+            <div class="stat-item">
+                <strong>Filtros Aplicados:</strong><br>
+                Tipo: ${filtroTipo === 'todos' ? 'Todos' : TIPOS_EVOLUCAO.find(t => t.value === filtroTipo)?.label || filtroTipo}<br>
+                Período: ${filtroMes === 'todos' && filtroAno === 'todos' ? 'Todos' : `${filtroMes === 'todos' ? '' : new Date(2024, parseInt(filtroMes) - 1).toLocaleDateString('pt-BR', { month: 'long' })} ${filtroAno === 'todos' ? '' : filtroAno}`}
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">Métricas Principais</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value">${metricas.totalEvolucoes}</div>
+                <div class="metric-label">Total de Evoluções</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">${Math.round(metricas.mediaDiasEntreEvolucoes)}</div>
+                <div class="metric-label">Média de Dias entre Evoluções</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">${Object.keys(metricas.profissionaisEnvolvidos).length}</div>
+                <div class="metric-label">Profissionais Envolvidos</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" style="color: ${
+                  metricas.tendenciaFrequencia === 'crescente' ? '#10b981' : 
+                  metricas.tendenciaFrequencia === 'decrescente' ? '#ef4444' : '#6b7280'
+                }">${metricas.tendenciaFrequencia.toUpperCase()}</div>
+                <div class="metric-label">Tendência de Frequência</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">Distribuição por Tipo de Evolução</h2>
+        ${Object.keys(metricas.evolucoesPorTipo).length === 0 ? 
+          '<div class="no-data">Nenhuma evolução registrada</div>' :
+          `<div style="display: flex; gap: 30px; align-items: flex-start; margin-bottom: 20px;">
+            <div style="flex: 1;">
+              <svg width="250" height="250" viewBox="0 0 200 200" style="display: block; margin: 0 auto;">
+                ${Object.entries(metricas.evolucoesPorTipo).map(([tipo, quantidade], index) => {
+                  const total = metricas.totalEvolucoes;
+                  const percentage = (quantidade / total) * 100;
+                  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#6B7280'];
+                  const color = colors[index % colors.length];
+                  
+                  // Calculate pie slice
+                  const radius = 80;
+                  const centerX = 100;
+                  const centerY = 100;
+                  
+                  let cumulativePercentage = 0;
+                  Object.entries(metricas.evolucoesPorTipo).slice(0, index).forEach(([_, qty]) => {
+                    cumulativePercentage += (qty / total) * 100;
+                  });
+                  
+                  const startAngle = (cumulativePercentage / 100) * 360 - 90;
+                  const endAngle = ((cumulativePercentage + percentage) / 100) * 360 - 90;
+                  
+                  const x1 = centerX + radius * Math.cos((startAngle * Math.PI) / 180);
+                  const y1 = centerY + radius * Math.sin((startAngle * Math.PI) / 180);
+                  const x2 = centerX + radius * Math.cos((endAngle * Math.PI) / 180);
+                  const y2 = centerY + radius * Math.sin((endAngle * Math.PI) / 180);
+                  
+                  const largeArc = percentage > 50 ? 1 : 0;
+                  
+                  const pathData = [
+                    `M ${centerX} ${centerY}`,
+                    `L ${x1} ${y1}`,
+                    `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
+                    'Z'
+                  ].join(' ');
+
+                  return `<path d="${pathData}" fill="${color}" stroke="white" stroke-width="2"/>`;
+                }).join('')}
+              </svg>
+            </div>
+            <div style="flex: 1;">
+              ${Object.entries(metricas.evolucoesPorTipo).map(([tipo, quantidade], index) => {
+                const tipoInfo = TIPOS_EVOLUCAO.find(t => t.value === tipo);
+                const percentage = ((quantidade / metricas.totalEvolucoes) * 100).toFixed(1);
+                const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#6B7280'];
+                const color = colors[index % colors.length];
+                
+                return `
+                  <div class="distribution-item" style="margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${color};"></div>
+                      <strong>${tipoInfo?.label || tipo}</strong>
+                    </div>
+                    <div>
+                      <strong>${quantidade}</strong> (${percentage}%)
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>`
+        }
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">Profissionais Envolvidos</h2>
+        ${Object.keys(metricas.profissionaisEnvolvidos).length === 0 ? 
+          '<div class="no-data">Nenhum profissional registrado</div>' :
+          `<div style="display: flex; gap: 30px; align-items: flex-start; margin-bottom: 20px;">
+            <div style="flex: 1;">
+              <svg width="250" height="250" viewBox="0 0 200 200" style="display: block; margin: 0 auto;">
+                ${Object.entries(metricas.profissionaisEnvolvidos).map(([id, info], index) => {
+                  const total = metricas.totalEvolucoes;
+                  const percentage = (info.quantidade / total) * 100;
+                  const colors = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#6B7280'];
+                  const color = colors[index % colors.length];
+                  
+                  // Calculate donut slice
+                  const outerRadius = 80;
+                  const innerRadius = 45;
+                  const centerX = 100;
+                  const centerY = 100;
+                  
+                  let cumulativePercentage = 0;
+                  Object.entries(metricas.profissionaisEnvolvidos).slice(0, index).forEach(([_, profInfo]) => {
+                    cumulativePercentage += (profInfo.quantidade / total) * 100;
+                  });
+                  
+                  const startAngle = (cumulativePercentage / 100) * 360 - 90;
+                  const endAngle = ((cumulativePercentage + percentage) / 100) * 360 - 90;
+                  
+                  const x1Outer = centerX + outerRadius * Math.cos((startAngle * Math.PI) / 180);
+                  const y1Outer = centerY + outerRadius * Math.sin((startAngle * Math.PI) / 180);
+                  const x2Outer = centerX + outerRadius * Math.cos((endAngle * Math.PI) / 180);
+                  const y2Outer = centerY + outerRadius * Math.sin((endAngle * Math.PI) / 180);
+                  
+                  const x1Inner = centerX + innerRadius * Math.cos((startAngle * Math.PI) / 180);
+                  const y1Inner = centerY + innerRadius * Math.sin((startAngle * Math.PI) / 180);
+                  const x2Inner = centerX + innerRadius * Math.cos((endAngle * Math.PI) / 180);
+                  const y2Inner = centerY + innerRadius * Math.sin((endAngle * Math.PI) / 180);
+                  
+                  const largeArc = percentage > 50 ? 1 : 0;
+                  
+                  const pathData = [
+                    `M ${x1Outer} ${y1Outer}`,
+                    `A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x2Outer} ${y2Outer}`,
+                    `L ${x2Inner} ${y2Inner}`,
+                    `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x1Inner} ${y1Inner}`,
+                    'Z'
+                  ].join(' ');
+
+                  return `<path d="${pathData}" fill="${color}" stroke="white" stroke-width="2"/>`;
+                }).join('')}
+                
+                <!-- Centro do donut com total -->
+                <text x="100" y="95" text-anchor="middle" style="font-size: 14px; font-weight: bold; fill: #374151;">Total</text>
+                <text x="100" y="110" text-anchor="middle" style="font-size: 20px; font-weight: bold; fill: #2563eb;">${metricas.totalEvolucoes}</text>
+              </svg>
+            </div>
+            <div style="flex: 1;">
+              ${Object.entries(metricas.profissionaisEnvolvidos).map(([id, info], index) => {
+                const percentage = ((info.quantidade / metricas.totalEvolucoes) * 100).toFixed(1);
+                const colors = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#6B7280'];
+                const color = colors[index % colors.length];
+                
+                return `
+                  <div class="professional-item" style="margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${color};"></div>
+                      <strong>${info.nome}</strong>
+                    </div>
+                    <div>
+                      <strong>${info.quantidade}</strong> evoluções (${percentage}%)
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>`
+        }
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">Evolução Mensal</h2>
+        ${metricas.evolucoesPorMes.length === 0 ? 
+          '<div class="no-data">Dados insuficientes para análise mensal</div>' :
+          `<div class="stats-row">
+            <div class="stat-item">
+              <strong>Pico Máximo:</strong><br>
+              ${Math.max(...metricas.evolucoesPorMes.map(i => i.quantidade))} evoluções
+            </div>
+            <div class="stat-item">
+              <strong>Mínimo:</strong><br>
+              ${Math.min(...metricas.evolucoesPorMes.map(i => i.quantidade))} evoluções
+            </div>
+            <div class="stat-item">
+              <strong>Média Mensal:</strong><br>
+              ${(metricas.evolucoesPorMes.reduce((acc, item) => acc + item.quantidade, 0) / metricas.evolucoesPorMes.length).toFixed(1)} evoluções
+            </div>
+          </div>
+          
+          <!-- Gráfico de Barras -->
+          <div style="margin: 30px 0; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: linear-gradient(to bottom, #f0f9ff, #ffffff);">
+            <svg width="100%" height="300" viewBox="0 0 ${metricas.evolucoesPorMes.length * 60 + 100} 250" style="display: block;">
+              <!-- Linhas de grade -->
+              ${[0, 25, 50, 75, 100].map(percentage => {
+                const y = 200 - (percentage / 100) * 150;
+                const value = Math.ceil((percentage / 100) * Math.max(...metricas.evolucoesPorMes.map(i => i.quantidade)));
+                return `
+                  <line x1="50" y1="${y}" x2="${metricas.evolucoesPorMes.length * 60 + 50}" y2="${y}" stroke="#d1d5db" stroke-dasharray="3,3" stroke-width="1"/>
+                  <text x="40" y="${y + 4}" text-anchor="end" style="font-size: 10px; fill: #6b7280;">${value}</text>
+                `;
+              }).join('')}
+              
+              <!-- Barras -->
+              ${metricas.evolucoesPorMes.map((item, index) => {
+                const [ano, mes] = item.mes.split('-');
+                const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                const mesNome = nomesMeses[parseInt(mes) - 1];
+                const maxValue = Math.max(...metricas.evolucoesPorMes.map(i => i.quantidade));
+                const height = (item.quantidade / maxValue) * 150;
+                const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+                const color = colors[index % colors.length];
+                const x = 60 + index * 60;
+                const y = 200 - height;
+                
+                return `
+                  <rect x="${x}" y="${y}" width="40" height="${height}" fill="${color}" rx="4" ry="4"/>
+                  <text x="${x + 20}" y="${y - 5}" text-anchor="middle" style="font-size: 12px; font-weight: bold; fill: #374151;">${item.quantidade}</text>
+                  <text x="${x + 20}" y="220" text-anchor="middle" style="font-size: 10px; fill: #6b7280;">${mesNome}</text>
+                  <text x="${x + 20}" y="235" text-anchor="middle" style="font-size: 9px; fill: #9ca3af;">${ano}</text>
+                `;
+              }).join('')}
+            </svg>
+          </div>
+          
+          <div style="margin-top: 20px;">
+            ${metricas.evolucoesPorMes.map(item => {
+              const [ano, mes] = item.mes.split('-');
+              const nomesMeses = [
+                'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+              ];
+              const mesNome = nomesMeses[parseInt(mes) - 1];
+              return `
+                <div class="distribution-item">
+                  <div><strong>${mesNome} ${ano}</strong></div>
+                  <div><strong>${item.quantidade}</strong> evolução${item.quantidade !== 1 ? 'ões' : ''}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>`
+        }
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">Timeline de Atividade</h2>
+        ${metricas.primeiraEvolucao ? `
+          <div class="timeline-item">
+            <strong>Primeira Evolução:</strong> ${formatarData(metricas.primeiraEvolucao)}
+          </div>
+        ` : ''}
+        ${metricas.ultimaEvolucao ? `
+          <div class="timeline-item">
+            <strong>Última Evolução:</strong> ${formatarData(metricas.ultimaEvolucao)}
+          </div>
+        ` : ''}
+        ${metricas.primeiraEvolucao && metricas.ultimaEvolucao && metricas.primeiraEvolucao !== metricas.ultimaEvolucao ? `
+          <div class="timeline-item">
+            <strong>Duração do Tratamento:</strong> ${Math.ceil((new Date(metricas.ultimaEvolucao).getTime() - new Date(metricas.primeiraEvolucao).getTime()) / (1000 * 60 * 60 * 24))} dias
+          </div>
+        ` : ''}
+    </div>
+
+    <div class="page-break"></div>
+
+    <div class="section">
+        <h2 class="section-title">Histórico Detalhado das Evoluções (${evolucoesFiltradas.length})</h2>
+        ${evolucoesFiltradas.length === 0 ? 
+          '<div class="no-data">Nenhuma evolução encontrada com os filtros aplicados</div>' :
+          evolucoesFiltradas
+            .sort((a, b) => new Date(b.data_evolucao).getTime() - new Date(a.data_evolucao).getTime())
+            .map((evolucao, index) => {
+              const tipoInfo = TIPOS_EVOLUCAO.find(t => t.value === evolucao.tipo_evolucao);
+              return `
+                <div class="evolution-item">
+                  <div class="evolution-header">
+                    <div class="evolution-type">${tipoInfo?.label || evolucao.tipo_evolucao}</div>
+                    <div class="evolution-date">
+                      <strong>#${evolucoesFiltradas.length - index}</strong><br>
+                      ${formatarData(evolucao.data_evolucao)}
+                    </div>
+                  </div>
+                  <div class="evolution-text">
+                    ${evolucao.texto.replace(/\n/g, '<br>')}
+                  </div>
+                  <div class="evolution-professional">
+                    Profissional: ${evolucao.profissional.nome}
+                    ${evolucao.profissional.informacoes_adicionais?.especialidade ? 
+                      ` - ${evolucao.profissional.informacoes_adicionais.especialidade}` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')
+        }
+    </div>
+
+    <div style="margin-top: 50px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+        <p>Relatório gerado automaticamente pelo Sistema de Gestão Clínica</p>
+        <p>Data de geração: ${formatarData(new Date().toISOString())}</p>
+    </div>
+
+    <script>
+        // Auto-print quando a página carregar
+        window.onload = function() {
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        };
+    </script>
+</body>
+</html>`;
+
+    // Escrever o conteúdo na nova janela
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   if (carregando) {
@@ -532,44 +1049,353 @@ export function HistoricoEvolucaoPaciente({
 
         {/* Tab de Gráficos */}
         <TabsContent value="graficos" className="space-y-6">
+          {/* Gráfico de Pizza - Distribuição por Tipo */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <PieChart className="h-4 w-4" />
+                  Distribuição por Tipo (Gráfico Pizza)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {Object.keys(metricas.evolucoesPorTipo).length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">Sem dados para exibir</p>
+                ) : (
+                  <div className="relative">
+                    {/* SVG Pie Chart */}
+                    <div className="flex justify-center mb-4">
+                      <svg width="200" height="200" viewBox="0 0 200 200">
+                        {Object.entries(metricas.evolucoesPorTipo).map(([tipo, quantidade], index) => {
+                          const total = metricas.totalEvolucoes;
+                          const percentage = (quantidade / total) * 100;
+                          const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#6B7280'];
+                          const color = colors[index % colors.length];
+                          
+                          // Calculate pie slice
+                          const radius = 80;
+                          const centerX = 100;
+                          const centerY = 100;
+                          
+                          let cumulativePercentage = 0;
+                          Object.entries(metricas.evolucoesPorTipo).slice(0, index).forEach(([_, qty]) => {
+                            cumulativePercentage += (qty / total) * 100;
+                          });
+                          
+                          const startAngle = (cumulativePercentage / 100) * 360 - 90;
+                          const endAngle = ((cumulativePercentage + percentage) / 100) * 360 - 90;
+                          
+                          const x1 = centerX + radius * Math.cos((startAngle * Math.PI) / 180);
+                          const y1 = centerY + radius * Math.sin((startAngle * Math.PI) / 180);
+                          const x2 = centerX + radius * Math.cos((endAngle * Math.PI) / 180);
+                          const y2 = centerY + radius * Math.sin((endAngle * Math.PI) / 180);
+                          
+                          const largeArc = percentage > 50 ? 1 : 0;
+                          
+                          const pathData = [
+                            `M ${centerX} ${centerY}`,
+                            `L ${x1} ${y1}`,
+                            `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
+                            'Z'
+                          ].join(' ');
+
+                          return (
+                            <path
+                              key={tipo}
+                              d={pathData}
+                              fill={color}
+                              stroke="white"
+                              strokeWidth="2"
+                            />
+                          );
+                        })}
+                      </svg>
+                    </div>
+                    
+                    {/* Legenda */}
+                    <div className="space-y-2">
+                      {Object.entries(metricas.evolucoesPorTipo).map(([tipo, quantidade], index) => {
+                        const tipoInfo = TIPOS_EVOLUCAO.find(t => t.value === tipo);
+                        const percentage = ((quantidade / metricas.totalEvolucoes) * 100).toFixed(1);
+                        const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#6B7280'];
+                        const color = colors[index % colors.length];
+                        
+                        return (
+                          <div key={tipo} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: color }}
+                              ></div>
+                              <span className="text-sm font-medium">
+                                {tipoInfo?.label || tipo}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-sm font-bold">{quantidade}</span>
+                              <span className="text-xs text-gray-500 ml-1">({percentage}%)</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Gráfico de Rosca - Profissionais */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Profissionais (Gráfico Rosca)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {Object.keys(metricas.profissionaisEnvolvidos).length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">Sem dados para exibir</p>
+                ) : (
+                  <div className="relative">
+                    {/* SVG Donut Chart */}
+                    <div className="flex justify-center mb-4">
+                      <svg width="200" height="200" viewBox="0 0 200 200">
+                        {Object.entries(metricas.profissionaisEnvolvidos).map(([id, info], index) => {
+                          const total = metricas.totalEvolucoes;
+                          const percentage = (info.quantidade / total) * 100;
+                          const colors = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#6B7280'];
+                          const color = colors[index % colors.length];
+                          
+                          // Calculate donut slice
+                          const outerRadius = 80;
+                          const innerRadius = 45;
+                          const centerX = 100;
+                          const centerY = 100;
+                          
+                          let cumulativePercentage = 0;
+                          Object.entries(metricas.profissionaisEnvolvidos).slice(0, index).forEach(([_, profInfo]) => {
+                            cumulativePercentage += (profInfo.quantidade / total) * 100;
+                          });
+                          
+                          const startAngle = (cumulativePercentage / 100) * 360 - 90;
+                          const endAngle = ((cumulativePercentage + percentage) / 100) * 360 - 90;
+                          
+                          const x1Outer = centerX + outerRadius * Math.cos((startAngle * Math.PI) / 180);
+                          const y1Outer = centerY + outerRadius * Math.sin((startAngle * Math.PI) / 180);
+                          const x2Outer = centerX + outerRadius * Math.cos((endAngle * Math.PI) / 180);
+                          const y2Outer = centerY + outerRadius * Math.sin((endAngle * Math.PI) / 180);
+                          
+                          const x1Inner = centerX + innerRadius * Math.cos((startAngle * Math.PI) / 180);
+                          const y1Inner = centerY + innerRadius * Math.sin((startAngle * Math.PI) / 180);
+                          const x2Inner = centerX + innerRadius * Math.cos((endAngle * Math.PI) / 180);
+                          const y2Inner = centerY + innerRadius * Math.sin((endAngle * Math.PI) / 180);
+                          
+                          const largeArc = percentage > 50 ? 1 : 0;
+                          
+                          const pathData = [
+                            `M ${x1Outer} ${y1Outer}`,
+                            `A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x2Outer} ${y2Outer}`,
+                            `L ${x2Inner} ${y2Inner}`,
+                            `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x1Inner} ${y1Inner}`,
+                            'Z'
+                          ].join(' ');
+
+                          return (
+                            <path
+                              key={id}
+                              d={pathData}
+                              fill={color}
+                              stroke="white"
+                              strokeWidth="2"
+                            />
+                          );
+                        })}
+                        
+                        {/* Centro do donut com total */}
+                        <text x="100" y="95" textAnchor="middle" className="text-lg font-bold fill-gray-700">
+                          Total
+                        </text>
+                        <text x="100" y="110" textAnchor="middle" className="text-2xl font-bold fill-blue-600">
+                          {metricas.totalEvolucoes}
+                        </text>
+                      </svg>
+                    </div>
+                    
+                    {/* Legenda */}
+                    <div className="space-y-2">
+                      {Object.entries(metricas.profissionaisEnvolvidos).map(([id, info], index) => {
+                        const percentage = ((info.quantidade / metricas.totalEvolucoes) * 100).toFixed(1);
+                        const colors = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#6B7280'];
+                        const color = colors[index % colors.length];
+                        
+                        return (
+                          <div key={id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: color }}
+                              ></div>
+                              <span className="text-sm font-medium">
+                                {info.nome}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-sm font-bold">{info.quantidade}</span>
+                              <span className="text-xs text-gray-500 ml-1">({percentage}%)</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Gráfico de Barras Detalhado - Evolução por Mês */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Evolução por Mês</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Evolução Mensal (Gráfico de Barras Detalhado)
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {metricas.evolucoesPorMes.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">Dados insuficientes para gráfico</p>
                 ) : (
-                  <div className="grid grid-cols-1 gap-2">
-                    {metricas.evolucoesPorMes.map((item) => {
-                      const [ano, mes] = item.mes.split('-');
-                      const nomesMeses = [
-                        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-                      ];
-                      const mesNome = nomesMeses[parseInt(mes) - 1];
-                      const maxValue = Math.max(...metricas.evolucoesPorMes.map(i => i.quantidade));
-                      const width = (item.quantidade / maxValue) * 100;
-                      
-                      return (
-                        <div key={item.mes} className="flex items-center gap-4">
-                          <div className="w-24 text-sm text-gray-600">
-                            {mesNome} {ano}
-                          </div>
-                          <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
-                            <div 
-                              className="bg-blue-600 h-6 rounded-full flex items-center justify-end pr-2" 
-                              style={{ width: `${width}%` }}
-                            >
-                              <span className="text-white text-xs font-medium">
-                                {item.quantidade}
-                              </span>
+                  <div className="space-y-6">
+                    {/* Gráfico de barras principal */}
+                    <div className="relative h-64 border border-gray-200 rounded-lg p-4 bg-gradient-to-b from-blue-50 to-white">
+                      <div className="h-full flex items-end justify-between gap-2">
+                        {metricas.evolucoesPorMes.map((item, index) => {
+                          const [ano, mes] = item.mes.split('-');
+                          const nomesMeses = [
+                            'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+                            'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+                          ];
+                          const mesNome = nomesMeses[parseInt(mes) - 1];
+                          const maxValue = Math.max(...metricas.evolucoesPorMes.map(i => i.quantidade));
+                          const height = (item.quantidade / maxValue) * 100;
+                          const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+                          const color = colors[index % colors.length];
+                          
+                          return (
+                            <div key={item.mes} className="flex flex-col items-center flex-1">
+                              <div 
+                                className="w-full rounded-t-lg flex items-end justify-center text-white text-xs font-bold shadow-lg relative group transition-all hover:shadow-xl hover:scale-105"
+                                style={{ 
+                                  height: `${height}%`, 
+                                  backgroundColor: color,
+                                  minHeight: '20px'
+                                }}
+                              >
+                                <span className="pb-1">{item.quantidade}</span>
+                                
+                                {/* Tooltip hover */}
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                  {item.quantidade} evolução{item.quantidade !== 1 ? 'ões' : ''} em {mesNome}/{ano}
+                                </div>
+                              </div>
+                              <div className="text-xs text-gray-600 mt-1 text-center">
+                                <div className="font-medium">{mesNome}</div>
+                                <div className="text-gray-500">{ano}</div>
+                              </div>
                             </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Linhas de grade horizontais */}
+                      <div className="absolute inset-0 pointer-events-none">
+                        {[0, 25, 50, 75, 100].map((percentage) => (
+                          <div
+                            key={percentage}
+                            className="absolute w-full border-t border-gray-300 border-dashed"
+                            style={{ bottom: `${percentage}%` }}
+                          >
+                            <span className="absolute -left-8 -top-2 text-xs text-gray-500">
+                              {Math.ceil((percentage / 100) * Math.max(...metricas.evolucoesPorMes.map(i => i.quantidade)))}
+                            </span>
                           </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Estatísticas detalhadas */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {Math.max(...metricas.evolucoesPorMes.map(i => i.quantidade))}
                         </div>
-                      );
-                    })}
+                        <div className="text-sm text-blue-800">Pico Máximo</div>
+                      </div>
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">
+                          {Math.min(...metricas.evolucoesPorMes.map(i => i.quantidade))}
+                        </div>
+                        <div className="text-sm text-green-800">Mínimo</div>
+                      </div>
+                      <div className="text-center p-3 bg-orange-50 rounded-lg">
+                        <div className="text-2xl font-bold text-orange-600">
+                          {(metricas.evolucoesPorMes.reduce((acc, item) => acc + item.quantidade, 0) / metricas.evolucoesPorMes.length).toFixed(1)}
+                        </div>
+                        <div className="text-sm text-orange-800">Média Mensal</div>
+                      </div>
+                      <div className="text-center p-3 bg-purple-50 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-600">
+                          {metricas.evolucoesPorMes.length}
+                        </div>
+                        <div className="text-sm text-purple-800">Meses Ativos</div>
+                      </div>
+                    </div>
+
+                    {/* Análise de tendência */}
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-blue-600" />
+                        Análise de Tendência
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${
+                            metricas.tendenciaFrequencia === 'crescente' ? 'bg-green-500' :
+                            metricas.tendenciaFrequencia === 'decrescente' ? 'bg-red-500' : 'bg-gray-500'
+                          }`}></div>
+                          <span className="capitalize font-medium">Tendência: {metricas.tendenciaFrequencia}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Período mais ativo:</span>
+                          <span className="font-medium ml-2">
+                            {metricas.evolucoesPorMes.length > 0 
+                              ? (() => {
+                                  const maisAtivo = metricas.evolucoesPorMes.reduce((prev, current) => 
+                                    prev.quantidade > current.quantidade ? prev : current
+                                  );
+                                  const [ano, mes] = maisAtivo.mes.split('-');
+                                  const nomesMeses = [
+                                    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+                                  ];
+                                  return `${nomesMeses[parseInt(mes) - 1]} ${ano}`;
+                                })()
+                              : 'N/A'
+                            }
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Variação:</span>
+                          <span className="font-medium ml-2">
+                            {metricas.evolucoesPorMes.length > 1 
+                              ? `±${(Math.max(...metricas.evolucoesPorMes.map(i => i.quantidade)) - Math.min(...metricas.evolucoesPorMes.map(i => i.quantidade)))} evolução${Math.max(...metricas.evolucoesPorMes.map(i => i.quantidade)) - Math.min(...metricas.evolucoesPorMes.map(i => i.quantidade)) !== 1 ? 'ões' : ''}`
+                              : '0'
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
