@@ -108,12 +108,44 @@ export async function GET(
       return false;
     };
 
-    // Filtrar slots que não estão bloqueados por exceções
+    // Buscar designações presenciais para o período
+    const { data: designacoesPresenciais, error: presencialError } = await supabase
+      .from('profissional_presencial')
+      .select('data_presencial')
+      .eq('profissional_id', profissionalId)
+      .gte('data_presencial', TimezoneUtils.extractDate(inicioDate))
+      .lte('data_presencial', TimezoneUtils.extractDate(fimDate));
+
+    if (presencialError) {
+      console.error('Erro ao buscar designações presenciais:', presencialError);
+    }
+
+    // Criar set de datas presenciais para lookup rápido
+    const datasPresenciais = new Set(
+      (designacoesPresenciais || []).map(d => d.data_presencial)
+    );
+
+    // Filtrar slots que não estão bloqueados por exceções E respeitam modalidade presencial
     const slotsDisponiveis = (slots || []).filter(slot => {
       const dataHoraInicioUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_inicio);
       const dataHoraFimUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_fim);
+      const dataSlot = TimezoneUtils.extractDate(dataHoraInicioUTC);
       
-      return !isSlotBlocked(dataHoraInicioUTC, dataHoraFimUTC);
+      // Verificar se não está bloqueado por exceções
+      if (isSlotBlocked(dataHoraInicioUTC, dataHoraFimUTC)) {
+        return false;
+      }
+
+      // NOVA REGRA: Se o profissional está designado para presencial nesta data,
+      // não exibir slots online (assumindo que slots são online por padrão)
+      // Para manter compatibilidade, vamos considerar que slots existentes são para modalidade online
+      // e só devem aparecer se NÃO há designação presencial
+      if (datasPresenciais.has(dataSlot)) {
+        // Profissional está em modo presencial nesta data - não mostrar slots online
+        return false;
+      }
+
+      return true;
     });
 
     // Mapear para frontend com formato correto

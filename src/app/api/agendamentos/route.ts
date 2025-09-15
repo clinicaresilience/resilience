@@ -271,6 +271,53 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Modalidade inválida. Escolha 'presencial' ou 'online'." }, { status: 400 });
     }
 
+    // NOVA VALIDAÇÃO: Verificar designação presencial vs modalidade solicitada
+    const dataConsultaFormatted = data_consulta ? 
+      (data_consulta.includes('T') ? TimezoneUtils.extractDate(TimezoneUtils.dbTimestampToUTC(data_consulta)) : data_consulta.split('T')[0]) :
+      (slot_id ? null : null);
+
+    if (dataConsultaFormatted || slot_id) {
+      let dataParaVerificar = dataConsultaFormatted;
+      
+      // Se usando slot_id, buscar a data do slot
+      if (slot_id && !dataParaVerificar) {
+        const { data: slotInfo } = await supabase
+          .from('agendamento_slot')
+          .select('data_hora_inicio')
+          .eq('id', slot_id)
+          .single();
+        
+        if (slotInfo) {
+          dataParaVerificar = TimezoneUtils.extractDate(TimezoneUtils.dbTimestampToUTC(slotInfo.data_hora_inicio));
+        }
+      }
+
+      if (dataParaVerificar) {
+        // Verificar se há designação presencial para esta data
+        const { data: designacaoPresencial } = await supabase
+          .from('profissional_presencial')
+          .select('id')
+          .eq('profissional_id', profissional_id)
+          .eq('data_presencial', dataParaVerificar)
+          .single();
+
+        const temDesignacaoPresencial = !!designacaoPresencial;
+
+        // Aplicar regras de exclusividade
+        if (temDesignacaoPresencial && validModalidade === 'online') {
+          return NextResponse.json({ 
+            error: "Este profissional está designado para atendimento presencial nesta data. Agendamentos online não são permitidos." 
+          }, { status: 400 });
+        }
+
+        if (!temDesignacaoPresencial && validModalidade === 'presencial') {
+          return NextResponse.json({ 
+            error: "Este profissional não está designado para atendimento presencial nesta data. Apenas agendamentos online são permitidos." 
+          }, { status: 400 });
+        }
+      }
+    }
+
     let agendamento;
 
     if (slot_id) {

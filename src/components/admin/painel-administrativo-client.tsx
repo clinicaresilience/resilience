@@ -63,7 +63,7 @@ export function PainelAdministrativoClient({
       id: "agendas" as TabType,
       label: "Agendas",
       icon: Calendar,
-      description: "Calendário e horários dos profissionais",
+      description: "Gestão de agendas e atendimento presencial",
     },
     {
       id: "usuarios" as TabType,

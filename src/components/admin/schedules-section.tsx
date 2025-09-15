@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import { CalendarView } from "./calendar-view"
 import {
   Calendar,
@@ -16,10 +19,14 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  Loader2
+  Loader2,
+  Plus,
+  Building2,
+  User,
+  Trash2
 } from "lucide-react"
 
-type ViewMode = "calendar" | "list" | "statistics"
+type ViewMode = "calendar" | "list" | "statistics" | "presencial"
 
 type Agendamento = {
   id: string
@@ -48,6 +55,42 @@ type Agendamento = {
   }
 }
 
+type Profissional = {
+  id: string
+  nome: string
+  email: string
+  informacoes_adicionais?: {
+    especialidade?: string
+    crp?: string
+  }
+}
+
+type Empresa = {
+  id: string
+  nome: string
+  codigo: string
+  ativa: boolean
+}
+
+type DesignacaoPresencial = {
+  id: string
+  profissional_id: string
+  data_presencial: string
+  hora_inicio?: string
+  hora_fim?: string
+  criado_em: string
+  atualizado_em: string
+  usuarios: Profissional
+}
+
+type NovaDesignacao = {
+  profissional_id: string
+  empresa_id: string
+  data_presencial: string
+  hora_inicio?: string
+  hora_fim?: string
+}
+
 export function SchedulesSection() {
   const [viewMode, setViewMode] = useState<ViewMode>("calendar")
   const [selectedProfessional, setSelectedProfessional] = useState("todos")
@@ -58,32 +101,72 @@ export function SchedulesSection() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Estados para atendimento presencial
+  const [profissionaisPresenciais, setProfissionaisPresenciais] = useState<Profissional[]>([])
+  const [empresas, setEmpresas] = useState<Empresa[]>([])
+  const [designacoes, setDesignacoes] = useState<DesignacaoPresencial[]>([])
+  const [modalAberto, setModalAberto] = useState(false)
+  const [salvandoDesignacao, setSalvandoDesignacao] = useState(false)
+  const [novaDesignacao, setNovaDesignacao] = useState<NovaDesignacao>({
+    profissional_id: '',
+    empresa_id: '',
+    data_presencial: '',
+    hora_inicio: '',
+    hora_fim: '',
+  })
+  const [sucessoPresencial, setSucessoPresencial] = useState('')
+  const [erroPresencial, setErroPresencial] = useState('')
+
   // Buscar dados reais do banco
   useEffect(() => {
-    const fetchAgendamentos = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true)
-        const response = await fetch('/api/admin/agendamentos')
-        const result = await response.json()
+        
+        // Buscar agendamentos
+        const agendamentosResponse = await fetch('/api/admin/agendamentos')
+        const agendamentosResult = await agendamentosResponse.json()
 
-        if (result.success) {
-          setAllAgendamentos(result.data)
+        if (agendamentosResult.success) {
+          setAllAgendamentos(agendamentosResult.data)
         } else {
-          setError(result.error || 'Erro ao carregar agendamentos')
+          setError(agendamentosResult.error || 'Erro ao carregar agendamentos')
         }
+
+        // Buscar profissionais para presencial
+        const profResponse = await fetch('/api/profissionais')
+        if (profResponse.ok) {
+          const profResult = await profResponse.json()
+          setProfissionaisPresenciais(profResult || [])
+        }
+
+        // Buscar empresas
+        const empresasResponse = await fetch('/api/companies')
+        if (empresasResponse.ok) {
+          const empresasResult = await empresasResponse.json()
+          setEmpresas(empresasResult || [])
+        }
+
+        // Buscar designações presenciais
+        const designacoesResponse = await fetch('/api/profissional-presencial')
+        const designacoesResult = await designacoesResponse.json()
+        if (designacoesResponse.ok) {
+          setDesignacoes(designacoesResult.data || [])
+        }
+
       } catch (err) {
         setError('Erro ao conectar com o servidor')
-        console.error('Erro ao buscar agendamentos:', err)
+        console.error('Erro ao buscar dados:', err)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchAgendamentos()
+    fetchData()
   }, [])
 
-  // Obter lista única de profissionais
-  const profissionais = useMemo(() => {
+  // Obter lista única de profissionais dos agendamentos
+  const profissionaisAgendamentos = useMemo(() => {
     const uniqueProfs = Array.from(new Set(allAgendamentos.map(ag => ag.profissionalNome)))
     return uniqueProfs.sort()
   }, [allAgendamentos])
@@ -170,14 +253,14 @@ export function SchedulesSection() {
       pendentes: allAgendamentos.filter(ag => ag.status === "pendente").length,
       cancelados: allAgendamentos.filter(ag => ag.status === "cancelado").length,
       concluidos: allAgendamentos.filter(ag => ag.status === "concluido").length,
-      porProfissional: profissionais.map(prof => ({
+      porProfissional: profissionaisAgendamentos.map(prof => ({
         nome: prof,
         total: allAgendamentos.filter(ag => ag.profissionalNome === prof).length,
         confirmados: allAgendamentos.filter(ag => ag.profissionalNome === prof && ag.status === "confirmado").length,
         pendentes: allAgendamentos.filter(ag => ag.profissionalNome === prof && ag.status === "pendente").length
       }))
     }
-  }, [allAgendamentos, profissionais])
+  }, [allAgendamentos, profissionaisAgendamentos])
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -210,6 +293,110 @@ export function SchedulesSection() {
       concluido: "bg-blue-100 text-blue-800 border-blue-200"
     }
     return colors[status as keyof typeof colors] || colors.confirmado
+  }
+
+  // Funções para atendimento presencial
+  const criarDesignacao = async () => {
+    try {
+      setSalvandoDesignacao(true)
+      setErroPresencial('')
+
+      // Validações
+      if (!novaDesignacao.profissional_id || !novaDesignacao.empresa_id || !novaDesignacao.data_presencial) {
+        setErroPresencial('Profissional, empresa e data são obrigatórios')
+        return
+      }
+
+      const payload = {
+        ...novaDesignacao,
+        hora_inicio: novaDesignacao.hora_inicio || null,
+        hora_fim: novaDesignacao.hora_fim || null,
+      }
+
+      const response = await fetch('/api/profissional-presencial', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao criar designação')
+      }
+
+      setSucessoPresencial('Designação presencial criada com sucesso!')
+      setModalAberto(false)
+      setNovaDesignacao({
+        profissional_id: '',
+        empresa_id: '',
+        data_presencial: '',
+        hora_inicio: '',
+        hora_fim: '',
+      })
+      
+      // Recarregar designações
+      const designacoesResponse = await fetch('/api/profissional-presencial')
+      const designacoesResult = await designacoesResponse.json()
+      if (designacoesResponse.ok) {
+        setDesignacoes(designacoesResult.data || [])
+      }
+
+      // Limpar mensagem de sucesso após 3 segundos
+      setTimeout(() => setSucessoPresencial(''), 3000)
+    } catch (error) {
+      console.error('Erro ao criar designação:', error)
+      setErroPresencial(error instanceof Error ? error.message : 'Erro ao criar designação')
+    } finally {
+      setSalvandoDesignacao(false)
+    }
+  }
+
+  const removerDesignacao = async (id: string, profissionalNome: string, data: string) => {
+    if (!confirm(`Tem certeza que deseja remover a designação presencial de ${profissionalNome} para ${formatarData(data)}?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/profissional-presencial?id=${id}`, {
+        method: 'DELETE',
+      })
+
+      const data_response = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data_response.error || 'Erro ao remover designação')
+      }
+
+      setSucessoPresencial('Designação presencial removida com sucesso!')
+      
+      // Recarregar designações
+      const designacoesResponse = await fetch('/api/profissional-presencial')
+      const designacoesResult = await designacoesResponse.json()
+      if (designacoesResponse.ok) {
+        setDesignacoes(designacoesResult.data || [])
+      }
+
+      setTimeout(() => setSucessoPresencial(''), 3000)
+    } catch (error) {
+      console.error('Erro ao remover designação:', error)
+      setErroPresencial(error instanceof Error ? error.message : 'Erro ao remover designação')
+    }
+  }
+
+  const formatarData = (dataISO: string) => {
+    return new Date(dataISO).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
+  }
+
+  const formatarHora = (horaString?: string) => {
+    if (!horaString) return '-'
+    return horaString.substring(0, 5)
   }
 
   return (
@@ -245,9 +432,165 @@ export function SchedulesSection() {
               <TrendingUp className="h-4 w-4" />
               Estatísticas
             </Button>
+            <Button
+              variant={viewMode === "presencial" ? "default" : "outline"}
+              onClick={() => setViewMode("presencial")}
+              className="flex items-center gap-2"
+            >
+              <Building2 className="h-4 w-4" />
+              Atend. Presencial
+            </Button>
           </div>
 
-          {/* Filtros */}
+          {/* Botão para Criar Designação - aparece apenas na aba presencial */}
+          {viewMode === "presencial" && (
+            <Dialog open={modalAberto} onOpenChange={setModalAberto}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                >
+                  <Plus className="h-4 w-4" />
+                  Nova Designação
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Designar Atendimento Presencial</DialogTitle>
+                  <DialogDescription>
+                    Configure um profissional para atendimento presencial em uma data específica
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4 py-4">
+                  <div>
+                    <Label htmlFor="profissional">Profissional *</Label>
+                    <Select 
+                      value={novaDesignacao.profissional_id}
+                      onValueChange={(value) => setNovaDesignacao(prev => ({
+                        ...prev,
+                        profissional_id: value
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um profissional" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {profissionaisPresenciais.map((prof) => (
+                          <SelectItem key={prof.id} value={prof.id}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{prof.nome}</span>
+                              {prof.informacoes_adicionais?.especialidade && (
+                                <span className="text-sm text-gray-500">
+                                  {prof.informacoes_adicionais.especialidade}
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="empresa">Empresa *</Label>
+                    <Select 
+                      value={novaDesignacao.empresa_id}
+                      onValueChange={(value) => setNovaDesignacao(prev => ({
+                        ...prev,
+                        empresa_id: value
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma empresa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {empresas.filter(emp => emp.ativa).map((empresa) => (
+                          <SelectItem key={empresa.id} value={empresa.id}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{empresa.nome}</span>
+                              <span className="text-sm text-gray-500">
+                                Código: {empresa.codigo}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="data">Data do Atendimento Presencial *</Label>
+                    <Input
+                      id="data"
+                      type="date"
+                      min={new Date().toISOString().split('T')[0]}
+                      value={novaDesignacao.data_presencial}
+                      onChange={(e) => setNovaDesignacao(prev => ({
+                        ...prev,
+                        data_presencial: e.target.value
+                      }))}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="hora-inicio">Hora de Início (opcional)</Label>
+                      <Input
+                        id="hora-inicio"
+                        type="time"
+                        value={novaDesignacao.hora_inicio}
+                        onChange={(e) => setNovaDesignacao(prev => ({
+                          ...prev,
+                          hora_inicio: e.target.value
+                        }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="hora-fim">Hora de Fim (opcional)</Label>
+                      <Input
+                        id="hora-fim"
+                        type="time"
+                        value={novaDesignacao.hora_fim}
+                        onChange={(e) => setNovaDesignacao(prev => ({
+                          ...prev,
+                          hora_fim: e.target.value
+                        }))}
+                      />
+                    </div>
+                  </div>
+
+                  {erroPresencial && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                      <span className="text-sm text-red-700">{erroPresencial}</span>
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setModalAberto(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="button" 
+                    onClick={criarDesignacao}
+                    disabled={salvandoDesignacao}
+                  >
+                    {salvandoDesignacao ? 'Salvando...' : 'Criar Designação'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+
+        {/* Filtros */}
+        <div className="flex flex-col lg:flex-row gap-4 mb-6">
           <div className="flex flex-wrap gap-2 flex-1">
             {/* Busca */}
             <div className="relative flex-1 min-w-[200px]">
@@ -267,7 +610,7 @@ export function SchedulesSection() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os Profissionais</SelectItem>
-                {profissionais.map(prof => (
+                {profissionaisAgendamentos.map(prof => (
                   <SelectItem key={prof} value={prof}>{prof}</SelectItem>
                 ))}
               </SelectContent>
@@ -479,6 +822,110 @@ export function SchedulesSection() {
                     {statistics.total > 0 ? Math.round((statistics.concluidos / statistics.total) * 100) : 0}%
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Visualização de Atendimento Presencial */}
+      {viewMode === "presencial" && (
+        <div className="space-y-6">
+          {/* Mensagens de feedback para presencial */}
+          {sucessoPresencial && (
+            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span className="text-sm text-green-700">{sucessoPresencial}</span>
+            </div>
+          )}
+
+          {/* Lista de Todos os Profissionais com Status de Atendimento */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-blue-600" />
+                Gestão de Atendimento Presencial
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {profissionaisPresenciais.map((profissional) => {
+                  // Verificar se o profissional tem designações ativas
+                  const designacoesAtivas = designacoes.filter(d => d.profissional_id === profissional.id)
+                  
+                  return (
+                    <div key={profissional.id} className="p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <User className="h-5 w-5 text-gray-600" />
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{profissional.nome}</h4>
+                            {profissional.informacoes_adicionais?.especialidade && (
+                              <p className="text-sm text-gray-600">
+                                {profissional.informacoes_adicionais.especialidade}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {designacoesAtivas.length > 0 ? (
+                            <Badge variant="default" className="bg-blue-100 text-blue-800">
+                              {designacoesAtivas.length} designação(ões) ativa(s)
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">
+                              Apenas online
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Designações ativas do profissional */}
+                      {designacoesAtivas.length > 0 && (
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium text-gray-700">Designações Presenciais:</h5>
+                          {designacoesAtivas.map((designacao) => (
+                            <div key={designacao.id} className="flex items-center justify-between p-2 bg-blue-50 rounded-md">
+                              <div className="flex items-center gap-3 text-sm">
+                                <Calendar className="h-4 w-4 text-blue-600" />
+                                <span className="text-blue-900">
+                                  {formatarData(designacao.data_presencial)}
+                                </span>
+                                <Clock className="h-4 w-4 text-blue-600 ml-2" />
+                                <span className="text-blue-900">
+                                  {designacao.hora_inicio && designacao.hora_fim ? (
+                                    `${formatarHora(designacao.hora_inicio)} - ${formatarHora(designacao.hora_fim)}`
+                                  ) : (
+                                    'Dia inteiro'
+                                  )}
+                                </span>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removerDesignacao(
+                                  designacao.id,
+                                  designacao.usuarios.nome,
+                                  designacao.data_presencial
+                                )}
+                                className="text-red-600 border-red-200 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
+                {profissionaisPresenciais.length === 0 && (
+                  <div className="text-center py-8">
+                    <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">Nenhum profissional cadastrado no sistema.</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
