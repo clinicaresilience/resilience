@@ -1,35 +1,41 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    
+    // Obter usuário autenticado
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Buscar dados do usuário
-    const { data: userData, error: dbError } = await supabase
-      .from("usuarios")
-      .select("id, nome, email, tipo_usuario")
-      .eq("id", user.id)
+    // Buscar dados adicionais do usuário na tabela usuarios
+    const { data: userData, error: userError } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('id', user.id)
       .single();
 
-    if (dbError || !userData) {
-      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    if (userError) {
+      console.error('Erro ao buscar dados do usuário:', userError);
+      return NextResponse.json({ error: 'User data not found' }, { status: 404 });
     }
 
+    // Retornar dados do usuário
     return NextResponse.json({
-      success: true,
-      user: userData,
-    }, { status: 200 });
+      id: user.id,
+      email: user.email,
+      nome: userData.nome,
+      tipo_usuario: userData.tipo_usuario,
+      user_metadata: user.user_metadata,
+      ...userData
+    });
+
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    console.error('Erro na API de autenticação:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

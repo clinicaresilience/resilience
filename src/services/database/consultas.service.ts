@@ -136,63 +136,83 @@ export class ConsultasService {
     return consultasFormatted;
   }
   // ======================================
-  // Buscar pacientes atendidos por um profissional
+  // Buscar pacientes atendidos por um profissional (usando nova tabela paciente_profissional)
   // ======================================
   static async getPacientesAtendidos(profissionalId: string): Promise<PacienteAtendido[]> {
     const supabase = await createClient();
 
     try {
-      const { data: agendamentos, error } = await supabase
-        .from('agendamentos')
+      // NOVO: Buscar pacientes ativos na relação paciente_profissional
+      const { data: pacientesProfissional, error: relacaoError } = await supabase
+        .from('paciente_profissional')
         .select(`
-          id,
           paciente_id,
-          data_consulta,
-          status,
-          paciente:usuarios!agendamentos_paciente_id_fkey(
+          paciente:usuarios!paciente_profissional_paciente_fkey(
             id,
             nome,
             email
           )
         `)
         .eq('profissional_id', profissionalId)
-        .eq('status', 'concluido')
-        .order('data_consulta', { ascending: false });
+        .eq('ativo', true);
 
-      if (error) {
-        console.error('Erro ao buscar pacientes atendidos:', error);
-        throw error;
+      if (relacaoError) {
+        console.error('Erro ao buscar relação paciente-profissional:', relacaoError);
+        throw relacaoError;
       }
 
-      // Agrupar por paciente e calcular estatísticas
-      const pacientesMap = new Map<string, PacienteAtendido>();
+      if (!pacientesProfissional || pacientesProfissional.length === 0) {
+        return [];
+      }
 
-      agendamentos?.forEach((agendamento: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-        if (!agendamento.paciente) return;
+      const pacientesAtendidos: PacienteAtendido[] = [];
 
-        const pacienteId = agendamento.paciente.id;
+      // Para cada paciente ativo, buscar estatísticas de consultas
+      for (const relacao of pacientesProfissional) {
+        if (!relacao.paciente) continue;
 
-        if (pacientesMap.has(pacienteId)) {
-          const paciente = pacientesMap.get(pacienteId)!;
-          paciente.totalConsultas += 1;
+        const pacienteData = Array.isArray(relacao.paciente) 
+          ? relacao.paciente[0] 
+          : relacao.paciente;
 
-          // Atualizar última consulta se for mais recente
-          if (new Date(agendamento.data_consulta) > new Date(paciente.ultimaConsulta)) {
-            paciente.ultimaConsulta = agendamento.data_consulta;
-          }
-        } else {
-          pacientesMap.set(pacienteId, {
-            id: pacienteId,
-            nome: agendamento.paciente.nome,
-            email: agendamento.paciente.email,
-            ultimaConsulta: agendamento.data_consulta,
-            totalConsultas: 1
-          });
+        if (!pacienteData) continue;
+
+        // Buscar consultas concluídas deste paciente com este profissional
+        const { data: consultas, error: consultasError } = await supabase
+          .from('agendamentos')
+          .select('id, data_consulta')
+          .eq('paciente_id', pacienteData.id)
+          .eq('profissional_id', profissionalId)
+          .eq('status', 'concluido')
+          .order('data_consulta', { ascending: false });
+
+        if (consultasError) {
+          console.error('Erro ao buscar consultas do paciente:', consultasError);
+          continue;
         }
-      });
 
-      return Array.from(pacientesMap.values())
-        .sort((a, b) => new Date(b.ultimaConsulta).getTime() - new Date(a.ultimaConsulta).getTime());
+        const totalConsultas = consultas?.length || 0;
+
+        // Exigir pelo menos 1 consulta concluída
+        if (totalConsultas === 0) {
+          console.log(`Paciente ${pacienteData.nome} sem consultas concluídas - não incluir`);
+          continue;
+        }
+
+        const ultimaConsulta = consultas[0].data_consulta;
+
+        pacientesAtendidos.push({
+          id: pacienteData.id,
+          nome: pacienteData.nome,
+          email: pacienteData.email,
+          ultimaConsulta,
+          totalConsultas
+        });
+      }
+
+      return pacientesAtendidos.sort((a, b) => 
+        new Date(b.ultimaConsulta).getTime() - new Date(a.ultimaConsulta).getTime()
+      );
 
     } catch (error) {
       console.error('Erro no getPacientesAtendidos:', error);

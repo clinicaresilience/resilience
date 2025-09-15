@@ -4,10 +4,10 @@ import { createClient } from '@/lib/server';
 // DELETE - Excluir prontuário inteiro
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { prontuario_id: string } }
 ) {
   try {
-    const { id } = params;
+    const { prontuario_id: id } = params;
     const supabase = await createClient();
 
     // Verificar se o usuário é admin

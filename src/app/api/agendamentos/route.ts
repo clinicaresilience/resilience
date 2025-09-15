@@ -199,6 +199,73 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
+    // NOVA LÓGICA: Verificar se é primeiro agendamento ou validar profissional padrão
+    const { data: relacaoExistente } = await supabase
+      .from('paciente_profissional')
+      .select('profissional_id')
+      .eq('paciente_id', user.id)
+      .eq('ativo', true)
+      .single();
+
+    if (relacaoExistente) {
+      // Paciente já tem profissional padrão - validar se está tentando agendar com o mesmo
+      if (relacaoExistente.profissional_id !== profissional_id) {
+        return NextResponse.json({ 
+          error: "Você só pode agendar consultas com seu profissional atual. Para mudança de profissional, entre em contato com a administração." 
+        }, { status: 403 });
+      }
+    } else {
+      // Verificar se paciente tem prontuário existente (caso foi transferido mas ainda não tem relação ativa)
+      const { data: prontuarioExistente } = await supabase
+        .from('prontuarios')
+        .select('profissional_atual_id')
+        .eq('paciente_id', user.id)
+        .single();
+
+      if (prontuarioExistente) {
+        // Paciente tem prontuário - validar se está agendando com profissional atual do prontuário
+        if (prontuarioExistente.profissional_atual_id !== profissional_id) {
+          return NextResponse.json({ 
+            error: "Você só pode agendar consultas com seu profissional atual. Para mudança de profissional, entre em contato com a administração." 
+          }, { status: 403 });
+        }
+        
+        // Criar relação na tabela paciente_profissional para sincronizar
+        console.log(`Criando relação para paciente transferido ${user.id} com profissional: ${profissional_id}`);
+        
+        const { error: criarRelacaoError } = await supabase
+          .from('paciente_profissional')
+          .insert({
+            paciente_id: user.id,
+            profissional_id: profissional_id,
+            ativo: true
+          });
+
+        if (criarRelacaoError) {
+          console.error('Erro ao criar relação para paciente transferido:', criarRelacaoError);
+          // Não falhar - continuar com agendamento mesmo se relação não for criada
+        }
+      } else {
+        // PRIMEIRO AGENDAMENTO - Criar relação na tabela paciente_profissional
+        console.log(`Primeiro agendamento do paciente ${user.id} - definindo profissional padrão: ${profissional_id}`);
+        
+        const { error: criarRelacaoError } = await supabase
+          .from('paciente_profissional')
+          .insert({
+            paciente_id: user.id,
+            profissional_id: profissional_id,
+            ativo: true
+          });
+
+        if (criarRelacaoError) {
+          console.error('Erro ao criar relação paciente-profissional:', criarRelacaoError);
+          return NextResponse.json({ 
+            error: "Erro ao definir profissional padrão" 
+          }, { status: 500 });
+        }
+      }
+    }
+
     const validModalidade = modalidade || 'presencial';
     if (!['presencial', 'online'].includes(validModalidade)) {
       return NextResponse.json({ error: "Modalidade inválida. Escolha 'presencial' ou 'online'." }, { status: 400 });

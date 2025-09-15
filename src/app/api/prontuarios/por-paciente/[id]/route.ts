@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/server';
 import { ProntuariosService } from '@/services/database/prontuarios.service';
 
-// GET /api/prontuarios/[paciente_id]
+// GET /api/prontuarios/por-paciente/[id]
 // Buscar prontuário específico de um paciente
 export async function GET(
   req: NextRequest,
-  { params }: { params: { paciente_id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const supabase = await createClient();
-    const { paciente_id } = params;
+    const { id: paciente_id } = params;
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser();

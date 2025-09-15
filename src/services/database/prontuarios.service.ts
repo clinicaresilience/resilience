@@ -72,30 +72,13 @@ export class ProntuariosService {
       }
 
       if (prontuarioExistente) {
-        // Se prontuário existe, atualizar profissional atual se necessário
-        if (prontuarioExistente.profissional_atual_id !== profissionalId) {
-          const { data: prontuarioAtualizado, error: atualizarError } = await supabase
-            .from('prontuarios')
-            .update({
-              profissional_atual_id: profissionalId,
-              atualizado_em: new Date().toISOString()
-            })
-            .eq('id', prontuarioExistente.id)
-            .select('*')
-            .single();
-
-          if (atualizarError) {
-            console.error('Erro ao atualizar profissional atual:', atualizarError);
-            throw atualizarError;
-          }
-
-          return prontuarioAtualizado;
-        }
-
+        // MUDANÇA: NÃO atualizar automaticamente o profissional atual
+        // Apenas retornar o prontuário existente
+        // A responsabilidade deve ser alterada APENAS através de transferência explícita
         return prontuarioExistente;
       }
 
-      // Se não existe, criar novo prontuário
+      // Se não existe, criar novo prontuário (primeira consulta do paciente)
       const { data: novoProntuario, error: criarError } = await supabase
         .from('prontuarios')
         .insert([{
@@ -236,12 +219,9 @@ export class ProntuariosService {
         throw registrosError;
       }
 
-      // Verificar se o profissional tem acesso
-      const podeAcessar = 
-        prontuario.profissional_atual_id === profissionalId || // É o profissional atual
-        registros.some(r => r.profissional_id === profissionalId); // Já criou registros anteriormente
-
-      if (!podeAcessar) {
+      // MUDANÇA: Apenas o profissional atual pode acessar o prontuário
+      // Profissionais anteriores perdem acesso completamente após transferência
+      if (prontuario.profissional_atual_id !== profissionalId) {
         throw new Error('Profissional não tem acesso a este prontuário');
       }
 
@@ -266,7 +246,7 @@ export class ProntuariosService {
   }
 
   // ======================================
-  // Listar prontuários do profissional (pacientes que pode acessar)
+  // Listar prontuários do profissional (usando nova tabela paciente_profissional)
   // ======================================
   static async listarProntuariosProfissional(
     profissionalId: string
@@ -274,7 +254,25 @@ export class ProntuariosService {
     const supabase = await createClient();
 
     try {
-      // Primeiro, buscar prontuários onde o profissional é atual
+      // NOVO: Buscar pacientes ativos na relação paciente_profissional
+      const { data: pacientesAtivos, error: relacaoError } = await supabase
+        .from('paciente_profissional')
+        .select('paciente_id')
+        .eq('profissional_id', profissionalId)
+        .eq('ativo', true);
+
+      if (relacaoError) {
+        console.error('Erro ao buscar relação paciente-profissional:', relacaoError);
+        throw relacaoError;
+      }
+
+      if (!pacientesAtivos || pacientesAtivos.length === 0) {
+        return [];
+      }
+
+      const pacienteIds = pacientesAtivos.map(r => r.paciente_id);
+
+      // Buscar prontuários dos pacientes ativos
       const { data: prontuariosAtuais, error: prontuariosAtuaisError } = await supabase
         .from('prontuarios')
         .select(`
@@ -285,6 +283,7 @@ export class ProntuariosService {
             email
           )
         `)
+        .in('paciente_id', pacienteIds)
         .eq('profissional_atual_id', profissionalId);
 
       if (prontuariosAtuaisError) {
@@ -292,62 +291,10 @@ export class ProntuariosService {
         throw prontuariosAtuaisError;
       }
 
-      // Segundo, buscar prontuários onde o profissional criou registros
-      const { data: registrosDoProfissional, error: registrosError } = await supabase
-        .from('prontuarios_registros')
-        .select('prontuario_id')
-        .eq('profissional_id', profissionalId);
-
-      if (registrosError) {
-        console.error('Erro ao buscar registros do profissional:', registrosError);
-        throw registrosError;
-      }
-
-      const prontuarioIdsComRegistros = [...new Set(registrosDoProfissional?.map(r => r.prontuario_id) || [])];
-      
-      let prontuariosComRegistros: Array<{
-        id: string;
-        paciente_id: string;
-        profissional_atual_id: string;
-        criado_em: string;
-        atualizado_em: string;
-        paciente: {
-          id: string;
-          nome: string;
-          email: string;
-        };
-      }> = [];
-      
-      if (prontuarioIdsComRegistros.length > 0) {
-        const { data, error } = await supabase
-          .from('prontuarios')
-          .select(`
-            *,
-            paciente:usuarios!prontuarios_paciente_fkey(
-              id,
-              nome,
-              email
-            )
-          `)
-          .in('id', prontuarioIdsComRegistros);
-
-        if (error) {
-          console.error('Erro ao buscar prontuários com registros:', error);
-        } else {
-          prontuariosComRegistros = data || [];
-        }
-      }
-
-      // Combinar e remover duplicatas
-      const todosOsProntuarios = [...(prontuariosAtuais || []), ...prontuariosComRegistros];
-      const prontuariosUnicos = todosOsProntuarios.filter((prontuario, index, array) => 
-        array.findIndex(p => p.id === prontuario.id) === index
-      );
-
       const resultado: ProntuarioCompleto[] = [];
 
       // Para cada prontuário, buscar os registros
-      for (const prontuario of prontuariosUnicos) {
+      for (const prontuario of prontuariosAtuais || []) {
         const { data: registros, error: registrosError } = await supabase
           .from('prontuarios_registros')
           .select('*')

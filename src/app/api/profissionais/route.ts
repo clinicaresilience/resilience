@@ -48,9 +48,8 @@ export async function GET() {
 
     const { data: profissionais, error } = await supabase
         .from("usuarios")
-        .select("id, nome, informacoes_adicionais, avatar_url, bio, especialidade")
+        .select("id, nome, informacoes_adicionais")
         .eq("tipo_usuario", "profissional")
-        .eq("ativo", true)
         .order("nome");
 
     if (error) {

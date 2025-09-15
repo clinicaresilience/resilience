@@ -87,10 +87,21 @@ export function NovoProntuarioClient({
   const [textoEdicao, setTextoEdicao] = useState<string>("");
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
+  // Estados para transferência de paciente (admin apenas)
+  const [professionals, setProfessionals] = useState<any[]>([]);
+  const [transferModal, setTransferModal] = useState<{
+    prontuario: ProntuarioCompleto;
+    newProfessionalId: string;
+  } | null>(null);
+  const [transferring, setTransferring] = useState<boolean>(false);
+
   // Buscar prontuários
   useEffect(() => {
     buscarProntuarios();
-  }, [profissionalId]);
+    if (isAdmin) {
+      buscarProfissionais();
+    }
+  }, [profissionalId, isAdmin]);
 
   const buscarProntuarios = async () => {
     try {
@@ -338,6 +349,81 @@ export function NovoProntuarioClient({
       console.error('Erro ao excluir prontuário:', error);
       alert('Erro ao excluir prontuário');
     }
+  };
+
+  // Buscar profissionais para transferência
+  const buscarProfissionais = async () => {
+    if (!isAdmin) return;
+    
+    try {
+      const response = await fetch("/api/profissionais");
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Profissionais carregados:", data); // Debug
+        // A API já retorna apenas profissionais, não precisa filtrar por tipo_usuario
+        setProfessionals(data || []);
+      } else {
+        console.error("Erro na resposta da API profissionais:", response.status);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar profissionais:", error);
+    }
+  };
+
+  // Transferir paciente para novo profissional
+  const transferirPaciente = async (prontuario: ProntuarioCompleto, newProfessionalId: string) => {
+    if (!isAdmin || !newProfessionalId || transferring) return;
+
+    if (!confirm(`Tem certeza que deseja transferir o paciente ${prontuario.paciente.nome} para o novo profissional?`)) {
+      return;
+    }
+
+    try {
+      setTransferring(true);
+      
+      const response = await fetch('/api/prontuarios/transferir-paciente', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prontuario_id: prontuario.id,
+          novo_profissional_id: newProfessionalId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setTransferModal(null);
+        alert(`Paciente ${prontuario.paciente.nome} transferido com sucesso!`);
+        
+        // Recarregar prontuários
+        await buscarProntuarios();
+        
+        // Fechar modal de prontuário se estava aberto
+        if (prontuarioSelecionado && prontuarioSelecionado.id === prontuario.id) {
+          setMostrarProntuario(false);
+          setProntuarioSelecionado(null);
+        }
+      } else {
+        alert(result.error || 'Erro ao transferir paciente');
+      }
+    } catch (error) {
+      console.error('Erro ao transferir paciente:', error);
+      alert('Erro ao transferir paciente');
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  // Iniciar transferência
+  const iniciarTransferencia = (prontuario: ProntuarioCompleto) => {
+    if (!isAdmin) return;
+    setTransferModal({
+      prontuario,
+      newProfessionalId: '',
+    });
   };
 
   // Filtrar prontuários
@@ -708,7 +794,7 @@ export function NovoProntuarioClient({
                     </div>
                   )}
 
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-2">
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -719,6 +805,18 @@ export function NovoProntuarioClient({
                       <FileText className="h-4 w-4 mr-2" />
                       Ver Completo
                     </Button>
+                    
+                    {/* Botão de transferência apenas para admin */}
+                    {isAdmin && (
+                      <Button
+                        variant="outline"
+                        onClick={() => iniciarTransferencia(prontuario)}
+                        className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                      >
+                        <ArrowRightLeft className="h-4 w-4 mr-2" />
+                        Transferir
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -949,6 +1047,101 @@ export function NovoProntuarioClient({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Transferência (admin apenas) */}
+      {transferModal && (
+        <Dialog open={true} onOpenChange={() => setTransferModal(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ArrowRightLeft className="h-5 w-5 text-orange-600" />
+                Transferir Paciente
+              </DialogTitle>
+              <DialogDescription>
+                Transferir o prontuário do paciente para outro profissional
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  <strong>Paciente:</strong> {transferModal.prontuario.paciente.nome}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Profissional atual:</strong> {
+                    professionals.find(p => p.id === transferModal.prontuario.profissional_atual_id)?.nome || 'Nome não encontrado'
+                  }
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Novo profissional:</Label>
+                <Select
+                  value={transferModal.newProfessionalId}
+                  onValueChange={(value) => 
+                    setTransferModal({ ...transferModal, newProfessionalId: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um profissional" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {professionals
+                      .filter(prof => prof.id !== transferModal.prontuario.profissional_atual_id)
+                      .map((professional) => (
+                        <SelectItem key={professional.id} value={professional.id}>
+                          {professional.nome} - {professional.informacoes_adicionais?.especialidade || professional.especialidade || 'Especialidade não informada'}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-orange-700">
+                    <p className="font-medium mb-2">Atenção:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>O prontuário será transferido para o novo profissional</li>
+                      <li>O profissional anterior perderá acesso para novos registros</li>
+                      <li>Todos os registros anteriores serão mantidos</li>
+                      <li>Apenas o novo profissional poderá adicionar registros futuros</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setTransferModal(null)}
+                disabled={transferring}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => transferirPaciente(transferModal.prontuario, transferModal.newProfessionalId)}
+                disabled={!transferModal.newProfessionalId || transferring}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                {transferring ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Transferindo...
+                  </>
+                ) : (
+                  <>
+                    <ArrowRightLeft className="h-4 w-4 mr-2" />
+                    Confirmar Transferência
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

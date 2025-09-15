@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRightLeft, AlertTriangle, FileText } from "lucide-react";
+import { AlertTriangle, FileText } from "lucide-react";
 import { NovoProntuarioClient } from "@/components/professional/novo-prontuario-client";
 
 interface Professional {
@@ -67,7 +66,7 @@ function AdminProntuariosWrapper() {
     try {
       setTransferring(prontuarioId);
       
-      const response = await fetch('/api/prontuarios/alterar-profissional', {
+      const response = await fetch('/api/prontuarios/transferir-paciente', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

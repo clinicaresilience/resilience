@@ -9,11 +9,8 @@ export async function GET(
   try {
     const supabase = await createClient();
 
-    // Autenticação
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Remover autenticação obrigatória para permitir acesso público aos horários
+    // Esta API deve ser acessível para usuários não logados fazerem agendamentos
 
     const { profissionalId } = params;
     const { searchParams } = new URL(request.url);
