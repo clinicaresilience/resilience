@@ -29,6 +29,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
   const [area, setArea] = useState("");
   const [especialidade, setEspecialidade] = useState("");
   const [crp, setCrp] = useState("");
@@ -38,6 +39,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
   const resetForm = () => {
     setNome("");
     setEmail("");
+    setCpf("");
     setArea("");
     setEspecialidade("");
     setCrp("");
@@ -58,7 +60,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
     setError(null);
     setSuccess(null);
 
-    if (!nome.trim() || !email.trim() || !especialidade.trim()) {
+    if (!nome.trim() || !email.trim() || !cpf.trim() || !especialidade.trim() || !crp.trim()) {
       setError("Preencha todos os campos obrigatórios.");
       setLoading(false);
       return;
@@ -71,6 +73,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
       const result = await criarProfissional({
         nome,
         email,
+        cpf,
         senha: senhaFinal,
         area,
         especialidade,
@@ -135,6 +138,17 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
           </div>
 
           <div>
+            <Label htmlFor="cpf">CPF</Label>
+            <Input
+              id="cpf"
+              value={cpf}
+              onChange={(e) => setCpf(e.target.value)}
+              placeholder="000.000.000-00"
+              required
+            />
+          </div>
+
+          <div>
             <Label htmlFor="area">Área</Label>
             <Input
               id="area"
@@ -159,6 +173,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
               id="crp"
               value={crp}
               onChange={(e) => setCrp(e.target.value)}
+              required
             />
           </div>
 

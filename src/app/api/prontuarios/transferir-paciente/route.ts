@@ -123,7 +123,40 @@ export async function PUT(request: NextRequest) {
         throw criarRelacaoError;
       }
 
-      // 3. Atualizar prontuário (mantém compatibilidade)
+      // 3. Cancelar agendamentos futuros com profissional anterior
+      const { data: agendamentosFuturos, error: buscarAgendamentosError } = await supabaseTransaction
+        .from('agendamentos')
+        .select('id, data_consulta, status')
+        .eq('paciente_id', prontuario.paciente_id)
+        .eq('profissional_id', prontuario.profissional_atual_id)
+        .in('status', ['agendado', 'confirmado'])
+        .gte('data_consulta', new Date().toISOString());
+
+      if (buscarAgendamentosError) {
+        console.error('Erro ao buscar agendamentos futuros:', buscarAgendamentosError);
+        throw buscarAgendamentosError;
+      }
+
+      if (agendamentosFuturos && agendamentosFuturos.length > 0) {
+        console.log(`Cancelando ${agendamentosFuturos.length} agendamentos futuros do paciente`);
+        
+        for (const agendamento of agendamentosFuturos) {
+          const { error: cancelarError } = await supabaseTransaction
+            .from('agendamentos')
+            .update({
+              status: 'cancelado',
+              notas: 'Transferência de paciente para novo profissional - Agendamento cancelado automaticamente'
+            })
+            .eq('id', agendamento.id);
+
+          if (cancelarError) {
+            console.error('Erro ao cancelar agendamento:', cancelarError);
+            // Continuar cancelando outros agendamentos mesmo se um falhar
+          }
+        }
+      }
+
+      // 4. Atualizar prontuário (mantém compatibilidade)
       const { data: prontuarioData, error: updateError } = await supabaseTransaction
         .from('prontuarios')
         .update({

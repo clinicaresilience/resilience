@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/server-admin";
 export async function criarProfissional(data: {
     nome: string;
     email: string;
+    cpf: string;
     senha: string;
     area?: string;
     especialidade?: string;
@@ -40,6 +41,7 @@ export async function criarProfissional(data: {
         const { error: updateError } = await supabase.from("usuarios").update({
             tipo_usuario: "profissional",
             nome: data.nome,
+            cpf: data.cpf,
             informacoes_adicionais: {
                 area: data.area,
                 especialidade: data.especialidade,
@@ -58,6 +60,7 @@ export async function criarProfissional(data: {
                 id: userId,
                 nome: data.nome,
                 email: data.email,
+                cpf: data.cpf,
                 tipo_usuario: "profissional",
                 ativo: true,
                 primeiro_acesso: true,

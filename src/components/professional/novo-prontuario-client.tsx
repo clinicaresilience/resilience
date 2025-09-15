@@ -878,6 +878,25 @@ export function NovoProntuarioClient({
                       </p>
                     </div>
                   </div>
+                  
+                  {/* Informação do Profissional Responsável Atual */}
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Stethoscope className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium text-blue-900">
+                        Profissional Responsável Atual
+                      </span>
+                    </div>
+                    <p className="text-sm text-blue-800">
+                      {professionals.find(p => p.id === prontuarioSelecionado.profissional_atual_id)?.nome || 
+                       (prontuarioSelecionado.profissional_atual_id === profissionalId ? profissionalNome : 'Profissional não identificado')}
+                    </p>
+                    {professionals.find(p => p.id === prontuarioSelecionado.profissional_atual_id)?.informacoes_adicionais?.especialidade && (
+                      <p className="text-xs text-blue-600">
+                        {professionals.find(p => p.id === prontuarioSelecionado.profissional_atual_id)?.informacoes_adicionais?.especialidade}
+                      </p>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
 

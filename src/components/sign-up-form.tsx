@@ -18,6 +18,7 @@ export function SignUpForm({
     nome: "",
     email: "",
     telefone: "",
+    cpf: "",
     senha: "",
     confirmarSenha: "",
   });
@@ -59,6 +60,7 @@ export function SignUpForm({
           nome: formData.nome,
           email: formData.email,
           telefone: formData.telefone,
+          cpf: formData.cpf,
           senha: formData.senha,
           confirmarSenha: formData.confirmarSenha,
         }),
@@ -206,6 +208,24 @@ export function SignUpForm({
                       placeholder="(00) 00000-0000"
                       required
                       value={formData.telefone}
+                      onChange={handleInputChange}
+                      disabled={loading || success}
+                      className="h-12 px-4 bg-gray-50/50 border border-gray-200 rounded-lg focus:bg-white focus:border-azul-vivido focus:ring-2 focus:ring-azul-vivido/20 transition-all duration-200"
+                    />
+                  </div>
+
+                  {/* Campo CPF */}
+                  <div className="space-y-2">
+                    <Label htmlFor="cpf" className="text-sm font-medium text-gray-700">
+                      CPF
+                    </Label>
+                    <Input
+                      id="cpf"
+                      name="cpf"
+                      type="text"
+                      placeholder="000.000.000-00"
+                      required
+                      value={formData.cpf}
                       onChange={handleInputChange}
                       disabled={loading || success}
                       className="h-12 px-4 bg-gray-50/50 border border-gray-200 rounded-lg focus:bg-white focus:border-azul-vivido focus:ring-2 focus:ring-azul-vivido/20 transition-all duration-200"

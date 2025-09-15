@@ -4,10 +4,10 @@ import { createClient } from '@/lib/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nome, email, telefone, senha, confirmarSenha } = body;
+    const { nome, email, telefone, cpf, senha, confirmarSenha } = body;
 
     // Validation
-    if (!nome || !email || !telefone || !senha || !confirmarSenha) {
+    if (!nome || !email || !telefone || !cpf || !senha || !confirmarSenha) {
       return NextResponse.json(
         { error: 'Todos os campos são obrigatórios' },
         { status: 400 }
@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
           email,
           nome,
           telefone,
+          cpf,
           tipo_usuario: 'comum', // Default for new registrations
         });
 
