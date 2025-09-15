@@ -42,11 +42,14 @@ import {
   Trash2,
   Save,
   X,
+  Activity,
 } from "lucide-react";
 import { ProntuarioCompleto } from "@/services/database/prontuarios.service";
 import { PacienteAtendido } from "@/services/database/consultas.service";
 import { CarimboDigital } from "./carimbo-digital";
 import { exportarProntuarioPDF } from "./exportar-prontuario-pdf";
+import { EvolucoesPaciente } from "./evolucoes-paciente";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface NovoProntuarioClientV2Props {
   profissionalNome: string;
@@ -900,26 +903,49 @@ export function NovoProntuarioClient({
                 </CardContent>
               </Card>
 
-              {/* Registros */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">
-                      Registros ({prontuarioSelecionado.registros.length})
-                    </CardTitle>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        handleExportarPDF(prontuarioSelecionado)
-                      }
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      Exportar PDF
-                    </Button>
-                  </div>
-                </CardHeader>
+              {/* Tabs para Prontuário e Evolução */}
+              <Tabs defaultValue="prontuario" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="prontuario" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Registros de Prontuário ({prontuarioSelecionado.registros.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="evolucao" className="flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Evolução do Paciente
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="evolucao" className="mt-6">
+                  <EvolucoesPaciente
+                    prontuarioId={prontuarioSelecionado.id}
+                    pacienteNome={prontuarioSelecionado.paciente.nome}
+                    isAdmin={isAdmin}
+                    profissionalId={profissionalId}
+                    profissionalAtualId={prontuarioSelecionado.profissional_atual_id}
+                  />
+                </TabsContent>
+
+                <TabsContent value="prontuario" className="mt-6">
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">
+                          Registros de Prontuário ({prontuarioSelecionado.registros.length})
+                        </CardTitle>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            handleExportarPDF(prontuarioSelecionado)
+                          }
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Exportar PDF
+                        </Button>
+                      </div>
+                    </CardHeader>
                 <CardContent>
                   {prontuarioSelecionado.registros.length === 0 ? (
                     <p className="text-gray-500 text-center py-4">
@@ -1061,7 +1087,9 @@ export function NovoProntuarioClient({
                     </div>
                   )}
                 </CardContent>
-              </Card>
+                  </Card>
+                </TabsContent>
+              </Tabs>
             </div>
           )}
         </DialogContent>

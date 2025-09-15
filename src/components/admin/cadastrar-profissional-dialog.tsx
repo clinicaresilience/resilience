@@ -30,6 +30,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [area, setArea] = useState("");
   const [especialidade, setEspecialidade] = useState("");
   const [crp, setCrp] = useState("");
@@ -40,6 +41,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
     setNome("");
     setEmail("");
     setCpf("");
+    setTelefone("");
     setArea("");
     setEspecialidade("");
     setCrp("");
@@ -60,7 +62,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
     setError(null);
     setSuccess(null);
 
-    if (!nome.trim() || !email.trim() || !cpf.trim() || !especialidade.trim() || !crp.trim()) {
+    if (!nome.trim() || !email.trim() || !cpf.trim() || !telefone.trim() || !especialidade.trim() || !crp.trim()) {
       setError("Preencha todos os campos obrigatórios.");
       setLoading(false);
       return;
@@ -74,6 +76,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
         nome,
         email,
         cpf,
+        telefone,
         senha: senhaFinal,
         area,
         especialidade,
@@ -144,6 +147,18 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
               value={cpf}
               onChange={(e) => setCpf(e.target.value)}
               placeholder="000.000.000-00"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="telefone">Telefone WhatsApp</Label>
+            <Input
+              id="telefone"
+              type="tel"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+              placeholder="(00) 00000-0000"
               required
             />
           </div>

@@ -199,7 +199,7 @@ export function SignUpForm({
                   {/* Campo Telefone */}
                   <div className="space-y-2">
                     <Label htmlFor="telefone" className="text-sm font-medium text-gray-700">
-                      Telefone
+                      Telefone WhatsApp *
                     </Label>
                     <Input
                       id="telefone"
@@ -212,6 +212,9 @@ export function SignUpForm({
                       disabled={loading || success}
                       className="h-12 px-4 bg-gray-50/50 border border-gray-200 rounded-lg focus:bg-white focus:border-azul-vivido focus:ring-2 focus:ring-azul-vivido/20 transition-all duration-200"
                     />
+                    <p className="text-xs text-gray-500">
+                      Número do WhatsApp para contato e confirmações
+                    </p>
                   </div>
 
                   {/* Campo CPF */}

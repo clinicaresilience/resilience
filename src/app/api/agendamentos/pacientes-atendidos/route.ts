@@ -23,8 +23,8 @@ export async function GET(req: NextRequest) {
       .eq("id", user.id)
       .single()
 
-    if (!userData || userData.tipo_usuario !== "profissional") {
-      return NextResponse.json({ error: "Acesso restrito a profissionais" }, { status: 403 })
+    if (!userData || (userData.tipo_usuario !== "profissional" && userData.tipo_usuario !== "admin")) {
+      return NextResponse.json({ error: "Acesso restrito a profissionais e administradores" }, { status: 403 })
     }
 
     const pacientesAtendidos = await ConsultasService.getPacientesAtendidos(user.id)

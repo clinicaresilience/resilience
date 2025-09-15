@@ -6,6 +6,7 @@ export async function criarProfissional(data: {
     nome: string;
     email: string;
     cpf: string;
+    telefone: string;
     senha: string;
     area?: string;
     especialidade?: string;
@@ -42,6 +43,7 @@ export async function criarProfissional(data: {
             tipo_usuario: "profissional",
             nome: data.nome,
             cpf: data.cpf,
+            telefone: data.telefone,
             informacoes_adicionais: {
                 area: data.area,
                 especialidade: data.especialidade,
@@ -61,6 +63,7 @@ export async function criarProfissional(data: {
                 nome: data.nome,
                 email: data.email,
                 cpf: data.cpf,
+                telefone: data.telefone,
                 tipo_usuario: "profissional",
                 ativo: true,
                 primeiro_acesso: true,
