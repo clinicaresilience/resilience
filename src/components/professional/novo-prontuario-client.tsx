@@ -43,12 +43,14 @@ import {
   Save,
   X,
   Activity,
+  BarChart3,
 } from "lucide-react";
 import { ProntuarioCompleto } from "@/services/database/prontuarios.service";
 import { PacienteAtendido } from "@/services/database/consultas.service";
 import { CarimboDigital } from "./carimbo-digital";
 import { exportarProntuarioPDF } from "./exportar-prontuario-pdf";
 import { EvolucoesPaciente } from "./evolucoes-paciente";
+import { HistoricoEvolucaoPaciente } from "./historico-evolucao-paciente";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface NovoProntuarioClientV2Props {
@@ -903,21 +905,35 @@ export function NovoProntuarioClient({
                 </CardContent>
               </Card>
 
-              {/* Tabs para Prontuário e Evolução */}
+              {/* Tabs para Prontuário, Evolução e Histórico */}
               <Tabs defaultValue="prontuario" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="prontuario" className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
-                    Registros de Prontuário ({prontuarioSelecionado.registros.length})
+                    Registros ({prontuarioSelecionado.registros.length})
                   </TabsTrigger>
                   <TabsTrigger value="evolucao" className="flex items-center gap-2">
                     <Activity className="h-4 w-4" />
-                    Evolução do Paciente
+                    Evolução
+                  </TabsTrigger>
+                  <TabsTrigger value="historico" className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Histórico & Métricas
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="evolucao" className="mt-6">
                   <EvolucoesPaciente
+                    prontuarioId={prontuarioSelecionado.id}
+                    pacienteNome={prontuarioSelecionado.paciente.nome}
+                    isAdmin={isAdmin}
+                    profissionalId={profissionalId}
+                    profissionalAtualId={prontuarioSelecionado.profissional_atual_id}
+                  />
+                </TabsContent>
+
+                <TabsContent value="historico" className="mt-6">
+                  <HistoricoEvolucaoPaciente
                     prontuarioId={prontuarioSelecionado.id}
                     pacienteNome={prontuarioSelecionado.paciente.nome}
                     isAdmin={isAdmin}
