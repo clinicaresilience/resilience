@@ -20,6 +20,7 @@ import {
   CheckCircle,
   AlertCircle,
   LogIn,
+  Monitor,
 } from "lucide-react";
 import moment from "moment";
 import "moment/locale/pt-br";
@@ -73,7 +74,7 @@ export function BookingConfirmation({
   const { user } = useAuth();
   const router = useRouter();
   const [notas, setNotas] = useState("");
-  const [modalidade, setModalidade] = useState<Modalidade>("presencial");
+  const modalidade: Modalidade = "online"; // Sempre online para agendamentos via slots
   const [codigoEmpresa, setCodigoEmpresa] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -171,7 +172,6 @@ export function BookingConfirmation({
 
   const handleClose = () => {
     setNotas("");
-    setModalidade("presencial");
     setCodigoEmpresa("");
     setError("");
     setSuccess(false);
@@ -266,20 +266,13 @@ export function BookingConfirmation({
                   </div>
                 </div>
 
-                {/* Modalidade */}
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="modalidade">Modalidade</Label>
-                  <select
-                    id="modalidade"
-                    value={modalidade}
-                    onChange={(e) =>
-                      setModalidade(e.target.value as Modalidade)
-                    }
-                    className="border rounded px-3 py-2"
-                  >
-                    <option value="presencial">Presencial</option>
-                    <option value="online">Online</option>
-                  </select>
+                {/* Modalidade - Sempre Online para agendamentos via slots */}
+                <div className="flex items-center gap-3">
+                  <Monitor className="h-4 w-4 text-blue-600" />
+                  <div>
+                    <p className="font-medium">Online</p>
+                    <p className="text-sm text-gray-500">Modalidade</p>
+                  </div>
                 </div>
 
                 {/* Código da Empresa */}

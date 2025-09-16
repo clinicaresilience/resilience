@@ -15,6 +15,13 @@ export async function criarProfissional(data: {
 }) {
     const supabase = createAdminClient();
 
+    // Limpar e validar CPF (remover formatação e garantir 11 dígitos)
+    const cpfLimpo = data.cpf.replace(/\D/g, ''); // Remove tudo que não é dígito
+    
+    if (cpfLimpo.length !== 11) {
+        throw new Error('CPF deve conter exatamente 11 dígitos');
+    }
+
     // 1️⃣ Criar usuário no Auth
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
         email: data.email,
@@ -42,7 +49,7 @@ export async function criarProfissional(data: {
         const { error: updateError } = await supabase.from("usuarios").update({
             tipo_usuario: "profissional",
             nome: data.nome,
-            cpf: data.cpf,
+            cpf: cpfLimpo,
             telefone: data.telefone,
             informacoes_adicionais: {
                 area: data.area,
@@ -62,7 +69,7 @@ export async function criarProfissional(data: {
                 id: userId,
                 nome: data.nome,
                 email: data.email,
-                cpf: data.cpf,
+                cpf: cpfLimpo,
                 telefone: data.telefone,
                 tipo_usuario: "profissional",
                 ativo: true,

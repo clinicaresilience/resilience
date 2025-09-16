@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
@@ -85,7 +86,7 @@ export function ExpandableUserTable({
           {users.map((user) => {
             const isExpanded = expandedRows.has(user.id);
             return (
-              <>
+              <React.Fragment key={user.id}>
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="py-3 pr-2">
                     <Button
@@ -144,7 +145,7 @@ export function ExpandableUserTable({
                     </td>
                   </tr>
                 )}
-              </>
+              </React.Fragment>
             );
           })}
         </tbody>

@@ -69,71 +69,94 @@ export class ConsultasService {
   static async getAllProntuarios() {
     const supabase = await createClient();
 
-    const { data: consultas, error } = await supabase
-      .from('agendamentos')
-      .select(`
-        id,
-        data_consulta,
-        modalidade,
-        status,
-        notas,
-        paciente:paciente_id(
+    try {
+      // Primeiro, buscar todas as consultas com informações básicas
+      const { data: consultas, error: consultasError } = await supabase
+        .from('agendamentos')
+        .select(`
           id,
-          nome,
-          email
-        ),
-        profissional:profissional_id(
-          id,
-          nome,
-          especialidade
-        ),
-        prontuario:prontuarios(
-          id,
-          arquivo
-        )
-      `)
-      .not('prontuario', 'is', null)
-      .order('data_consulta', { ascending: false });
+          data_consulta,
+          modalidade,
+          status,
+          notas,
+          paciente_id,
+          profissional_id
+        `)
+        .eq('status', 'concluido')
+        .order('data_consulta', { ascending: false });
 
-    if (error) {
+      if (consultasError) {
+        console.error('Erro ao buscar consultas:', consultasError);
+        throw consultasError;
+      }
+
+      if (!consultas || consultas.length === 0) {
+        return [];
+      }
+
+      // Buscar dados dos pacientes
+      const pacienteIds = [...new Set(consultas.map(c => c.paciente_id))];
+      const { data: pacientes } = await supabase
+        .from('usuarios')
+        .select('id, nome, email')
+        .in('id', pacienteIds);
+
+      // Buscar dados dos profissionais
+      const profissionalIds = [...new Set(consultas.map(c => c.profissional_id))];
+      const { data: profissionais } = await supabase
+        .from('usuarios')
+        .select('id, nome, informacoes_adicionais')
+        .in('id', profissionalIds);
+
+      // Buscar prontuários usando a tabela correta
+      const { data: prontuarios } = await supabase
+        .from('prontuarios')
+        .select('id, consulta_id, arquivo')
+        .in('consulta_id', consultas.map(c => c.id));
+
+      // Combinar os dados
+      const consultasFormatted = consultas
+        .filter(consulta => {
+          // Só incluir consultas que têm prontuário
+          return prontuarios?.some(p => p.consulta_id === consulta.id);
+        })
+        .map(consulta => {
+          const pacienteData = pacientes?.find(p => p.id === consulta.paciente_id);
+          const profissionalData = profissionais?.find(p => p.id === consulta.profissional_id);
+          const prontuarioData = prontuarios?.find(p => p.consulta_id === consulta.id);
+
+          return {
+            id: consulta.id,
+            paciente_id: consulta.paciente_id,
+            profissional_id: consulta.profissional_id,
+            data_consulta: consulta.data_consulta,
+            status: consulta.status,
+            modalidade: consulta.modalidade,
+            notas: consulta.notas,
+            paciente: pacienteData ? {
+              nome: pacienteData.nome,
+              email: pacienteData.email
+            } : undefined,
+            profissional: profissionalData ? {
+              nome: profissionalData.nome,
+              especialidade: profissionalData.informacoes_adicionais?.especialidade || ''
+            } : undefined,
+            prontuario: prontuarioData ? {
+              id: prontuarioData.id,
+              consulta_id: consulta.id,
+              arquivo: prontuarioData.arquivo,
+              criado_em: consulta.data_consulta,
+              atualizado_em: consulta.data_consulta
+            } : undefined
+          };
+        });
+
+      return consultasFormatted;
+
+    } catch (error) {
       console.error('Erro ao buscar todos os prontuários:', error);
       throw error;
     }
-
-    // Transform to match expected format for admin dashboard
-    const consultasFormatted = (consultas || []).map(consulta => {
-      // Handle Supabase returning arrays for related data
-      const pacienteData = Array.isArray(consulta.paciente) ? consulta.paciente[0] : consulta.paciente;
-      const profissionalData = Array.isArray(consulta.profissional) ? consulta.profissional[0] : consulta.profissional;
-      const prontuarioData = Array.isArray(consulta.prontuario) ? consulta.prontuario[0] : consulta.prontuario;
-
-      return {
-        id: consulta.id,
-        paciente_id: pacienteData?.id,
-        profissional_id: profissionalData?.id,
-        data_consulta: consulta.data_consulta,
-        status: consulta.status,
-        modalidade: consulta.modalidade,
-        notas: consulta.notas,
-        paciente: pacienteData ? {
-          nome: pacienteData.nome,
-          email: pacienteData.email
-        } : undefined,
-        profissional: profissionalData ? {
-          nome: profissionalData.nome,
-          especialidade: profissionalData.especialidade
-        } : undefined,
-        prontuario: prontuarioData ? {
-          id: prontuarioData.id,
-          consulta_id: consulta.id,
-          arquivo: prontuarioData.arquivo,
-          criado_em: consulta.data_consulta,
-          atualizado_em: consulta.data_consulta
-        } : undefined
-      };
-    });
-
-    return consultasFormatted;
   }
   // ======================================
   // Buscar pacientes atendidos por um profissional (usando nova tabela paciente_profissional)
