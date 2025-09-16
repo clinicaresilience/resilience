@@ -363,10 +363,10 @@ export function NovoProntuarioClient({
     try {
       const response = await fetch("/api/profissionais");
       if (response.ok) {
-        const data = await response.json();
-        console.log("Profissionais carregados:", data); // Debug
-        // A API já retorna apenas profissionais, não precisa filtrar por tipo_usuario
-        setProfessionals(data || []);
+        const result = await response.json();
+        console.log("Profissionais carregados:", result); // Debug
+        const data = result.data || [];
+        setProfessionals(data);
       } else {
         console.error("Erro na resposta da API profissionais:", response.status);
       }

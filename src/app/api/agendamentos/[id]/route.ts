@@ -19,7 +19,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
     }
 
-    const { id } = params
+    const { id } = await params
     if (!id) {
       return NextResponse.json({ error: "ID do agendamento não fornecido" }, { status: 400 })
     }
@@ -138,7 +138,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Apenas administradores podem deletar agendamentos" }, { status: 403 })
     }
 
-    const { id } = params
+    const { id } = await params
     if (!id) {
       return NextResponse.json({ error: "ID do agendamento não fornecido" }, { status: 400 })
     }

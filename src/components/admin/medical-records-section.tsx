@@ -48,7 +48,8 @@ function AdminProntuariosWrapper() {
       try {
         const response = await fetch("/api/profissionais");
         if (response.ok) {
-          const data = await response.json();
+          const result = await response.json();
+          const data = result.data || [];
           setProfessionals(data.filter((p: Professional) => p.tipo_usuario === 'profissional') || []);
         }
       } catch (error) {

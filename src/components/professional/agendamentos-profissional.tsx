@@ -349,6 +349,7 @@ export default function AgendamentosProfissional({
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            status: "cancelado",
             justificativa: justificativaCancelamento,
           }),
         }
