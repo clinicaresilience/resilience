@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./styles/globals.css";
 import { AuthProvider } from "@/features/auth/context/auth-context";
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
+import { DynamicWhatsAppFloat } from "@/components/ui/dynamic-whatsapp-float";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,6 +42,8 @@ export default function RootLayout({
           <AuthenticatedLayout>
             {children}
           </AuthenticatedLayout>
+          {/* WhatsApp Float Button - aparece em todas as páginas */}
+          <DynamicWhatsAppFloat />
         </AuthProvider>
       </body>
     </html>

@@ -3,7 +3,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { Home, FileText, Calendar, TrendingUp, Users, Building2, Clock, User, Timer, LucideIcon } from "lucide-react"
 
-export type adminTab = "dashboard" | "pacientes" | "prontuarios" | "agendas" | "analytics" | "profissionais" | "usuarios" | "empresas" | "limites-excecao" | "perfil"
+export type adminTab = "dashboard" | "pacientes" | "prontuarios" | "agendas" | "analytics" | "profissionais" | "usuarios" | "empresas" | "limites-excecao" | "clinica-info" | "perfil"
 export type profissionalTab = "dashboard" | "prontuarios" | "agendas" | "pacientes" | "perfil"
 export type pacienteTab = "inicio" | "agendas" | "perfil"
 export type TabType = adminTab | profissionalTab | pacienteTab
@@ -64,6 +64,7 @@ export const useTabStore = create<TabStore>()(
                             { id: "analytics", label: "Análises", icon: TrendingUp, path: "/painel-administrativo/analytics" },
                             { id: "usuarios", label: "Usuários", icon: Users, path: "/painel-administrativo/usuarios" },
                             { id: "empresas", label: "Empresas", icon: Building2, path: "/painel-administrativo/empresas" },
+                            { id: "clinica-info", label: "Clínica", icon: Building2, path: "/painel-administrativo/clinica-info" },
                             { id: "limites-excecao", label: "Limites", icon: Timer, path: "/painel-administrativo/limites-excecao" },
                             { id: "perfil", label: "Perfil", icon: User, path: "/painel-administrativo/perfil" },
                         ]
