@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { WhatsAppFloat } from "./whatsapp-float";
 
 export function DynamicWhatsAppFloat() {
-  const [phoneNumber, setPhoneNumber] = useState<string>("5511999999999"); // fallback padrão
+  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +29,8 @@ export function DynamicWhatsAppFloat() {
             console.log("✅ Usando número do banco:", whatsappRede.link);
             setPhoneNumber(whatsappRede.link);
           } else {
-            console.log("⚠️ WhatsApp não encontrado, usando número padrão");
+            console.log("⚠️ WhatsApp não encontrado, ícone não será exibido");
+            setPhoneNumber(null);
           }
         } else {
           console.log("❌ Erro na resposta da API:", data);
@@ -47,6 +48,11 @@ export function DynamicWhatsAppFloat() {
 
   // Não renderiza nada enquanto está carregando para evitar flash
   if (loading) {
+    return null;
+  }
+
+  // Só renderiza o botão se houver um número cadastrado
+  if (!phoneNumber) {
     return null;
   }
 
