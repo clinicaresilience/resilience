@@ -48,7 +48,7 @@ export async function GET() {
 
     const { data: profissionais, error } = await supabase
         .from("usuarios")
-        .select("id, nome, informacoes_adicionais")
+        .select("id, nome, email, informacoes_adicionais")
         .eq("tipo_usuario", "profissional")
         .order("nome");
 
@@ -56,5 +56,5 @@ export async function GET() {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(profissionais ?? []);
+    return NextResponse.json({ data: profissionais ?? [] });
 }

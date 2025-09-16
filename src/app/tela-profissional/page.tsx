@@ -13,6 +13,7 @@ import {
   Users,
   Clock,
   AlertCircle,
+  Building2,
 } from "lucide-react";
 import PrimeiroAcessoModal from "./primeiro-acesso";
 
@@ -116,6 +117,17 @@ export default async function TelaProfissional() {
     .lt("data_consulta", proximosTresDias.toISOString())
     .order("data_consulta", { ascending: true });
 
+  // Buscar designações presenciais ativas (próximos 30 dias)
+  const proximosTrintaDias = new Date();
+  proximosTrintaDias.setDate(proximosTrintaDias.getDate() + 30);
+  const { data: designacoesPresenciais } = await supabase
+    .from("profissional_presencial")
+    .select("data_presencial, hora_inicio, hora_fim")
+    .eq("profissional_id", user.id)
+    .gte("data_presencial", hoje.toISOString().split('T')[0])
+    .lte("data_presencial", proximosTrintaDias.toISOString().split('T')[0])
+    .order("data_presencial", { ascending: true });
+
   // Função auxiliar para formatar datas
   const formatarData = (dataStr: string) => {
     const data = new Date(dataStr);
@@ -190,6 +202,63 @@ export default async function TelaProfissional() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Designações Presenciais */}
+      {designacoesPresenciais && designacoesPresenciais.length > 0 && (
+        <Card className="mb-8 border-2 border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-blue-800">
+              <Building2 className="h-5 w-5" />
+              <span>Atendimento Presencial</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <p className="text-blue-700 mb-4">
+                Você tem {designacoesPresenciais.length} designação(ões) para atendimento presencial:
+              </p>
+              {designacoesPresenciais.map((designacao, index) => {
+                const dataDesignacao = new Date(designacao.data_presencial + 'T00:00:00');
+                const dataFormatada = dataDesignacao.toLocaleDateString('pt-BR');
+                const hoje = new Date();
+                const hojeStr = hoje.toLocaleDateString('pt-BR');
+                const amanha = new Date(hoje);
+                amanha.setDate(hoje.getDate() + 1);
+                const amanhaStr = amanha.toLocaleDateString('pt-BR');
+                
+                let textoData = dataFormatada;
+                if (dataFormatada === hojeStr) textoData = `Hoje (${dataFormatada})`;
+                else if (dataFormatada === amanhaStr) textoData = `Amanhã (${dataFormatada})`;
+
+                const horarioTexto = designacao.hora_inicio && designacao.hora_fim 
+                  ? `${designacao.hora_inicio.substring(0, 5)} às ${designacao.hora_fim.substring(0, 5)}`
+                  : 'Dia inteiro';
+
+                return (
+                  <div key={index} className="flex items-center justify-between p-3 bg-white border border-blue-200 rounded-lg">
+                    <div>
+                      <p className="font-medium text-blue-900">{textoData}</p>
+                      <p className="text-sm text-blue-700">{horarioTexto}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                        <Building2 className="h-3 w-3 mr-1" />
+                        Presencial
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Importante:</strong> Durante os dias de atendimento presencial, você não poderá criar agenda online. 
+                  Entre em contato com o administrador se precisar fazer alterações.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Próximas consultas */}
       <Card>

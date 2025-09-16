@@ -125,8 +125,20 @@ export async function GET(
       (designacoesPresenciais || []).map(d => d.data_presencial)
     );
 
+    // Buscar designações presenciais completas para criar slots presenciais
+    const { data: designacoesCompletas, error: designacoesError } = await supabase
+      .from('profissional_presencial')
+      .select('*')
+      .eq('profissional_id', profissionalId)
+      .gte('data_presencial', TimezoneUtils.extractDate(inicioDate))
+      .lte('data_presencial', TimezoneUtils.extractDate(fimDate));
+
+    if (designacoesError) {
+      console.error('Erro ao buscar designações completas:', designacoesError);
+    }
+
     // Filtrar slots que não estão bloqueados por exceções E respeitam modalidade presencial
-    const slotsDisponiveis = (slots || []).filter(slot => {
+    const slotsOnlineDisponiveis = (slots || []).filter(slot => {
       const dataHoraInicioUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_inicio);
       const dataHoraFimUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_fim);
       const dataSlot = TimezoneUtils.extractDate(dataHoraInicioUTC);
@@ -136,43 +148,109 @@ export async function GET(
         return false;
       }
 
-      // NOVA REGRA: Se o profissional está designado para presencial nesta data,
-      // não exibir slots online (assumindo que slots são online por padrão)
-      // Para manter compatibilidade, vamos considerar que slots existentes são para modalidade online
-      // e só devem aparecer se NÃO há designação presencial
+      // Se o profissional está designado para presencial nesta data,
+      // não exibir slots online
       if (datasPresenciais.has(dataSlot)) {
-        // Profissional está em modo presencial nesta data - não mostrar slots online
         return false;
       }
 
       return true;
     });
 
-    // Mapear para frontend com formato correto
-    const slotsFormatted = slotsDisponiveis.map(slot => {
+    // Mapear slots online para frontend
+    const slotsOnlineFormatted = slotsOnlineDisponiveis.map(slot => {
       const dataHoraInicioUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_inicio);
       const dataHoraFimUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_fim);
       
       return {
         id: slot.id,
         profissional_id: slot.profissional_id,
-        // Separar data e hora para compatibilidade com frontend (convertido para timezone local)
+        modalidade: 'online',
         data: TimezoneUtils.extractDate(dataHoraInicioUTC),
         hora: TimezoneUtils.extractTime(dataHoraInicioUTC),
         hora_inicio: TimezoneUtils.extractTime(dataHoraInicioUTC),
         hora_fim: TimezoneUtils.extractTime(dataHoraFimUTC),
-        // Campos adicionais para compatibilidade
         horario: TimezoneUtils.extractTime(dataHoraInicioUTC),
-        data_hora_inicio: dataHoraInicioUTC, // Timestamp UTC
-        data_hora_fim: dataHoraFimUTC, // Timestamp UTC
+        data_hora_inicio: dataHoraInicioUTC,
+        data_hora_fim: dataHoraFimUTC,
         disponivel: slot.status === 'livre',
         status: slot.status,
-        // Campos formatados para exibição
         dataFormatada: TimezoneUtils.formatForDisplay(dataHoraInicioUTC, undefined, 'date'),
         horaFormatada: TimezoneUtils.formatForDisplay(dataHoraInicioUTC, undefined, 'time'),
         dataHoraFormatada: TimezoneUtils.formatForDisplay(dataHoraInicioUTC)
       };
     });
+
+    // Criar slots presenciais virtuais para datas com designação presencial
+    const slotsPresenciaisFormatted = [];
+    for (const designacao of (designacoesCompletas || [])) {
+      const dataDesignacao = designacao.data_presencial;
+      
+      // Se tem horário específico definido, criar slot para esse período
+      if (designacao.hora_inicio && designacao.hora_fim) {
+        const dataHoraInicioStr = `${dataDesignacao}T${designacao.hora_inicio}:00`;
+        const dataHoraFimStr = `${dataDesignacao}T${designacao.hora_fim}:00`;
+        
+        const slotPresencial = {
+          id: `presencial-${designacao.id}`,
+          profissional_id: profissionalId,
+          modalidade: 'presencial',
+          data: dataDesignacao,
+          hora: designacao.hora_inicio.substring(0, 5),
+          hora_inicio: designacao.hora_inicio.substring(0, 5),
+          hora_fim: designacao.hora_fim.substring(0, 5),
+          horario: designacao.hora_inicio.substring(0, 5),
+          data_hora_inicio: dataHoraInicioStr,
+          data_hora_fim: dataHoraFimStr,
+          disponivel: true,
+          status: 'livre',
+          dataFormatada: new Date(dataDesignacao).toLocaleDateString('pt-BR'),
+          horaFormatada: designacao.hora_inicio.substring(0, 5),
+          dataHoraFormatada: `${new Date(dataDesignacao).toLocaleDateString('pt-BR')} ${designacao.hora_inicio.substring(0, 5)}`,
+          isPresencial: true,
+          designacao_id: designacao.id
+        };
+        
+        slotsPresenciaisFormatted.push(slotPresencial);
+      } else {
+        // Sem horário específico - criar slots para horário comercial (8h às 18h)
+        const horariosComerciais = [
+          '08:00', '09:00', '10:00', '11:00', 
+          '14:00', '15:00', '16:00', '17:00'
+        ];
+        
+        for (const hora of horariosComerciais) {
+          const horaFim = `${parseInt(hora.split(':')[0]) + 1}:00`;
+          const dataHoraInicioStr = `${dataDesignacao}T${hora}:00`;
+          const dataHoraFimStr = `${dataDesignacao}T${horaFim}:00`;
+          
+          const slotPresencial = {
+            id: `presencial-${designacao.id}-${hora}`,
+            profissional_id: profissionalId,
+            modalidade: 'presencial',
+            data: dataDesignacao,
+            hora: hora,
+            hora_inicio: hora,
+            hora_fim: horaFim,
+            horario: hora,
+            data_hora_inicio: dataHoraInicioStr,
+            data_hora_fim: dataHoraFimStr,
+            disponivel: true,
+            status: 'livre',
+            dataFormatada: new Date(dataDesignacao).toLocaleDateString('pt-BR'),
+            horaFormatada: hora,
+            dataHoraFormatada: `${new Date(dataDesignacao).toLocaleDateString('pt-BR')} ${hora}`,
+            isPresencial: true,
+            designacao_id: designacao.id
+          };
+          
+          slotsPresenciaisFormatted.push(slotPresencial);
+        }
+      }
+    }
+
+    // Combinar slots online e presenciais
+    const slotsFormatted = [...slotsOnlineFormatted, ...slotsPresenciaisFormatted];
 
     console.log(`Retornando ${slotsFormatted.length} slots para profissional ${profissionalId}`);
     return NextResponse.json(slotsFormatted);
@@ -196,28 +274,42 @@ export async function POST(
     }
 
     const { profissionalId } = params;
-    const { slotId, modalidade, notas } = await request.json();
+    const { slotId, modalidade, notas, dataHoraInicio, dataHoraFim } = await request.json();
 
     if (!slotId) {
       return NextResponse.json({ error: 'slotId é obrigatório' }, { status: 400 });
     }
 
-    // Buscar slot pelo ID
-    const { data: slot, error: slotError } = await supabase
-      .from('agendamento_slot')
-      .select('*')
-      .eq('id', slotId)
-      .eq('profissional_id', profissionalId)
-      .eq('status', 'livre')
-      .single();
+    let dataConsultaUTC;
+    let isPresencialSlot = false;
 
-    if (slotError || !slot) {
-      return NextResponse.json({ error: 'Slot não disponível' }, { status: 400 });
+    // Verificar se é slot presencial (ID começa com 'presencial-')
+    if (slotId.startsWith('presencial-')) {
+      isPresencialSlot = true;
+      
+      if (!dataHoraInicio) {
+        return NextResponse.json({ error: 'dataHoraInicio é obrigatório para slots presenciais' }, { status: 400 });
+      }
+      
+      dataConsultaUTC = dataHoraInicio;
+    } else {
+      // Buscar slot regular pelo ID
+      const { data: slot, error: slotError } = await supabase
+        .from('agendamento_slot')
+        .select('*')
+        .eq('id', slotId)
+        .eq('profissional_id', profissionalId)
+        .eq('status', 'livre')
+        .single();
+
+      if (slotError || !slot) {
+        return NextResponse.json({ error: 'Slot não disponível' }, { status: 400 });
+      }
+
+      dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_inicio);
     }
 
-    // Criar agendamento usando data_hora_inicio convertido para UTC
-    const dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(slot.data_hora_inicio);
-
+    // Criar agendamento
     const { data: agendamento, error: agendamentoError } = await supabase
       .from('agendamentos')
       .insert({
@@ -225,7 +317,7 @@ export async function POST(
         profissional_id: profissionalId,
         data_consulta: dataConsultaUTC,
         status: 'confirmado',
-        modalidade: modalidade || 'presencial',
+        modalidade: modalidade || (isPresencialSlot ? 'presencial' : 'online'),
         notas: notas
       })
       .select()
@@ -236,21 +328,24 @@ export async function POST(
       return NextResponse.json({ error: agendamentoError.message }, { status: 500 });
     }
 
-    // Marcar slot como ocupado
-    const { error: updateSlotError } = await supabase
-      .from('agendamento_slot')
-      .update({
-        status: 'ocupado',
-        paciente_id: user.id,
-        atualizado_em: TimezoneUtils.now()
-      })
-      .eq('id', slotId);
+    // Se for slot regular (não presencial), marcar como ocupado
+    if (!isPresencialSlot) {
+      const { error: updateSlotError } = await supabase
+        .from('agendamento_slot')
+        .update({
+          status: 'ocupado',
+          paciente_id: user.id,
+          atualizado_em: TimezoneUtils.now()
+        })
+        .eq('id', slotId);
 
-    if (updateSlotError) {
-      console.error('Erro ao ocupar slot:', updateSlotError);
-      await supabase.from('agendamentos').delete().eq('id', agendamento.id);
-      return NextResponse.json({ error: 'Erro ao reservar horário' }, { status: 500 });
+      if (updateSlotError) {
+        console.error('Erro ao ocupar slot:', updateSlotError);
+        await supabase.from('agendamentos').delete().eq('id', agendamento.id);
+        return NextResponse.json({ error: 'Erro ao reservar horário' }, { status: 500 });
+      }
     }
+    // Para slots presenciais, não precisamos marcar nada como ocupado pois são virtuais
 
     return NextResponse.json({
       success: true,

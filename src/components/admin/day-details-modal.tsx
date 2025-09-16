@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { formatTime, formatDateTimeObject, getDateOnly, isSameDay } from "@/utils/date-formatter"
 
 import {
   Calendar,
@@ -64,22 +65,15 @@ function PatientDetailsModal({ isOpen, onClose, agendamento }: PatientDetailsMod
 
   if (!agendamento) return null
 
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString)
-    return {
-      date: date.toLocaleDateString('pt-BR'),
-      time: date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-    }
-  }
-
-  const { date, time } = formatDateTime(agendamento.dataISO)
+  const { date, time } = formatDateTimeObject(agendamento.dataISO)
 
   const getStatusColor = (status: string) => {
     const colors = {
       confirmado: "bg-green-100 text-green-800 border-green-200",
       pendente: "bg-yellow-100 text-yellow-800 border-yellow-200",
       cancelado: "bg-red-100 text-red-800 border-red-200",
-      concluido: "bg-blue-100 text-blue-800 border-blue-200"
+      concluido: "bg-blue-100 text-blue-800 border-blue-200",
+      presencial: "bg-blue-100 text-blue-800 border-blue-200"
     }
     return colors[status as keyof typeof colors] || colors.confirmado
   }
@@ -263,21 +257,17 @@ export function DayDetailsModal({ isOpen, onClose, selectedDate, agendamentos }:
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null)
   const [showPatientModal, setShowPatientModal] = useState(false)
 
-  // Filtrar agendamentos para a data selecionada
+  // Filtrar agendamentos para a data selecionada usando utilitário universal
   const dayAgendamentos = selectedDate ? agendamentos.filter(ag => {
-    const agDate = new Date(ag.dataISO)
-    return agDate.toDateString() === selectedDate.toDateString()
+    const agDate = getDateOnly(ag.dataISO)
+    const selectedDateStr = selectedDate.toISOString().split('T')[0]
+    return agDate === selectedDateStr
   }).sort((a, b) => new Date(a.dataISO).getTime() - new Date(b.dataISO).getTime()) : []
 
   // Obter lista única de profissionais trabalhando no dia
   const profissionaisNoDia = Array.from(new Set(dayAgendamentos.map(ag => ag.profissionalNome)))
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+  // Usar formatTime do utilitário universal
 
   const getStatusColor = (status: string) => {
     const colors = {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { generateMockAgendamentos, type Agendamento } from "@/lib/mocks/agendamentos"
@@ -38,6 +38,31 @@ type AgendamentoReal = {
   }
 }
 
+type DesignacaoPresencial = {
+  id: string
+  profissional_id: string
+  empresa_id: string
+  data_presencial: string
+  hora_inicio?: string
+  hora_fim?: string
+  criado_em: string
+  atualizado_em: string
+  usuarios?: {
+    id: string
+    nome: string
+    email: string
+    informacoes_adicionais?: {
+      especialidade?: string
+      crp?: string
+    }
+  }
+  empresas?: {
+    id: string
+    nome: string
+    codigo: string
+  }
+}
+
 type CalendarViewProps = {
   agendamentos?: AgendamentoReal[]
   selectedProfessional?: string
@@ -53,12 +78,74 @@ export function CalendarView({
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("month")
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [presentialDesignations, setPresentialDesignations] = useState<DesignacaoPresencial[]>([])
+
+  // Fetch presential designations
+  const fetchPresentialDesignations = async () => {
+    try {
+      const response = await fetch('/api/profissional-presencial')
+      if (response.ok) {
+        const result = await response.json()
+        setPresentialDesignations(result.data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching presential designations:', error)
+    }
+  }
+
+  // Load presential designations on component mount
+  useEffect(() => {
+    fetchPresentialDesignations()
+  }, [])
 
   // Usar agendamentos externos ou gerar mock
-  const allAgendamentos = useMemo(() =>
+  const baseAgendamentos = useMemo(() =>
     externalAgendamentos || generateMockAgendamentos(),
     [externalAgendamentos]
   ) as AgendamentoReal[]
+
+  // Combine regular appointments with presential designations
+  const allAgendamentos = useMemo(() => {
+    const combined = [...baseAgendamentos]
+    
+    // Add presential designations as special appointments
+    if (presentialDesignations && presentialDesignations.length > 0) {
+      const presentialAgendamentos = presentialDesignations.map((designation: DesignacaoPresencial) => ({
+        id: `presential-${designation.id}`,
+        usuarioId: '',
+        profissionalId: designation.profissional_id,
+        profissionalNome: designation.usuarios?.nome || 'Profissional',
+        especialidade: designation.usuarios?.informacoes_adicionais?.especialidade || '',
+        dataISO: designation.hora_inicio ? `${designation.data_presencial}T${designation.hora_inicio}` : `${designation.data_presencial}T08:00:00`,
+        data_consulta: designation.data_presencial,
+        local: 'Presencial',
+        status: 'presencial',
+        notas: `Presencial ${designation.hora_inicio && designation.hora_fim 
+          ? `das ${designation.hora_inicio.substring(0, 5)} às ${designation.hora_fim.substring(0, 5)}` 
+          : 'dia inteiro'}${designation.empresas?.nome ? ` - ${designation.empresas.nome}` : ''}`,
+        modalidade: 'presencial',
+        pacienteNome: `🏥 Presencial${designation.empresas?.nome ? ` - ${designation.empresas.nome}` : ''}`,
+        pacienteEmail: '',
+        pacienteTelefone: '',
+        paciente: {
+          id: '',
+          nome: `🏥 Presencial${designation.empresas?.nome ? ` - ${designation.empresas.nome}` : ''}`,
+          email: '',
+          telefone: ''
+        },
+        profissional: {
+          nome: designation.usuarios?.nome || 'Profissional',
+          especialidade: designation.usuarios?.informacoes_adicionais?.especialidade || ''
+        },
+        isPresential: true,
+        empresa: designation.empresas || null
+      }))
+      
+      combined.push(...presentialAgendamentos)
+    }
+    
+    return combined
+  }, [baseAgendamentos, presentialDesignations])
 
   // Filtrar agendamentos
   const filteredAgendamentos = useMemo(() => {
@@ -115,7 +202,13 @@ export function CalendarView({
   const getAgendamentosForDate = (date: moment.Moment) => {
     const dateStr = date.format('YYYY-MM-DD')
     return filteredAgendamentos.filter(ag => {
-      const agDate = moment(ag.dataISO).format('YYYY-MM-DD')
+      // Para designações presenciais, extrair apenas a data sem conversão de timezone
+      let agDate: string
+      if (ag.dataISO.includes('T')) {
+        agDate = ag.dataISO.split('T')[0]
+      } else {
+        agDate = moment(ag.dataISO).format('YYYY-MM-DD')
+      }
       return agDate === dateStr
     }).sort((a, b) => new Date(a.dataISO).getTime() - new Date(b.dataISO).getTime())
   }
@@ -155,7 +248,8 @@ export function CalendarView({
       confirmado: "bg-green-100 text-green-800 border-green-200",
       pendente: "bg-yellow-100 text-yellow-800 border-yellow-200",
       cancelado: "bg-red-100 text-red-800 border-red-200",
-      concluido: "bg-blue-100 text-blue-800 border-blue-200"
+      concluido: "bg-blue-100 text-blue-800 border-blue-200",
+      presencial: "bg-blue-100 text-blue-800 border-blue-200"
     }
     return colors[status as keyof typeof colors] || colors.confirmado
   }

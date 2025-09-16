@@ -52,25 +52,48 @@ interface Profissional {
 interface DesignacaoPresencial {
   id: string;
   profissional_id: string;
+  empresa_id: string;
   data_presencial: string;
   hora_inicio?: string;
   hora_fim?: string;
   criado_em: string;
   atualizado_em: string;
   usuarios: Profissional;
+  empresas: {
+    id: string;
+    nome: string;
+    codigo: string;
+    endereco_logradouro?: string;
+    endereco_numero?: string;
+    endereco_complemento?: string;
+    endereco_bairro?: string;
+    endereco_cidade?: string;
+    endereco_estado?: string;
+    endereco_cep?: string;
+  };
 }
 
 interface NovaDesignacao {
   profissional_id: string;
+  empresa_id: string;
   data_presencial: string;
   hora_inicio?: string;
   hora_fim?: string;
 }
 
+interface Empresa {
+  id: string;
+  nome: string;
+  codigo: string;
+  ativa: boolean;
+}
+
 export function GestaoAtendimentoPresencial() {
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [designacoes, setDesignacoes] = useState<DesignacaoPresencial[]>([]);
   const [carregandoProfissionais, setCarregandoProfissionais] = useState(true);
+  const [carregandoEmpresas, setCarregandoEmpresas] = useState(true);
   const [carregandoDesignacoes, setCarregandoDesignacoes] = useState(true);
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
@@ -80,6 +103,7 @@ export function GestaoAtendimentoPresencial() {
   const [salvandoDesignacao, setSalvandoDesignacao] = useState(false);
   const [novaDesignacao, setNovaDesignacao] = useState<NovaDesignacao>({
     profissional_id: '',
+    empresa_id: '',
     data_presencial: '',
     hora_inicio: '',
     hora_fim: '',
@@ -94,6 +118,7 @@ export function GestaoAtendimentoPresencial() {
 
   useEffect(() => {
     buscarProfissionais();
+    buscarEmpresas();
     buscarDesignacoes();
   }, []);
 
@@ -117,6 +142,25 @@ export function GestaoAtendimentoPresencial() {
       setErro('Erro ao carregar lista de profissionais');
     } finally {
       setCarregandoProfissionais(false);
+    }
+  };
+
+  const buscarEmpresas = async () => {
+    try {
+      setCarregandoEmpresas(true);
+      const response = await fetch('/api/companies');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao buscar empresas');
+      }
+
+      setEmpresas(data.data || data || []);
+    } catch (error) {
+      console.error('Erro ao buscar empresas:', error);
+      setErro('Erro ao carregar lista de empresas');
+    } finally {
+      setCarregandoEmpresas(false);
     }
   };
 
@@ -152,8 +196,8 @@ export function GestaoAtendimentoPresencial() {
       setErro('');
 
       // Validações
-      if (!novaDesignacao.profissional_id || !novaDesignacao.data_presencial) {
-        setErro('Profissional e data são obrigatórios');
+      if (!novaDesignacao.profissional_id || !novaDesignacao.empresa_id || !novaDesignacao.data_presencial) {
+        setErro('Profissional, empresa e data são obrigatórios');
         return;
       }
 
@@ -181,6 +225,7 @@ export function GestaoAtendimentoPresencial() {
       setModalAberto(false);
       setNovaDesignacao({
         profissional_id: '',
+        empresa_id: '',
         data_presencial: '',
         hora_inicio: '',
         hora_fim: '',
@@ -227,16 +272,47 @@ export function GestaoAtendimentoPresencial() {
   };
 
   const formatarData = (dataISO: string) => {
-    return new Date(dataISO).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
+    // Extrair apenas a parte da data (YYYY-MM-DD) ignorando timezone
+    const dateOnly = dataISO.split('T')[0];
+    const [year, month, day] = dateOnly.split('-');
+    return `${day}/${month}/${year}`;
   };
 
   const formatarHora = (horaString?: string) => {
     if (!horaString) return '-';
     return horaString.substring(0, 5);
+  };
+
+  // Função para formatar endereço completo
+  const formatarEndereco = (empresa?: DesignacaoPresencial['empresas']): string => {
+    if (!empresa) return '';
+    
+    const partes = [];
+    
+    if (empresa.endereco_logradouro) {
+      let endereco = empresa.endereco_logradouro;
+      if (empresa.endereco_numero) {
+        endereco += `, ${empresa.endereco_numero}`;
+      }
+      if (empresa.endereco_complemento) {
+        endereco += `, ${empresa.endereco_complemento}`;
+      }
+      partes.push(endereco);
+    }
+    
+    if (empresa.endereco_bairro) {
+      partes.push(empresa.endereco_bairro);
+    }
+    
+    if (empresa.endereco_cidade && empresa.endereco_estado) {
+      partes.push(`${empresa.endereco_cidade} - ${empresa.endereco_estado}`);
+    }
+    
+    if (empresa.endereco_cep) {
+      partes.push(`CEP: ${empresa.endereco_cep}`);
+    }
+    
+    return partes.join(', ');
   };
 
   const profissionalSelecionado = profissionais.find(p => p.id === novaDesignacao.profissional_id);
@@ -294,6 +370,31 @@ export function GestaoAtendimentoPresencial() {
                                   {prof.informacoes_adicionais.especialidade}
                                 </span>
                               )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="empresa">Empresa *</Label>
+                    <Select 
+                      value={novaDesignacao.empresa_id}
+                      onValueChange={(value) => setNovaDesignacao(prev => ({
+                        ...prev,
+                        empresa_id: value
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma empresa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {empresas.filter(emp => emp.ativa).map((empresa) => (
+                          <SelectItem key={empresa.id} value={empresa.id}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{empresa.nome}</span>
+                              <span className="text-sm text-gray-500">Código: {empresa.codigo}</span>
                             </div>
                           </SelectItem>
                         ))}
@@ -501,6 +602,18 @@ export function GestaoAtendimentoPresencial() {
                             {designacao.usuarios.informacoes_adicionais.especialidade}
                           </Badge>
                         )}
+                      </div>
+                      
+                      {/* Empresa */}
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-purple-600" />
+                        <div>
+                          <p className="font-medium text-purple-900">{designacao.empresas.nome}</p>
+                          <p className="text-sm text-purple-700">Código: {designacao.empresas.codigo}</p>
+                          {formatarEndereco(designacao.empresas) && (
+                            <p className="text-sm text-gray-600">📍 {formatarEndereco(designacao.empresas)}</p>
+                          )}
+                        </div>
                       </div>
                       
                       {/* Data e Horário */}

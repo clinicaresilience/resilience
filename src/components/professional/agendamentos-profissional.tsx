@@ -4,6 +4,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { StatusAgendamento, type UiAgendamento } from "@/types/agendamento";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TimezoneUtils } from "@/utils/timezone";
+import { DateFormatter } from "@/utils/date-formatter";
 import {
   Card,
   CardContent,
@@ -32,7 +33,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, Building2, Monitor } from "lucide-react";
 
 type Props = {
   profissionalId: string;
@@ -64,6 +65,18 @@ interface AgendamentoPaciente {
   pacienteNome: string;
   pacienteEmail?: string;
   pacienteTelefone?: string;
+  isPresential?: boolean; // Novo campo para identificar designações presenciais
+  empresa?: {
+    nome: string;
+    codigo: string;
+    endereco_logradouro?: string;
+    endereco_numero?: string;
+    endereco_complemento?: string;
+    endereco_bairro?: string;
+    endereco_cidade?: string;
+    endereco_estado?: string;
+    endereco_cep?: string;
+  };
 }
 
 // Interface para slots disponíveis
@@ -73,7 +86,37 @@ interface SlotDisponivel {
   disponivel: boolean;
 }
 
-// Função removida - usando TimezoneUtils.formatForDisplay() do utils/timezone.ts
+// Função para formatar endereço completo
+function formatarEndereco(empresa?: AgendamentoPaciente['empresa']): string {
+  if (!empresa) return '';
+  
+  const partes = [];
+  
+  if (empresa.endereco_logradouro) {
+    let endereco = empresa.endereco_logradouro;
+    if (empresa.endereco_numero) {
+      endereco += `, ${empresa.endereco_numero}`;
+    }
+    if (empresa.endereco_complemento) {
+      endereco += `, ${empresa.endereco_complemento}`;
+    }
+    partes.push(endereco);
+  }
+  
+  if (empresa.endereco_bairro) {
+    partes.push(empresa.endereco_bairro);
+  }
+  
+  if (empresa.endereco_cidade && empresa.endereco_estado) {
+    partes.push(`${empresa.endereco_cidade} - ${empresa.endereco_estado}`);
+  }
+  
+  if (empresa.endereco_cep) {
+    partes.push(`CEP: ${empresa.endereco_cep}`);
+  }
+  
+  return partes.join(', ');
+}
 
 export default function AgendamentosProfissional({
   profissionalId,
@@ -103,17 +146,20 @@ export default function AgendamentosProfissional({
   const [dataEscolhida, setDataEscolhida] = useState("");
   const [horarioEscolhido, setHorarioEscolhido] = useState("");
 
-  // Carregar agendamentos do profissional
+  // Carregar agendamentos e designações presenciais do profissional
   useEffect(() => {
     async function fetchAgendamentos() {
       setLoading(true);
       try {
-        const response = await fetch('/api/agendamentos');
-        if (response.ok) {
-          const result = await response.json();
+        // Buscar agendamentos online
+        const responseAgendamentos = await fetch('/api/agendamentos');
+        let agendamentosOnline: AgendamentoPaciente[] = [];
+        
+        if (responseAgendamentos.ok) {
+          const result = await responseAgendamentos.json();
           if (result.success && result.data) {
             // Mapear corretamente os campos de data e paciente
-            const agendamentosFormatados = result.data.map((ag: Record<string, any>) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+            agendamentosOnline = result.data.map((ag: Record<string, any>) => { // eslint-disable-line @typescript-eslint/no-explicit-any
               // Extrair nome do paciente corretamente
               let pacienteNome = 'Paciente não identificado';
               if (ag.pacienteNome) {
@@ -134,7 +180,7 @@ export default function AgendamentosProfissional({
                 dataISO = ag.data_hora_inicio;
               }
               
-              const agendamentoFormatado = {
+              return {
                 id: ag.id,
                 usuarioId: ag.usuarioId || ag.paciente_id,
                 profissionalId: ag.profissionalId || ag.profissional_id,
@@ -144,19 +190,72 @@ export default function AgendamentosProfissional({
                 local: ag.local || 'Clínica Resilience',
                 status: ag.status,
                 notas: ag.notas,
-                modalidade: ag.modalidade,
+                modalidade: ag.modalidade || 'online',
                 pacienteNome: pacienteNome,
                 pacienteEmail: ag.pacienteEmail || ag.paciente?.email || ag.usuario?.email || '',
-                pacienteTelefone: ag.pacienteTelefone || ag.paciente?.telefone || ag.usuario?.telefone || ''
+                pacienteTelefone: ag.pacienteTelefone || ag.paciente?.telefone || ag.usuario?.telefone || '',
+                isPresential: false
               };
-              
-              return agendamentoFormatado;
             });
-            setAgendamentos(agendamentosFormatados);
           }
         } else {
-          console.error("Erro ao carregar agendamentos:", response.statusText);
+          console.error("Erro ao carregar agendamentos:", responseAgendamentos.statusText);
         }
+
+        // Buscar designações presenciais
+        const responsePresencial = await fetch(`/api/profissional-presencial?profissional_id=${profissionalId}`);
+        let designacoesPresenciais: AgendamentoPaciente[] = [];
+        
+        if (responsePresencial.ok) {
+          const result = await responsePresencial.json();
+          if (result.data) {
+            // Mapear designações presenciais para o formato de agendamento
+            designacoesPresenciais = result.data.map((designacao: Record<string, any>) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+              // Criar string de data/hora para designação presencial
+              let dataISO = designacao.data_presencial;
+              if (designacao.hora_inicio) {
+                dataISO = `${designacao.data_presencial}T${designacao.hora_inicio}:00`;
+              } else {
+                dataISO = `${designacao.data_presencial}T08:00:00`;
+              }
+              
+              return {
+                id: `presencial-${designacao.id}`,
+                usuarioId: '',
+                profissionalId: designacao.profissional_id,
+                profissionalNome: designacao.usuarios?.nome || 'Profissional',
+                especialidade: designacao.usuarios?.informacoes_adicionais || '',
+                dataISO: dataISO,
+                local: designacao.empresas?.nome || 'Atendimento Presencial',
+                status: 'confirmado' as StatusAgendamento,
+                notas: `Designação presencial na empresa ${designacao.empresas?.nome || 'N/A'}`,
+                modalidade: 'presencial',
+                pacienteNome: 'Atendimento Presencial',
+                pacienteEmail: '',
+                pacienteTelefone: '',
+                isPresential: true,
+                empresa: {
+                  nome: designacao.empresas?.nome || 'N/A',
+                  codigo: designacao.empresas?.codigo || 'N/A',
+                  endereco_logradouro: designacao.empresas?.endereco_logradouro,
+                  endereco_numero: designacao.empresas?.endereco_numero,
+                  endereco_complemento: designacao.empresas?.endereco_complemento,
+                  endereco_bairro: designacao.empresas?.endereco_bairro,
+                  endereco_cidade: designacao.empresas?.endereco_cidade,
+                  endereco_estado: designacao.empresas?.endereco_estado,
+                  endereco_cep: designacao.empresas?.endereco_cep
+                }
+              };
+            });
+          }
+        } else {
+          console.error("Erro ao carregar designações presenciais:", responsePresencial.statusText);
+        }
+
+        // Combinar e ordenar todos os agendamentos
+        const todosAgendamentos = [...agendamentosOnline, ...designacoesPresenciais];
+        setAgendamentos(todosAgendamentos);
+        
       } catch (error) {
         console.error("Erro ao carregar agendamentos:", error);
       } finally {
@@ -326,6 +425,22 @@ export default function AgendamentosProfissional({
     }
   }
 
+  // Calcular métricas de atendimentos presenciais vs online
+  const metricas = useMemo(() => {
+    const presenciais = agendamentos.filter(a => a.isPresential && a.status === 'confirmado').length;
+    const onlineConcluidos = agendamentos.filter(a => !a.isPresential && a.status === 'concluido').length;
+    const totalOnline = agendamentos.filter(a => !a.isPresential).length;
+    const totalPresencial = agendamentos.filter(a => a.isPresential).length;
+    
+    return {
+      presenciais,
+      onlineConcluidos,
+      totalOnline,
+      totalPresencial,
+      total: presenciais + onlineConcluidos
+    };
+  }, [agendamentos]);
+
   // Gerar opções de horários disponíveis para a data escolhida
   const horariosDisponiveis = useMemo(() => {
     if (!dataEscolhida || !slotsDisponiveis.length) return [];
@@ -386,6 +501,37 @@ export default function AgendamentosProfissional({
         </CardHeader>
       </Card>
 
+      {/* Métricas de Atendimentos */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardContent className="flex items-center justify-between p-6">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Presenciais</p>
+              <p className="text-2xl font-bold">{metricas.presenciais}</p>
+            </div>
+            <Building2 className="h-8 w-8 text-blue-600" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between p-6">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Online Concluídos</p>
+              <p className="text-2xl font-bold">{metricas.onlineConcluidos}</p>
+            </div>
+            <Monitor className="h-8 w-8 text-green-600" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center justify-between p-6">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Realizados</p>
+              <p className="text-2xl font-bold">{metricas.total}</p>
+            </div>
+            <Calendar className="h-8 w-8 text-purple-600" />
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 gap-4">
         {listagem.length === 0 && (
           <Card>
@@ -401,12 +547,25 @@ export default function AgendamentosProfissional({
         {listagem.map((a) => {
           const ehPassado = TimezoneUtils.isPast(TimezoneUtils.dbTimestampToUTC(a.dataISO));
           return (
-            <Card key={a.id} className="border-muted">
+            <Card key={a.id} className={`border-muted ${a.isPresential ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-green-500'}`}>
               <CardHeader className="flex-row items-start justify-between gap-4">
                 <div className="space-y-1">
-                  <CardTitle className="text-xl">
-                    {a.pacienteNome}
-                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-xl">
+                      {a.pacienteNome}
+                    </CardTitle>
+                    {a.isPresential ? (
+                      <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                        <Building2 className="h-3 w-3" />
+                        Presencial
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                        <Monitor className="h-3 w-3" />
+                        Online
+                      </div>
+                    )}
+                  </div>
                   <CardDescription className="text-sm">
                     {a.especialidade
                       ? `${a.especialidade} • ${a.local}`
@@ -416,6 +575,18 @@ export default function AgendamentosProfissional({
                     <CardDescription className="text-xs">
                       {a.pacienteEmail}
                     </CardDescription>
+                  )}
+                  {a.empresa && (
+                    <div className="space-y-1">
+                      <CardDescription className="text-xs text-blue-600">
+                        Empresa: {a.empresa.nome} ({a.empresa.codigo})
+                      </CardDescription>
+                      {formatarEndereco(a.empresa) && (
+                        <CardDescription className="text-xs text-gray-600">
+                          📍 {formatarEndereco(a.empresa)}
+                        </CardDescription>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -433,6 +604,12 @@ export default function AgendamentosProfissional({
                   <span className="text-muted-foreground">Data/Hora: </span>
                   <span className="font-medium">
                     {TimezoneUtils.formatForDisplay(TimezoneUtils.dbTimestampToUTC(a.dataISO), undefined, 'full')}
+                  </span>
+                </div>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Modalidade: </span>
+                  <span className={`font-medium ${a.isPresential ? 'text-blue-600' : 'text-green-600'}`}>
+                    {a.isPresential ? 'Atendimento Presencial' : 'Consulta Online'}
                   </span>
                 </div>
                 {a.notas ? (

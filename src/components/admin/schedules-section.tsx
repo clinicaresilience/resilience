@@ -137,14 +137,14 @@ export function SchedulesSection() {
         const profResponse = await fetch('/api/profissionais')
         if (profResponse.ok) {
           const profResult = await profResponse.json()
-          setProfissionaisPresenciais(profResult || [])
+          setProfissionaisPresenciais(profResult.data || profResult || [])
         }
 
         // Buscar empresas
         const empresasResponse = await fetch('/api/companies')
         if (empresasResponse.ok) {
           const empresasResult = await empresasResponse.json()
-          setEmpresas(empresasResult || [])
+          setEmpresas(empresasResult.data || empresasResult || [])
         }
 
         // Buscar designações presenciais
@@ -387,11 +387,10 @@ export function SchedulesSection() {
   }
 
   const formatarData = (dataISO: string) => {
-    return new Date(dataISO).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
+    // Extrair apenas a parte da data (YYYY-MM-DD) ignorando timezone
+    const dateOnly = dataISO.split('T')[0]
+    const [year, month, day] = dateOnly.split('-')
+    return `${day}/${month}/${year}`
   }
 
   const formatarHora = (horaString?: string) => {

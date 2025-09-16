@@ -7,9 +7,10 @@ import 'moment/locale/pt-br'
 import 'moment-timezone'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Calendar as CalendarIcon, Clock, User, MapPin, Phone, Mail, FileText } from "lucide-react"
+import { Calendar as CalendarIcon, Clock, User, MapPin, Phone, Mail, FileText, Building2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { StatusBadge } from "@/components/ui/status-badge"
+import { TimezoneUtils } from '@/utils/timezone'
 import '../../styles/calendar.css'
 
 // Configurar moment para português
@@ -58,6 +59,7 @@ type CalendarEvent = {
   resource: Agendamento & {
     duracao: string
   }
+  type: 'appointment' | 'presential'
 }
 
 export function AgendaCalendar() {
@@ -71,19 +73,107 @@ export function AgendaCalendar() {
   const [justificativa, setJustificativa] = useState("")
   const [showCancelForm, setShowCancelForm] = useState(false)
 
+  // Buscar designações presenciais do profissional
+  const fetchPresentialDesignations = async () => {
+    try {
+      // Try to get all designations first and then filter them
+      const response = await fetch('/api/profissional-presencial')
+      if (response.ok) {
+        const result = await response.json()
+        console.log('All presential designations fetched:', result)
+        
+        // Get current user from Supabase auth to filter
+        const userResponse = await fetch('/api/auth/user')
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          const userId = userData.id  // Access id directly, not userData.user.id
+          console.log('Current user ID:', userId)
+          
+          if (userId && result.data) {
+            // Filter designations for current professional
+            const filtered = result.data.filter((designation: any) => 
+              designation.profissional_id === userId
+            )
+            console.log('Filtered designations for professional:', filtered)
+            return filtered
+          }
+        }
+        
+        // If auth fails, return empty array (professional gets no designations)
+        console.log('Could not get user ID, returning empty array')
+        return []
+      }
+    } catch (error) {
+      console.error('Erro ao buscar designações presenciais:', error)
+    }
+    return []
+  }
+
   // Buscar agendamentos do profissional
   const fetchAgendamentos = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/agendamentos')
-      if (response.ok) {
-        const data = await response.json()
+      
+      // Fetch both appointments and presential designations
+      const [agendamentosResponse, presentialData] = await Promise.all([
+        fetch('/api/agendamentos'),
+        fetchPresentialDesignations()
+      ])
+      
+      if (agendamentosResponse.ok) {
+        const data = await agendamentosResponse.json()
         // Se os dados vêm da tabela agendamento_slot, mapear corretamente
-        const agendamentosFormatados = (data.data || []).map((ag: Record<string, any>) => ({
+        const agendamentosFormatados = (data.data || []).map((ag: Record<string, unknown>) => ({
           ...ag,
           dataISO: ag.data_consulta || ag.data_hora_inicio || ag.dataISO
         }))
-        setAgendamentos(agendamentosFormatados)
+        
+        // Combine appointments with presential designations
+        const allAgendamentos = [...agendamentosFormatados]
+        
+        // Add presential designations as special appointments
+        if (presentialData && presentialData.length > 0) {
+          const presentialAgendamentos = presentialData.map((designation: Record<string, unknown>) => ({
+            id: `presential-${designation.id}`,
+            usuarioId: '',
+            profissionalId: designation.profissional_id,
+            profissionalNome: 'Atendimento Presencial',
+            dataISO: (() => {
+              // Extrair apenas a parte da data (YYYY-MM-DD) ignorando timezone
+              const dateOnly = (designation.data_presencial as string).split('T')[0];
+              const timeOnly = designation.hora_inicio as string || '12:00';
+              // Criar data diretamente no timezone local sem conversão UTC
+              return `${dateOnly}T${timeOnly}:00`;
+            })(),
+            local: 'Presencial',
+            status: 'presencial',
+            notas: `Presencial ${designation.hora_inicio && designation.hora_fim 
+              ? `das ${(designation.hora_inicio as string).substring(0, 5)} às ${(designation.hora_fim as string).substring(0, 5)}` 
+              : 'dia inteiro'}${designation.empresas && (designation.empresas as any).nome ? ` - ${(designation.empresas as any).nome}` : ''}`,
+            pacienteNome: `🏥 Presencial${designation.empresas && (designation.empresas as any).nome ? ` - ${(designation.empresas as any).nome}` : ''}`,
+            pacienteEmail: '',
+            pacienteTelefone: '',
+            data_consulta: designation.data_presencial,
+            data_hora_inicio: (() => {
+              const dateOnly = (designation.data_presencial as string).split('T')[0];
+              const timeOnly = (designation.hora_inicio as string) || '08:00';
+              // Use TimezoneUtils to create proper timestamp with backend timezone
+              return TimezoneUtils.createDateTime(dateOnly, timeOnly);
+            })(),
+            data_hora_fim: (() => {
+              const dateOnly = (designation.data_presencial as string).split('T')[0];
+              const timeOnly = (designation.hora_fim as string) || '18:00';
+              // Use TimezoneUtils to create proper timestamp with backend timezone
+              return TimezoneUtils.createDateTime(dateOnly, timeOnly);
+            })(),
+            isPresential: true,
+            empresa: designation.empresas || null
+          }))
+          
+          allAgendamentos.push(...presentialAgendamentos)
+        }
+        
+        setAgendamentos(allAgendamentos)
       } else {
         setError('Erro ao carregar agendamentos')
       }
@@ -109,6 +199,9 @@ export function AgendaCalendar() {
         return null
       }
 
+      // Check if this is a presential designation
+      const isPresential = (ag as Record<string, unknown>).isPresential || ag.status === 'presencial'
+
       // Garantir que a data seja interpretada corretamente para o timezone local
       const startDate = new Date(dataHora)
       
@@ -127,11 +220,27 @@ export function AgendaCalendar() {
         duracaoTexto = '60 minutos'
       }
 
+      // Special handling for presential designations
+      if (isPresential) {
+        return {
+          id: ag.id,
+          title: ag.pacienteNome || '🏥 Atendimento Presencial',
+          start: startDate,
+          end: endDate,
+          type: 'presential' as const,
+          resource: {
+            ...ag,
+            duracao: duracaoTexto
+          }
+        }
+      }
+
       return {
         id: ag.id,
         title: `${ag.pacienteNome || 'Paciente'} - ${startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })}`,
         start: startDate,
         end: endDate,
+        type: 'appointment' as const,
         resource: {
           ...ag,
           duracao: duracaoTexto
@@ -145,6 +254,25 @@ export function AgendaCalendar() {
     const status = event.resource.status
     let backgroundColor = '#3174ad'
     let borderColor = '#3174ad'
+
+    // Special styling for presential designations
+    if (event.type === 'presential') {
+      backgroundColor = '#2563eb'
+      borderColor = '#1d4ed8'
+      return {
+        style: {
+          backgroundColor,
+          borderColor,
+          color: 'white',
+          border: `3px solid ${borderColor}`,
+          borderRadius: '6px',
+          fontSize: '12px',
+          padding: '2px 6px',
+          fontWeight: 'bold',
+          opacity: 0.9
+        }
+      }
+    }
 
     switch (status) {
       case 'confirmado':
@@ -257,7 +385,7 @@ export function AgendaCalendar() {
             <CalendarIcon className="h-5 w-5" />
             Minha Agenda ({agendamentos.length} agendamentos)
           </CardTitle>
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-4 text-sm flex-wrap">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-green-500 rounded"></div>
               <span>Confirmado</span>
@@ -273,6 +401,10 @@ export function AgendaCalendar() {
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-purple-500 rounded"></div>
               <span>Concluído</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-600 rounded border-2 border-blue-800"></div>
+              <span>🏥 Presencial</span>
             </div>
           </div>
         </CardHeader>
@@ -319,76 +451,182 @@ export function AgendaCalendar() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5" />
-              Detalhes do Agendamento
+              {selectedEvent?.type === 'presential' ? 'Designação Presencial' : 'Detalhes do Agendamento'}
             </DialogTitle>
             <DialogDescription>
-              Informações completas do agendamento
+              {selectedEvent?.type === 'presential' ? 'Informações da designação presencial' : 'Informações completas do agendamento'}
             </DialogDescription>
           </DialogHeader>
 
           {selectedEvent && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">Consulta Agendada</h3>
-                <StatusBadge status={selectedEvent.resource.status} />
+                <h3 className="font-semibold text-lg">
+                  {selectedEvent.type === 'presential' ? '🏥 Atendimento Presencial' : 'Consulta Agendada'}
+                </h3>
+                {selectedEvent.type !== 'presential' && (
+                  <StatusBadge status={selectedEvent.resource.status} />
+                )}
+                {selectedEvent.type === 'presential' && (
+                  <div className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                    <Building2 className="h-3 w-3 mr-1" />
+                    Presencial
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
-                {/* Data e Hora */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium">Data e Hora:</span>
-                  </div>
-                  <p className="text-sm text-gray-700 ml-6">
-                    {formatDateTime(selectedEvent.start)}
-                  </p>
-                  <p className="text-xs text-gray-500 ml-6">
-                    Duração: {selectedEvent.resource.duracao}
-                  </p>
-                </div>
-
-                {/* Paciente */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-purple-600" />
-                    <span className="text-sm font-medium">Paciente:</span>
-                  </div>
-                  <div className="ml-6 space-y-1">
-                    <p className="text-sm text-gray-700">{selectedEvent.resource.pacienteNome || 'Nome não informado'}</p>
-                    {selectedEvent.resource.pacienteEmail && (
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Mail className="h-3 w-3" />
-                        <span>{selectedEvent.resource.pacienteEmail}</span>
+                {selectedEvent.type === 'presential' ? (
+                  <>
+                    {/* Data e Hora */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-medium">Período:</span>
                       </div>
-                    )}
-                    {selectedEvent.resource.pacienteTelefone && (
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Phone className="h-3 w-3" />
-                        <span>{selectedEvent.resource.pacienteTelefone}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Local */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-red-600" />
-                    <span className="text-sm font-medium">Local:</span>
-                  </div>
-                  <p className="text-sm text-gray-700 ml-6">{selectedEvent.resource.local}</p>
-                </div>
-
-                {/* Observações */}
-                {selectedEvent.resource.notas && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-orange-600" />
-                      <span className="text-sm font-medium">Observações:</span>
+                      <p className="text-sm text-gray-700 ml-6">
+                        {formatDateTime(selectedEvent.start)}
+                      </p>
+                      <p className="text-xs text-gray-500 ml-6">
+                        Duração: {selectedEvent.resource.duracao}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-700 ml-6 p-2 bg-gray-50 rounded">{selectedEvent.resource.notas}</p>
-                  </div>
+
+                    {/* Local */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-medium">Modalidade:</span>
+                      </div>
+                      <p className="text-sm text-gray-700 ml-6">Presencial</p>
+                    </div>
+
+                    {/* Observações */}
+                    {selectedEvent.resource.notas && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium">Detalhes:</span>
+                        </div>
+                        <p className="text-sm text-gray-700 ml-6 p-2 bg-blue-50 rounded border border-blue-200">{selectedEvent.resource.notas}</p>
+                      </div>
+                    )}
+
+                    {/* Endereço da Empresa */}
+                    {(selectedEvent.resource as any).empresa && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-purple-600" />
+                          <span className="text-sm font-medium">Detalhes do Local:</span>
+                        </div>
+                        <div className="ml-6 space-y-1">
+                          <p className="text-sm font-medium text-purple-900">
+                            {(selectedEvent.resource as any).empresa.nome} ({(selectedEvent.resource as any).empresa.codigo})
+                          </p>
+                          {(() => {
+                            const empresa = (selectedEvent.resource as any).empresa;
+                            const enderecoParts = [];
+                            
+                            if (empresa.endereco_logradouro) {
+                              let endereco = empresa.endereco_logradouro;
+                              if (empresa.endereco_numero) {
+                                endereco += `, ${empresa.endereco_numero}`;
+                              }
+                              if (empresa.endereco_complemento) {
+                                endereco += `, ${empresa.endereco_complemento}`;
+                              }
+                              enderecoParts.push(endereco);
+                            }
+                            
+                            if (empresa.endereco_bairro) {
+                              enderecoParts.push(empresa.endereco_bairro);
+                            }
+                            
+                            if (empresa.endereco_cidade && empresa.endereco_estado) {
+                              enderecoParts.push(`${empresa.endereco_cidade} - ${empresa.endereco_estado}`);
+                            }
+                            
+                            if (empresa.endereco_cep) {
+                              enderecoParts.push(`CEP: ${empresa.endereco_cep}`);
+                            }
+                            
+                            return enderecoParts.length > 0 ? (
+                              <p className="text-sm text-gray-600 p-2 bg-purple-50 rounded border border-purple-200">
+                                📍 {enderecoParts.join(', ')}
+                              </p>
+                            ) : null;
+                          })()}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Aviso Importante */}
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-sm text-blue-800">
+                        <strong>Atenção:</strong> Durante este período, você está designado para atendimento presencial. 
+                        Novos agendamentos online não poderão ser criados para este horário.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Data e Hora */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-medium">Data e Hora:</span>
+                      </div>
+                      <p className="text-sm text-gray-700 ml-6">
+                        {formatDateTime(selectedEvent.start)}
+                      </p>
+                      <p className="text-xs text-gray-500 ml-6">
+                        Duração: {selectedEvent.resource.duracao}
+                      </p>
+                    </div>
+
+                    {/* Paciente */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-purple-600" />
+                        <span className="text-sm font-medium">Paciente:</span>
+                      </div>
+                      <div className="ml-6 space-y-1">
+                        <p className="text-sm text-gray-700">{selectedEvent.resource.pacienteNome || 'Nome não informado'}</p>
+                        {selectedEvent.resource.pacienteEmail && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <Mail className="h-3 w-3" />
+                            <span>{selectedEvent.resource.pacienteEmail}</span>
+                          </div>
+                        )}
+                        {selectedEvent.resource.pacienteTelefone && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <Phone className="h-3 w-3" />
+                            <span>{selectedEvent.resource.pacienteTelefone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Local */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-red-600" />
+                        <span className="text-sm font-medium">Local:</span>
+                      </div>
+                      <p className="text-sm text-gray-700 ml-6">{selectedEvent.resource.local}</p>
+                    </div>
+
+                    {/* Observações */}
+                    {selectedEvent.resource.notas && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-orange-600" />
+                          <span className="text-sm font-medium">Observações:</span>
+                        </div>
+                        <p className="text-sm text-gray-700 ml-6 p-2 bg-gray-50 rounded">{selectedEvent.resource.notas}</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -416,50 +654,7 @@ export function AgendaCalendar() {
               )}
 
               <div className="pt-4 border-t">
-                {selectedEvent.resource.status === 'confirmado' || selectedEvent.resource.status === 'pendente' ? (
-                  <>
-                    {!showCancelForm ? (
-                      <div className="flex gap-2">
-                        <Button 
-                          onClick={() => setSelectedEvent(null)}
-                          className="flex-1"
-                          variant="outline"
-                        >
-                          Fechar
-                        </Button>
-                        <Button
-                          onClick={() => setShowCancelForm(true)}
-                          className="flex-1"
-                          variant="destructive"
-                        >
-                          Cancelar Consulta
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => {
-                            setShowCancelForm(false)
-                            setJustificativa("")
-                          }}
-                          className="flex-1"
-                          variant="outline"
-                          disabled={isLoading}
-                        >
-                          Voltar
-                        </Button>
-                        <Button
-                          onClick={handleCancelAgendamento}
-                          disabled={isLoading || !justificativa.trim()}
-                          className="flex-1"
-                          variant="destructive"
-                        >
-                          {isLoading ? 'Cancelando...' : 'Confirmar Cancelamento'}
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                ) : (
+                {selectedEvent.type === 'presential' ? (
                   <Button 
                     onClick={() => setSelectedEvent(null)}
                     className="w-full"
@@ -467,6 +662,61 @@ export function AgendaCalendar() {
                   >
                     Fechar
                   </Button>
+                ) : (
+                  <>
+                    {selectedEvent.resource.status === 'confirmado' || selectedEvent.resource.status === 'pendente' ? (
+                      <>
+                        {!showCancelForm ? (
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={() => setSelectedEvent(null)}
+                              className="flex-1"
+                              variant="outline"
+                            >
+                              Fechar
+                            </Button>
+                            <Button
+                              onClick={() => setShowCancelForm(true)}
+                              className="flex-1"
+                              variant="destructive"
+                            >
+                              Cancelar Consulta
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => {
+                                setShowCancelForm(false)
+                                setJustificativa("")
+                              }}
+                              className="flex-1"
+                              variant="outline"
+                              disabled={isLoading}
+                            >
+                              Voltar
+                            </Button>
+                            <Button
+                              onClick={handleCancelAgendamento}
+                              disabled={isLoading || !justificativa.trim()}
+                              className="flex-1"
+                              variant="destructive"
+                            >
+                              {isLoading ? 'Cancelando...' : 'Confirmar Cancelamento'}
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <Button 
+                        onClick={() => setSelectedEvent(null)}
+                        className="w-full"
+                        variant="outline"
+                      >
+                        Fechar
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </div>

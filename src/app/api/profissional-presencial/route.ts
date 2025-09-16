@@ -4,6 +4,7 @@ import { createClient } from '@/lib/server';
 interface ProfissionalPresencial {
   id: string;
   profissional_id: string;
+  empresa_id: string;
   data_presencial: string;
   hora_inicio?: string;
   hora_fim?: string;
@@ -34,6 +35,18 @@ export async function GET(request: NextRequest) {
           nome,
           email,
           informacoes_adicionais
+        ),
+        empresas:empresa_id (
+          id,
+          nome,
+          codigo,
+          endereco_logradouro,
+          endereco_numero,
+          endereco_complemento,
+          endereco_bairro,
+          endereco_cidade,
+          endereco_estado,
+          endereco_cep
         )
       `)
       .order('data_presencial', { ascending: true });
@@ -99,12 +112,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { profissional_id, data_presencial, hora_inicio, hora_fim } = body;
+    const { profissional_id, empresa_id, data_presencial, hora_inicio, hora_fim } = body;
 
     // Validações
-    if (!profissional_id || !data_presencial) {
+    if (!profissional_id || !data_presencial || !empresa_id) {
       return NextResponse.json(
-        { error: 'Profissional e data são obrigatórios' },
+        { error: 'Profissional, empresa e data são obrigatórios' },
         { status: 400 }
       );
     }
@@ -124,17 +137,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar se já existe designação para essa data
+    // Verificar se o profissional já tem designação para essa data (independente da empresa)
     const { data: existente } = await supabase
       .from('profissional_presencial')
-      .select('id')
+      .select('id, empresas!inner(nome)')
       .eq('profissional_id', profissional_id)
       .eq('data_presencial', data_presencial)
       .single();
 
     if (existente) {
       return NextResponse.json(
-        { error: 'Já existe uma designação presencial para este profissional nesta data' },
+        { error: `Este profissional já possui designação presencial para ${data_presencial}. Um profissional pode atender em apenas uma empresa por dia.` },
         { status: 400 }
       );
     }
@@ -158,6 +171,7 @@ export async function POST(request: NextRequest) {
     // Criar a designação
     const novaDesignacao = {
       profissional_id,
+      empresa_id,
       data_presencial,
       hora_inicio: hora_inicio || null,
       hora_fim: hora_fim || null
@@ -173,6 +187,11 @@ export async function POST(request: NextRequest) {
           nome,
           email,
           informacoes_adicionais
+        ),
+        empresas:empresa_id (
+          id,
+          nome,
+          codigo
         )
       `)
       .single();

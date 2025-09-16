@@ -52,6 +52,38 @@ export async function POST(request: NextRequest) {
     console.log('Criando cronograma para profissional:', profissional_id);
     console.log('Configuração recebida:', configuracao);
 
+    // Buscar designações presenciais para os próximos 30 dias para verificar conflitos
+    const hoje = moment().startOf('day');
+    const dataLimite = moment().add(30, 'days').endOf('day');
+    
+    const { data: designacoesPresenciais, error: presencialError } = await supabase
+      .from('profissional_presencial')
+      .select('data_presencial')
+      .eq('profissional_id', profissional_id)
+      .gte('data_presencial', hoje.format('YYYY-MM-DD'))
+      .lte('data_presencial', dataLimite.format('YYYY-MM-DD'));
+
+    if (presencialError) {
+      console.error('Erro ao buscar designações presenciais:', presencialError);
+    }
+
+    // Criar set de datas presenciais para lookup rápido
+    const datasPresenciais = new Set(
+      (designacoesPresenciais || []).map(d => d.data_presencial)
+    );
+
+    if (datasPresenciais.size > 0) {
+      console.log(`Profissional ${profissional_id} tem ${datasPresenciais.size} designações presenciais. Não será possível criar agenda online para essas datas.`);
+      
+      // Informar ao usuário sobre as datas com conflito
+      const datasConflito = Array.from(datasPresenciais).sort();
+      return NextResponse.json({
+        error: `Não é possível criar agenda online. O profissional possui designações para atendimento presencial nas seguintes datas: ${datasConflito.join(', ')}. Para criar agenda online, primeiro remova as designações presenciais.`,
+        datasConflito,
+        tipo: 'conflito_presencial'
+      }, { status: 400 });
+    }
+
     // Limpar slots antigos (opcional - pode querer manter histórico)
     await supabase
       .from('agendamento_slot')
@@ -63,12 +95,15 @@ export async function POST(request: NextRequest) {
     const diasConfig = configuracao.dias || [];
     const intervaloMinutos = configuracao.intervalo_minutos || 60;
 
-    // Gerar slots para os próximos 30 dias
-    const hoje = moment().startOf('day');
-    const dataLimite = moment().add(30, 'days').endOf('day');
-
     for (let data = hoje.clone(); data.isSameOrBefore(dataLimite); data.add(1, 'day')) {
       const diaSemana = data.day(); // 0 = domingo, 1 = segunda, etc.
+      const dataStr = data.format('YYYY-MM-DD');
+      
+      // Pular datas com designação presencial (verificação adicional de segurança)
+      if (datasPresenciais.has(dataStr)) {
+        console.log(`Pulando data ${dataStr} - profissional tem designação presencial`);
+        continue;
+      }
       
       // Verificar se este dia da semana está configurado
       const configDia = diasConfig.find((d: any) => d.diaSemana === diaSemana);
@@ -86,6 +121,7 @@ export async function POST(request: NextRequest) {
           data_hora_inicio: slot.toISOString(),
           data_hora_fim: slotFim.toISOString(),
           status: 'livre',
+          modalidade: 'online', // Definir explicitamente que são slots online
         });
       }
     }

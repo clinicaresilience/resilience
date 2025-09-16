@@ -8,6 +8,17 @@ export interface Company {
   ativa: boolean;
   created_at?: string;
   updated_at?: string;
+  cnpj?: string;
+  inscricao_estadual?: string;
+  inscricao_municipal?: string;
+  nome_fantasia?: string;
+  endereco_logradouro?: string;
+  endereco_numero?: string;
+  endereco_complemento?: string;
+  endereco_bairro?: string;
+  endereco_cidade?: string;
+  endereco_estado?: string;
+  endereco_cep?: string;
 }
 
 export class CompaniesService {
@@ -18,6 +29,17 @@ export class CompaniesService {
     nome: string;
     codigo: string;
     ativa?: boolean;
+    cnpj?: string | null;
+    inscricao_estadual?: string | null;
+    inscricao_municipal?: string | null;
+    nome_fantasia?: string | null;
+    endereco_logradouro?: string | null;
+    endereco_numero?: string | null;
+    endereco_complemento?: string | null;
+    endereco_bairro?: string | null;
+    endereco_cidade?: string | null;
+    endereco_estado?: string | null;
+    endereco_cep?: string | null;
   }) {
     const supabase = await createClient();
     
@@ -27,6 +49,17 @@ export class CompaniesService {
         nome: companyData.nome,
         codigo: companyData.codigo.toUpperCase().trim(),
         ativa: companyData.ativa ?? true,
+        cnpj: companyData.cnpj,
+        inscricao_estadual: companyData.inscricao_estadual,
+        inscricao_municipal: companyData.inscricao_municipal,
+        nome_fantasia: companyData.nome_fantasia,
+        endereco_logradouro: companyData.endereco_logradouro,
+        endereco_numero: companyData.endereco_numero,
+        endereco_complemento: companyData.endereco_complemento,
+        endereco_bairro: companyData.endereco_bairro,
+        endereco_cidade: companyData.endereco_cidade,
+        endereco_estado: companyData.endereco_estado,
+        endereco_cep: companyData.endereco_cep,
       })
       .select()
       .single();
