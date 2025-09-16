@@ -109,7 +109,7 @@ export function PerfilProfissionalClient({
     setShowConfirmation(false);
     setSelectedSlot(null);
     // Redirecionar para página de agendamentos
-    window.location.href = "/tela-usuario/agendamentos";
+    // window.location.href = "/tela-usuario/agendamentos";
   };
 
   const handleLoginSuccess = () => {

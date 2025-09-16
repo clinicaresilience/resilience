@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server"
 import { AgendamentosService } from "@/services/database/agendamentos.service"
 import { createClient } from "@/lib/server"
+import { EmailService } from "@/services/email/email.service"
 
 // PATCH /api/agendamentos/[id]
 // Atualiza um agendamento (cancelar, confirmar, etc)
@@ -54,6 +55,18 @@ export async function PATCH(
 
     if (status === "cancelado" && justificativa) {
       updatedAgendamento = await AgendamentosService.cancelAgendamento(id, justificativa)
+      
+      // Enviar notificação por email de cancelamento
+      try {
+        const dadosEmail = await EmailService.buscarDadosAgendamento(id)
+        if (dadosEmail) {
+          dadosEmail.justificativa_cancelamento = justificativa
+          await EmailService.enviarNotificacaoCancelamento(dadosEmail)
+        }
+      } catch (emailError) {
+        console.error('Erro ao enviar notificações de cancelamento:', emailError)
+      }
+      
     } else if (status === "confirmado") {
       updatedAgendamento = await AgendamentosService.confirmAgendamento(id)
     } else if (status === "concluido") {
@@ -73,6 +86,17 @@ export async function PATCH(
       }
 
       updatedAgendamento = await AgendamentosService.getAgendamentoById(id)
+      
+      // Enviar notificação por email de reagendamento
+      try {
+        const dadosEmail = await EmailService.buscarDadosAgendamento(id)
+        if (dadosEmail) {
+          await EmailService.enviarNotificacaoReagendamento(dadosEmail)
+        }
+      } catch (emailError) {
+        console.error('Erro ao enviar notificações de reagendamento:', emailError)
+      }
+      
     } else if (status) {
       updatedAgendamento = await AgendamentosService.updateAgendamentoStatus(id, { status, notas })
     } else {

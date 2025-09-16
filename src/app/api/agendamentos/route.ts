@@ -3,6 +3,7 @@ import { AgendamentosService } from "@/services/database/agendamentos.service";
 import { CompaniesService } from "@/services/database/companies.service";
 import { createClient } from "@/lib/server";
 import { TimezoneUtils } from "@/utils/timezone";
+import { EmailService } from "@/services/email/email.service";
 
 export async function PATCH(
   req: NextRequest,
@@ -37,6 +38,21 @@ export async function PATCH(
 
     // Usar o método cancelAgendamento que libera o slot automaticamente
     const agendamento = await AgendamentosService.cancelAgendamento(id, justificativa);
+
+    // Enviar notificação por email após cancelamento bem-sucedido
+    try {
+      const dadosEmail = await EmailService.buscarDadosAgendamento(id);
+      if (dadosEmail) {
+        // Adicionar justificativa ao objeto de dados
+        dadosEmail.justificativa_cancelamento = justificativa;
+        await EmailService.enviarNotificacaoCancelamento(dadosEmail);
+      } else {
+        console.warn('Não foi possível buscar dados do agendamento para envio de email:', id);
+      }
+    } catch (emailError) {
+      console.error('Erro ao enviar notificações de cancelamento:', emailError);
+      // Não falhar o cancelamento por erro de email
+    }
 
     return NextResponse.json({
       success: true,
@@ -367,6 +383,19 @@ export async function POST(req: NextRequest) {
     }
 
     const dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(agendamento.data_consulta);
+    
+    // Enviar notificação por email após criação bem-sucedida
+    try {
+      const dadosEmail = await EmailService.buscarDadosAgendamento(agendamento.id);
+      if (dadosEmail) {
+        await EmailService.enviarNotificacaoCriacao(dadosEmail);
+      } else {
+        console.warn('Não foi possível buscar dados do agendamento para envio de email:', agendamento.id);
+      }
+    } catch (emailError) {
+      console.error('Erro ao enviar notificações de email:', emailError);
+      // Não falhar o agendamento por erro de email
+    }
     
     return NextResponse.json({
       success: true,
