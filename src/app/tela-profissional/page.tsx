@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import Link from "next/link";
+import { ProfessionalPageWrapper } from "@/components/professional/professional-page-wrapper";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -146,12 +147,13 @@ export default async function TelaProfissional() {
   };
 
   return (
-    <div>
-      <PrimeiroAcessoModal
-        primeiroAcesso={usuario.primeiro_acesso}
-        userId={user.id}
-        userEmail={user.email!}
-      />
+    <ProfessionalPageWrapper usuario={usuario} userEmail={user.email || ""}>
+      <div>
+        <PrimeiroAcessoModal
+          primeiroAcesso={usuario.primeiro_acesso}
+          userId={user.id}
+          userEmail={user.email!}
+        />
 
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-azul-escuro">Área do Profissional</h1>
@@ -304,6 +306,7 @@ export default async function TelaProfissional() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </ProfessionalPageWrapper>
   );
 }
