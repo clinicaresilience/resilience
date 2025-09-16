@@ -59,19 +59,34 @@ export default function AuthenticatedHeader() {
           <nav className="hidden md:flex items-center flex-1 justify-center px-2 min-w-0">
             <div className="flex items-center space-x-1 lg:space-x-2 overflow-x-auto scrollbar-hide max-w-full">
               {tabs.map((tab) => (
-                <Link
-                  key={tab.id}
-                  href={tab.path!}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-1 px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                    activeTab === tab.id
-                      ? "bg-azul-escuro text-white"
-                      : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="hidden lg:inline">{tab.label}</span>
-                </Link>
+                tab.path ? (
+                  <Link
+                    key={tab.id}
+                    href={tab.path}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center space-x-1 px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                      activeTab === tab.id
+                        ? "bg-azul-escuro text-white"
+                        : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="hidden lg:inline">{tab.label}</span>
+                  </Link>
+                ) : (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center space-x-1 px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                      activeTab === tab.id
+                        ? "bg-azul-escuro text-white"
+                        : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="hidden lg:inline">{tab.label}</span>
+                  </button>
+                )
               ))}
             </div>
           </nav>
@@ -141,22 +156,40 @@ export default function AuthenticatedHeader() {
             {/* Navegação */}
             <nav className="space-y-2">
               {tabs.map((tab) => (
-                <Link
-                  key={tab.id}
-                  href={tab.path!}
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 ${
-                    activeTab === tab.id
-                      ? "bg-azul-escuro text-white shadow-sm"
-                      : "text-gray-700 hover:text-azul-escuro hover:bg-gray-100"
-                  }`}
-                >
-                  <tab.icon className="w-5 h-5 flex-shrink-0" />
-                  <span>{tab.label}</span>
-                </Link>
+                tab.path ? (
+                  <Link
+                    key={tab.id}
+                    href={tab.path}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 ${
+                      activeTab === tab.id
+                        ? "bg-azul-escuro text-white shadow-sm"
+                        : "text-gray-700 hover:text-azul-escuro hover:bg-gray-100"
+                    }`}
+                  >
+                    <tab.icon className="w-5 h-5 flex-shrink-0" />
+                    <span>{tab.label}</span>
+                  </Link>
+                ) : (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 w-full text-left ${
+                      activeTab === tab.id
+                        ? "bg-azul-escuro text-white shadow-sm"
+                        : "text-gray-700 hover:text-azul-escuro hover:bg-gray-100"
+                    }`}
+                  >
+                    <tab.icon className="w-5 h-5 flex-shrink-0" />
+                    <span>{tab.label}</span>
+                  </button>
+                )
               ))}
             </nav>
 

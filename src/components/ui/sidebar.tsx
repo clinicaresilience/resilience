@@ -142,19 +142,34 @@ export function Sidebar({
           {/* Navigation */}
           <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
             {tabs.map((tab) => (
-              <Link
-                key={tab.id}
-                href={tab.path!}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-1'} px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? "bg-azul-escuro text-white"
-                    : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
-                }`}
-              >
-                <tab.icon className="w-4 h-4 flex-shrink-0" />
-                {!isCollapsed && <span className="truncate">{tab.label}</span>}
-              </Link>
+              tab.path ? (
+                <Link
+                  key={tab.id}
+                  href={tab.path}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-1'} px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? "bg-azul-escuro text-white"
+                      : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4 flex-shrink-0" />
+                  {!isCollapsed && <span className="truncate">{tab.label}</span>}
+                </Link>
+              ) : (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-1'} px-3 py-2 rounded-md text-sm font-medium transition-colors w-full text-left ${
+                    activeTab === tab.id
+                      ? "bg-azul-escuro text-white"
+                      : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4 flex-shrink-0" />
+                  {!isCollapsed && <span className="truncate">{tab.label}</span>}
+                </button>
+              )
             ))}
           </nav>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Menu, X, TrendingUp, Building2 } from "lucide-react";
+import { Menu, X, TrendingUp, Building2, Timer } from "lucide-react";
 import { useTabStore, TabType } from "../../app/store/useTabStore";
 
 interface MobileHamburgerMenuProps {
@@ -24,6 +24,12 @@ export function MobileHamburgerMenu({ isOpen, onToggle }: MobileHamburgerMenuPro
       label: "Empresas",
       icon: Building2,
       description: "Empresas parceiras e códigos",
+    },
+    {
+      id: "limites-excecao" as TabType,
+      label: "Limites",
+      icon: Timer,
+      description: "Configure limites de exceção diários para profissionais",
     },
   ];
 

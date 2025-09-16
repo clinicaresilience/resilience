@@ -11,6 +11,7 @@ import { SchedulesSection } from "@/components/admin/schedules-section";
 import { ProfessionalAnalytics } from "@/components/admin/professional-analytics";
 import { UsersManagement } from "@/components/admin/users-management";
 import { CompaniesManagement } from "@/components/admin/companies-management";
+import { ExceptionLimitsManagement } from "@/components/admin/exception-limits-management";
 import { PacientesListClient } from "@/components/admin/pacientes-list-client";
 import {
   FileText,
@@ -22,6 +23,7 @@ import {
   UserCheck,
   User,
   Menu,
+  Timer,
 } from "lucide-react";
 
 interface PainelAdministrativoClientProps {
@@ -89,6 +91,12 @@ export function PainelAdministrativoClient({
       icon: Building2,
       description: "Empresas parceiras e códigos",
     },
+    {
+      id: "limites-excecao" as TabType,
+      label: "Limites",
+      icon: Timer,
+      description: "Configure limites de exceção diários para profissionais",
+    },
   ];
 
   const renderContent = () => {
@@ -107,6 +115,8 @@ export function PainelAdministrativoClient({
         return <UsersManagement />;
       case "empresas":
         return <CompaniesManagement />;
+      case "limites-excecao":
+        return <ExceptionLimitsManagement />;
       default:
         return <AdminDashboard />;
     }
