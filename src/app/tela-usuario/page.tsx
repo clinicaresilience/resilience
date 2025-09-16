@@ -184,6 +184,22 @@ export default function TelaUsuario() {
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Link href="/tela-usuario/avaliacoes">
+            <CardHeader className="pb-3">
+              <div className="flex items-center space-x-2">
+                <Heart className="h-6 w-6 text-yellow-500" />
+                <CardTitle className="text-lg">Avaliar Profissionais</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Avalie os profissionais após suas consultas
+              </CardDescription>
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <Link href="/portal-publico">
             <CardHeader className="pb-3">
               <div className="flex items-center space-x-2">

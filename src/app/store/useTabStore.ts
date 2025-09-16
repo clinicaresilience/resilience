@@ -1,9 +1,9 @@
 // stores/useTabStore.ts
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { Home, FileText, Calendar, TrendingUp, Users, Building2, Clock, User, Timer, LucideIcon } from "lucide-react"
+import { Home, FileText, Calendar, TrendingUp, Users, Building2, Clock, User, Timer, Star, LucideIcon } from "lucide-react"
 
-export type adminTab = "dashboard" | "pacientes" | "prontuarios" | "agendas" | "analytics" | "profissionais" | "usuarios" | "empresas" | "limites-excecao" | "clinica-info" | "perfil"
+export type adminTab = "dashboard" | "pacientes" | "prontuarios" | "agendas" | "analytics" | "profissionais" | "usuarios" | "empresas" | "limites-excecao" | "clinica-info" | "avaliacoes" | "perfil"
 export type profissionalTab = "dashboard" | "prontuarios" | "agendas" | "pacientes" | "perfil"
 export type pacienteTab = "inicio" | "agendas" | "perfil"
 export type TabType = adminTab | profissionalTab | pacienteTab
@@ -62,6 +62,7 @@ export const useTabStore = create<TabStore>()(
                             { id: "prontuarios", label: "Prontuários", icon: FileText, path: "/painel-administrativo/prontuarios" },
                             { id: "agendas", label: "Agendas", icon: Calendar, path: "/painel-administrativo/agendas" },
                             { id: "analytics", label: "Análises", icon: TrendingUp, path: "/painel-administrativo/analytics" },
+                            { id: "avaliacoes", label: "Avaliações", icon: Star, path: "/painel-administrativo/avaliacoes" },
                             { id: "usuarios", label: "Usuários", icon: Users, path: "/painel-administrativo/usuarios" },
                             { id: "empresas", label: "Empresas", icon: Building2, path: "/painel-administrativo/empresas" },
                             { id: "clinica-info", label: "Clínica", icon: Building2, path: "/painel-administrativo/clinica-info" },

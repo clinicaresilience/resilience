@@ -12,6 +12,7 @@ import { ProfessionalAnalytics } from "@/components/admin/professional-analytics
 import { UsersManagement } from "@/components/admin/users-management";
 import { CompaniesManagement } from "@/components/admin/companies-management";
 import { ExceptionLimitsManagement } from "@/components/admin/exception-limits-management";
+import { AvaliacoesManagement } from "@/components/admin/avaliacoes-management";
 import { PacientesListClient } from "@/components/admin/pacientes-list-client";
 import {
   FileText,
@@ -24,6 +25,7 @@ import {
   User,
   Menu,
   Timer,
+  Star,
 } from "lucide-react";
 
 interface PainelAdministrativoClientProps {
@@ -86,6 +88,12 @@ export function PainelAdministrativoClient({
       description: "Análises detalhadas por profissional",
     },
     {
+      id: "avaliacoes" as TabType,
+      label: "Avaliações",
+      icon: Star,
+      description: "Visualizar avaliações e médias dos profissionais",
+    },
+    {
       id: "empresas" as TabType,
       label: "Empresas",
       icon: Building2,
@@ -117,6 +125,8 @@ export function PainelAdministrativoClient({
         return <CompaniesManagement />;
       case "limites-excecao":
         return <ExceptionLimitsManagement />;
+      case "avaliacoes":
+        return <AvaliacoesManagement />;
       default:
         return <AdminDashboard />;
     }
