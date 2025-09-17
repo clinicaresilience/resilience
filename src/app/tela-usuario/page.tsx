@@ -106,17 +106,25 @@ export default function TelaUsuario() {
           local: "Clínica Resilience",
           notas: pendingData.notas || undefined,
           modalidade: pendingData.modalidade,
+          codigo_empresa: "RESILIENCE", // Código padrão da empresa
         }),
       });
 
       if (response.ok) {
+        // Limpar dados pendentes após sucesso
+        const { PendingBookingManager } = await import("@/utils/pending-booking");
+        PendingBookingManager.clear();
+        
         // Recarregar a página para mostrar o novo agendamento
         window.location.reload();
       } else {
-        console.error("Erro ao confirmar agendamento pendente");
+        const errorData = await response.json();
+        console.error("Erro ao confirmar agendamento pendente:", errorData);
+        alert(`Erro ao confirmar agendamento: ${errorData.error || 'Erro desconhecido'}`);
       }
     } catch (error) {
       console.error("Erro ao confirmar agendamento pendente:", error);
+      alert("Erro interno ao confirmar agendamento. Tente novamente.");
     }
   };
 

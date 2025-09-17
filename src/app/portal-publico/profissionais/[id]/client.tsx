@@ -60,12 +60,19 @@ export function PerfilProfissionalClient({
     const checkAuth = async () => {
       try {
         const response = await fetch("/api/auth/user");
+        // 401 é esperado quando não logado - não é erro
         setIsAuthenticated(response.ok);
-      } catch {
+      } catch (error) {
+        // Ignorar completamente erros de autenticação no portal público
         setIsAuthenticated(false);
       }
     };
-    checkAuth();
+    
+    // Executar silenciosamente
+    checkAuth().catch(() => {
+      // Suprime qualquer erro de rede/autenticação
+      setIsAuthenticated(false);
+    });
   }, []);
 
   const handleSlotSelect = (slot: AgendaSlot) => {
@@ -105,7 +112,7 @@ export function PerfilProfissionalClient({
     setShowConfirmation(false);
     setSelectedSlot(null);
     // Redirecionar para página de agendamentos
-    // window.location.href = "/tela-usuario/agendamentos";
+    window.location.href = "/tela-usuario/agendamentos";
   };
 
   const handleLoginSuccess = () => {

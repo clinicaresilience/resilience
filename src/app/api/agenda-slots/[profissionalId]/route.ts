@@ -4,7 +4,7 @@ import { TimezoneUtils } from '@/utils/timezone';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { profissionalId: string } }
+  { params }: { params: Promise<{ profissionalId: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -12,7 +12,7 @@ export async function GET(
     // Remover autenticação obrigatória para permitir acesso público aos horários
     // Esta API deve ser acessível para usuários não logados fazerem agendamentos
 
-    const { profissionalId } = params;
+    const { profissionalId } = await params;
     const { searchParams } = new URL(request.url);
     const dataInicio = searchParams.get('dataInicio');
     const dataFim = searchParams.get('dataFim');
@@ -263,7 +263,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { profissionalId: string } }
+  { params }: { params: Promise<{ profissionalId: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -273,7 +273,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { profissionalId } = params;
+    const { profissionalId } = await params;
     const { slotId, modalidade, notas, dataHoraInicio, dataHoraFim } = await request.json();
 
     if (!slotId) {
