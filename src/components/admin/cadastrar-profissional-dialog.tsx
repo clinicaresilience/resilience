@@ -15,6 +15,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { criarProfissional } from "../../app/actions/criar-profissional";
 import { RefreshCw } from "lucide-react";
+import { 
+  normalizarCRP, 
+  validarCRP, 
+  aplicarMascaraCRP, 
+  validarCRPEmTempoReal 
+} from "@/utils/crp-validation";
 
 interface CadastrarProfissionalDialogProps {
   onSuccess?: () => void;
@@ -58,6 +64,8 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
   const [area, setArea] = useState("");
   const [especialidade, setEspecialidade] = useState("");
   const [crp, setCrp] = useState("");
+  const [crpError, setCrpError] = useState("");
+  const [crpAviso, setCrpAviso] = useState("");
   const [descricao, setDescricao] = useState("");
   const [senha, setSenha] = useState("");
 
@@ -89,6 +97,14 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
     // Validações do frontend
     if (!nome.trim() || !email.trim() || !cpf.trim() || !telefone.trim() || !area.trim() || !especialidade.trim() || !crp.trim()) {
       setError("Preencha todos os campos obrigatórios (Nome, Email, CPF, Telefone, Área, Especialidade e CRP).");
+      setLoading(false);
+      return;
+    }
+
+    // Validar CRP
+    const validacaoCRP = validarCRP(crp);
+    if (!validacaoCRP.valido) {
+      setError(validacaoCRP.erro || "CRP inválido");
       setLoading(false);
       return;
     }
@@ -129,7 +145,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
         senha: senhaFinal,
         area,
         especialidade,
-        crp,
+        crp: normalizarCRP(crp), // Normalizar antes de enviar
         descricao,
       });
 
@@ -249,10 +265,36 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
             <Input
               id="crp"
               value={crp}
-              onChange={(e) => setCrp(e.target.value)}
+              onChange={(e) => {
+                const valor = aplicarMascaraCRP(e.target.value);
+                setCrp(valor);
+                
+                // Validação em tempo real
+                const validacao = validarCRPEmTempoReal(valor);
+                if (validacao.mensagem) {
+                  setCrpError(validacao.mensagem);
+                  setCrpAviso("");
+                } else if (validacao.aviso) {
+                  setCrpError("");
+                  setCrpAviso(validacao.aviso);
+                } else {
+                  setCrpError("");
+                  setCrpAviso("");
+                }
+              }}
+              className={crpError ? "border-red-500" : ""}
               required
-              placeholder="Ex: 06/123456"
+              placeholder="SP/06123 ou SP06123"
             />
+            {crpError && (
+              <p className="text-sm text-red-500 mt-1">{crpError}</p>
+            )}
+            {crpAviso && (
+              <p className="text-sm text-blue-500 mt-1">{crpAviso}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Formato: Sigla do estado + número (ex: SP06123, RJ12345)
+            </p>
           </div>
 
           <div>

@@ -22,6 +22,12 @@ import {
   Award,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { 
+  normalizarCRP, 
+  validarCRP, 
+  aplicarMascaraCRP, 
+  validarCRPEmTempoReal 
+} from "@/utils/crp-validation";
 
 interface User {
   id: string;
@@ -83,8 +89,9 @@ export function EditProfileForm({
         return "";
       
       case "crp":
-        if (userType === "profissional" && value && !/^\d{2}\/\d{5,6}$/.test(value)) {
-          return "Formato: UF/NÚMERO (ex: SP/123456)";
+        if (userType === "profissional" && value) {
+          const validacao = validarCRP(value);
+          return validacao.valido ? "" : (validacao.erro || "CRP inválido");
         }
         return "";
       
