@@ -76,37 +76,36 @@ export function AgendaCalendar() {
   // Buscar designações presenciais do profissional
   const fetchPresentialDesignations = async () => {
     try {
-      // Try to get all designations first and then filter them
-      const response = await fetch('/api/profissional-presencial')
+      // Get current user first
+      const userResponse = await fetch('/api/auth/user')
+      if (!userResponse.ok) {
+        console.log('Could not get user info')
+        return []
+      }
+
+      const userData = await userResponse.json()
+      const userId = userData.id
+      console.log('Current user ID:', userId)
+      
+      if (!userId) {
+        console.log('No user ID found')
+        return []
+      }
+
+      // Get designations filtered by current professional
+      const response = await fetch(`/api/profissional-presencial?profissional_id=${userId}`)
       if (response.ok) {
         const result = await response.json()
-        console.log('All presential designations fetched:', result)
-        
-        // Get current user from Supabase auth to filter
-        const userResponse = await fetch('/api/auth/user')
-        if (userResponse.ok) {
-          const userData = await userResponse.json()
-          const userId = userData.id  // Access id directly, not userData.user.id
-          console.log('Current user ID:', userId)
-          
-          if (userId && result.data) {
-            // Filter designations for current professional
-            const filtered = result.data.filter((designation: any) => 
-              designation.profissional_id === userId
-            )
-            console.log('Filtered designations for professional:', filtered)
-            return filtered
-          }
-        }
-        
-        // If auth fails, return empty array (professional gets no designations)
-        console.log('Could not get user ID, returning empty array')
+        console.log('Presential designations fetched for professional:', result)
+        return result.data || []
+      } else {
+        console.log('Failed to fetch presential designations')
         return []
       }
     } catch (error) {
       console.error('Erro ao buscar designações presenciais:', error)
+      return []
     }
-    return []
   }
 
   // Buscar agendamentos do profissional
@@ -133,43 +132,47 @@ export function AgendaCalendar() {
         
         // Add presential designations as special appointments
         if (presentialData && presentialData.length > 0) {
-          const presentialAgendamentos = presentialData.map((designation: Record<string, unknown>) => ({
-            id: `presential-${designation.id}`,
-            usuarioId: '',
-            profissionalId: designation.profissional_id,
-            profissionalNome: 'Atendimento Presencial',
-            dataISO: (() => {
-              // Extrair apenas a parte da data (YYYY-MM-DD) ignorando timezone
-              const dateOnly = (designation.data_presencial as string).split('T')[0];
-              const timeOnly = designation.hora_inicio as string || '12:00';
-              // Criar data diretamente no timezone local sem conversão UTC
-              return `${dateOnly}T${timeOnly}:00`;
-            })(),
-            local: 'Presencial',
-            status: 'presencial',
-            notas: `Presencial ${designation.hora_inicio && designation.hora_fim 
-              ? `das ${(designation.hora_inicio as string).substring(0, 5)} às ${(designation.hora_fim as string).substring(0, 5)}` 
-              : 'dia inteiro'}${designation.empresas && (designation.empresas as any).nome ? ` - ${(designation.empresas as any).nome}` : ''}`,
-            pacienteNome: `🏥 Presencial${designation.empresas && (designation.empresas as any).nome ? ` - ${(designation.empresas as any).nome}` : ''}`,
-            pacienteEmail: '',
-            pacienteTelefone: '',
-            data_consulta: designation.data_presencial,
-            data_hora_inicio: (() => {
-              const dateOnly = (designation.data_presencial as string).split('T')[0];
-              const timeOnly = (designation.hora_inicio as string) || '08:00';
-              // Use TimezoneUtils to create proper timestamp with backend timezone
-              return TimezoneUtils.createDateTime(dateOnly, timeOnly);
-            })(),
-            data_hora_fim: (() => {
-              const dateOnly = (designation.data_presencial as string).split('T')[0];
-              const timeOnly = (designation.hora_fim as string) || '18:00';
-              // Use TimezoneUtils to create proper timestamp with backend timezone
-              return TimezoneUtils.createDateTime(dateOnly, timeOnly);
-            })(),
-            isPresential: true,
-            empresa: designation.empresas || null
-          }))
+          console.log('Processing presential data:', presentialData)
           
+          const presentialAgendamentos = presentialData.map((designation: Record<string, unknown>) => {
+            console.log('Processing designation:', designation)
+            
+            // Extrair data de forma mais robusta
+            const dataPresencial = designation.data_presencial as string
+            const horaInicio = designation.hora_inicio as string || '08:00:00'
+            const horaFim = designation.hora_fim as string || '18:00:00'
+            
+            // Criar dataISO simples
+            const dateOnly = dataPresencial.split('T')[0] // YYYY-MM-DD
+            const timeStart = horaInicio.split('T')[1] || horaInicio // pegar apenas HH:mm:ss
+            const dataISO = `${dateOnly}T${timeStart}`
+            
+            const presentialItem = {
+              id: `presential-${designation.id}`,
+              usuarioId: '',
+              profissionalId: designation.profissional_id,
+              profissionalNome: 'Atendimento Presencial',
+              dataISO: dataISO,
+              local: 'Presencial',
+              status: 'presencial',
+              notas: `Presencial ${designation.hora_inicio && designation.hora_fim 
+                ? `das ${horaInicio.substring(0, 5)} às ${horaFim.substring(0, 5)}` 
+                : 'dia inteiro'}${designation.empresas && (designation.empresas as any).nome ? ` - ${(designation.empresas as any).nome}` : ''}`,
+              pacienteNome: `🏥 Presencial${designation.empresas && (designation.empresas as any).nome ? ` - ${(designation.empresas as any).nome}` : ''}`,
+              pacienteEmail: '',
+              pacienteTelefone: '',
+              data_consulta: dataPresencial,
+              data_hora_inicio: dataISO,
+              data_hora_fim: `${dateOnly}T${(horaFim.split('T')[1] || horaFim)}`,
+              isPresential: true,
+              empresa: designation.empresas || null
+            }
+            
+            console.log('Created presential item:', presentialItem)
+            return presentialItem
+          })
+          
+          console.log('All presential agendamentos:', presentialAgendamentos)
           allAgendamentos.push(...presentialAgendamentos)
         }
         

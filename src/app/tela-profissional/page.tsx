@@ -220,17 +220,38 @@ export default async function TelaProfissional() {
                 Você tem {designacoesPresenciais.length} designação(ões) para atendimento presencial:
               </p>
               {designacoesPresenciais.map((designacao, index) => {
-                const dataDesignacao = new Date(designacao.data_presencial + 'T00:00:00');
-                const dataFormatada = dataDesignacao.toLocaleDateString('pt-BR');
-                const hoje = new Date();
-                const hojeStr = hoje.toLocaleDateString('pt-BR');
-                const amanha = new Date(hoje);
-                amanha.setDate(hoje.getDate() + 1);
-                const amanhaStr = amanha.toLocaleDateString('pt-BR');
+                // Formatação segura de data
+                const dataStr = designacao.data_presencial;
+                let dataFormatada = 'Data inválida';
+                let textoData = 'Data inválida';
                 
-                let textoData = dataFormatada;
-                if (dataFormatada === hojeStr) textoData = `Hoje (${dataFormatada})`;
-                else if (dataFormatada === amanhaStr) textoData = `Amanhã (${dataFormatada})`;
+                try {
+                  // Parse da data do banco (formato: "2025-09-18 00:00:00+00")
+                  const dataDesignacao = new Date(dataStr);
+                  
+                  if (!isNaN(dataDesignacao.getTime())) {
+                    // Formatar usando UTC para evitar problemas de timezone
+                    const ano = dataDesignacao.getUTCFullYear();
+                    const mes = String(dataDesignacao.getUTCMonth() + 1).padStart(2, '0');
+                    const dia = String(dataDesignacao.getUTCDate()).padStart(2, '0');
+                    dataFormatada = `${dia}/${mes}/${ano}`;
+                    
+                    // Comparar com data de hoje em UTC
+                    const hoje = new Date();
+                    const hojeUTC = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+                    const designacaoUTC = new Date(ano, dataDesignacao.getUTCMonth(), dataDesignacao.getUTCDate());
+                    const amanhaUTC = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1);
+                    
+                    textoData = dataFormatada;
+                    if (designacaoUTC.getTime() === hojeUTC.getTime()) {
+                      textoData = `Hoje (${dataFormatada})`;
+                    } else if (designacaoUTC.getTime() === amanhaUTC.getTime()) {
+                      textoData = `Amanhã (${dataFormatada})`;
+                    }
+                  }
+                } catch (error) {
+                  console.error('Erro ao formatar data:', error, 'Data recebida:', dataStr);
+                }
 
                 const horarioTexto = designacao.hora_inicio && designacao.hora_fim 
                   ? `${designacao.hora_inicio.substring(0, 5)} às ${designacao.hora_fim.substring(0, 5)}`

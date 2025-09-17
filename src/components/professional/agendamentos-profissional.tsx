@@ -210,12 +210,20 @@ export default function AgendamentosProfissional({
           if (result.data) {
             // Mapear designações presenciais para o formato de agendamento
             designacoesPresenciais = result.data.map((designacao: Record<string, any>) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-              // Criar string de data/hora para designação presencial
-              let dataISO = designacao.data_presencial;
-              if (designacao.hora_inicio) {
-                dataISO = `${designacao.data_presencial}T${designacao.hora_inicio}:00`;
+              // Criar string de data/hora para designação presencial de forma mais robusta
+              const dataPresencial = designacao.data_presencial as string;
+              const horaInicio = designacao.hora_inicio as string;
+              
+              let dataISO: string;
+              if (horaInicio) {
+                // Se tem hora_inicio, extrair apenas a parte de hora (sem timezone)
+                const dateOnly = dataPresencial.split('T')[0]; // YYYY-MM-DD
+                const timeOnly = horaInicio.includes('T') ? horaInicio.split('T')[1] : horaInicio; // HH:mm:ss
+                dataISO = `${dateOnly}T${timeOnly}`;
               } else {
-                dataISO = `${designacao.data_presencial}T08:00:00`;
+                // Se não tem hora_inicio, usar 08:00:00 como padrão
+                const dateOnly = dataPresencial.split('T')[0]; // YYYY-MM-DD
+                dataISO = `${dateOnly}T08:00:00`;
               }
               
               return {
@@ -627,22 +635,22 @@ export default function AgendamentosProfissional({
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Detalhes do agendamento</DialogTitle>
+                      <DialogTitle>Detalhes do {a.isPresential ? 'atendimento presencial' : 'agendamento'}</DialogTitle>
                       <DialogDescription>
-                        Informações completas do paciente e atendimento.
+                        Informações completas do {a.isPresential ? 'atendimento presencial' : 'paciente e atendimento'}.
                       </DialogDescription>
                     </DialogHeader>
 
                     <div className="grid gap-2 text-sm">
                       <div>
                         <span className="text-muted-foreground">
-                          Paciente:{" "}
+                          {a.isPresential ? 'Tipo:' : 'Paciente:'}{" "}
                         </span>
                         <span className="font-medium">
                           {a.pacienteNome}
                         </span>
                       </div>
-                      {a.pacienteEmail && (
+                      {a.pacienteEmail && !a.isPresential && (
                         <div>
                           <span className="text-muted-foreground">
                             Email:{" "}
@@ -676,35 +684,56 @@ export default function AgendamentosProfissional({
                           <span>{a.notas}</span>
                         </div>
                       ) : null}
+                      {a.isPresential && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <p className="text-sm text-blue-800">
+                            <strong>Atenção:</strong> Esta é uma designação presencial criada pelo administrador. 
+                            Para modificações, entre em contato com a administração.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </DialogContent>
                 </Dialog>
 
-                <Button
-                  variant="secondary"
-                  onClick={() => abrirModalReagendamento(a)}
-                  disabled={!podeReagendar(a)}
-                  title={
-                    !podeReagendar(a)
-                      ? "Não é possível reagendar (expirado, concluído ou já cancelado)"
-                      : "Reagendar este agendamento"
-                  }
-                >
-                  Reagendar
-                </Button>
+                {/* Botões de ação apenas para agendamentos online (não presenciais) */}
+                {!a.isPresential && (
+                  <>
+                    <Button
+                      variant="secondary"
+                      onClick={() => abrirModalReagendamento(a)}
+                      disabled={!podeReagendar(a)}
+                      title={
+                        !podeReagendar(a)
+                          ? "Não é possível reagendar (expirado, concluído ou já cancelado)"
+                          : "Reagendar este agendamento"
+                      }
+                    >
+                      Reagendar
+                    </Button>
+                    
+                    <Button
+                      variant="destructive"
+                      onClick={() => abrirModalCancelamento(a.id)}
+                      disabled={!podeCancelar(a)}
+                      title={
+                        !podeCancelar(a)
+                          ? "Não é possível cancelar (expirado, concluído ou já cancelado)"
+                          : "Cancelar este agendamento"
+                      }
+                    >
+                      Cancelar
+                    </Button>
+                  </>
+                )}
                 
-                <Button
-                  variant="destructive"
-                  onClick={() => abrirModalCancelamento(a.id)}
-                  disabled={!podeCancelar(a)}
-                  title={
-                    !podeCancelar(a)
-                      ? "Não é possível cancelar (expirado, concluído ou já cancelado)"
-                      : "Cancelar este agendamento"
-                  }
-                >
-                  Cancelar
-                </Button>
+                {/* Para designações presenciais, mostrar apenas informação */}
+                {a.isPresential && (
+                  <div className="text-xs text-blue-600 flex items-center gap-1">
+                    <Building2 className="h-3 w-3" />
+                    Designação presencial - Entre em contato com a administração para alterações
+                  </div>
+                )}
               </CardFooter>
             </Card>
           );
