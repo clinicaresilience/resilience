@@ -17,7 +17,7 @@ export async function GET() {
     // Buscar preferências do usuário
     const { data: userData, error } = await supabase
       .from('usuarios')
-      .select('boas_vindas')
+      .select('boas_vindas, primeiro_acesso')
       .eq('id', user.id)
       .single();
 
@@ -26,10 +26,13 @@ export async function GET() {
       return NextResponse.json({ error: 'Erro ao buscar preferências' }, { status: 500 });
     }
 
+    // Show welcome if boas_vindas is true AND primeiro_acesso is true
+    const shouldShowWelcome = userData?.boas_vindas === true && userData?.primeiro_acesso === true;
+
     return NextResponse.json({ 
       success: true, 
       data: { 
-        showWelcome: userData?.boas_vindas ?? true 
+        showWelcome: shouldShowWelcome
       } 
     });
 
@@ -59,10 +62,15 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'showWelcome deve ser um boolean' }, { status: 400 });
     }
 
-    // Atualizar preferência
+    // Atualizar preferência - when disabling welcome, also set primeiro_acesso to false
+    const updateData: { boas_vindas: boolean; primeiro_acesso?: boolean } = { boas_vindas: showWelcome };
+    if (!showWelcome) {
+      updateData.primeiro_acesso = false;
+    }
+
     const { error } = await supabase
       .from('usuarios')
-      .update({ boas_vindas: showWelcome })
+      .update(updateData)
       .eq('id', user.id);
 
     if (error) {

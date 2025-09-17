@@ -157,10 +157,14 @@ export function WelcomeScreen({ isOpen, onClose, onDisableForever, userName, use
   const content = getWelcomeContent();
   const totalSteps = 3;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1);
     } else {
+      // When completing the journey, disable welcome screen forever
+      if (onDisableForever) {
+        await onDisableForever();
+      }
       onClose();
     }
   };

@@ -17,6 +17,8 @@ import {
   PendingBookingData,
 } from "@/utils/pending-booking";
 import { useEffect, useState } from "react";
+import { WelcomeScreen } from "@/components/welcome-screen";
+import { useWelcomeScreen } from "@/hooks/useWelcomeScreen";
 
 type Consulta = {
   id: string;
@@ -32,6 +34,9 @@ export default function TelaUsuario() {
   const [historico, setHistorico] = useState<Consulta[]>([]);
   const [usuario, setUsuario] = useState("");
   const [showPendingModal, setShowPendingModal] = useState(false);
+  
+  // Welcome screen hook
+  const { showWelcome, hideWelcome, disableWelcomeForever } = useWelcomeScreen();
 
   useEffect(() => {
     async function fetchConsultas() {
@@ -329,6 +334,15 @@ export default function TelaUsuario() {
         isOpen={showPendingModal}
         onClose={() => setShowPendingModal(false)}
         onConfirm={handleConfirmPendingBooking}
+      />
+
+      {/* Welcome Screen for new patients */}
+      <WelcomeScreen
+        isOpen={showWelcome}
+        onClose={hideWelcome}
+        onDisableForever={disableWelcomeForever}
+        userName={usuario || "Paciente"}
+        userType="comum"
       />
     </>
   );
