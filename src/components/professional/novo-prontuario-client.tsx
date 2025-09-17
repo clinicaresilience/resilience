@@ -364,7 +364,6 @@ export function NovoProntuarioClient({
       const response = await fetch("/api/profissionais");
       if (response.ok) {
         const result = await response.json();
-        console.log("Profissionais carregados:", result); // Debug
         const data = result.data || [];
         setProfessionals(data);
       } else {

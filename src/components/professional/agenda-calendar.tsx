@@ -79,16 +79,13 @@ export function AgendaCalendar() {
       // Get current user first
       const userResponse = await fetch('/api/auth/user')
       if (!userResponse.ok) {
-        console.log('Could not get user info')
         return []
       }
 
       const userData = await userResponse.json()
       const userId = userData.id
-      console.log('Current user ID:', userId)
       
       if (!userId) {
-        console.log('No user ID found')
         return []
       }
 
@@ -96,10 +93,8 @@ export function AgendaCalendar() {
       const response = await fetch(`/api/profissional-presencial?profissional_id=${userId}`)
       if (response.ok) {
         const result = await response.json()
-        console.log('Presential designations fetched for professional:', result)
         return result.data || []
       } else {
-        console.log('Failed to fetch presential designations')
         return []
       }
     } catch (error) {
@@ -132,11 +127,7 @@ export function AgendaCalendar() {
         
         // Add presential designations as special appointments
         if (presentialData && presentialData.length > 0) {
-          console.log('Processing presential data:', presentialData)
-          
           const presentialAgendamentos = presentialData.map((designation: Record<string, unknown>) => {
-            console.log('Processing designation:', designation)
-            
             // Extrair data de forma mais robusta
             const dataPresencial = designation.data_presencial as string
             const horaInicio = designation.hora_inicio as string || '08:00:00'
@@ -168,11 +159,9 @@ export function AgendaCalendar() {
               empresa: designation.empresas || null
             }
             
-            console.log('Created presential item:', presentialItem)
             return presentialItem
           })
           
-          console.log('All presential agendamentos:', presentialAgendamentos)
           allAgendamentos.push(...presentialAgendamentos)
         }
         
