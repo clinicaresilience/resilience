@@ -58,7 +58,7 @@ export function generateMockPacientes(): Paciente[] {
       dataNascimento: "1992-11-08",
       cpf: "345.678.901-23",
       endereco: "Rua Augusta, 789 - São Paulo, SP",
-      observacoes: "Primeira consulta - encaminhamento médico",
+      observacoes: "Primeira consulta - encaminhamento ",
       criadoEm: dataPassadaAleatoria(120)
     },
     {

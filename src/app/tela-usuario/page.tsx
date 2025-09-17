@@ -190,7 +190,7 @@ export default function TelaUsuario() {
             <CardHeader className="pb-3">
               <div className="flex items-center space-x-2">
                 <FileText className="h-6 w-6 text-azul-escuro" />
-                <CardTitle className="text-lg">Histórico Médico</CardTitle>
+                <CardTitle className="text-lg">Histórico </CardTitle>
               </div>
             </CardHeader>
             <CardContent>

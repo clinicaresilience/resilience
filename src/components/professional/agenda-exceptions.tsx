@@ -370,7 +370,7 @@ export function AgendaExceptions({ profissionalId }: AgendaExceptionsProps) {
                     onChange={(e) =>
                       setFormData({ ...formData, motivo: e.target.value })
                     }
-                    placeholder="Ex: Horário de almoço, Consulta médica, etc."
+                    placeholder="Ex: Horário de almoço, Consulta , etc."
                     rows={2}
                   />
                 </div>

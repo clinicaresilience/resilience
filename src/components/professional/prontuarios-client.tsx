@@ -113,7 +113,7 @@ export function ProfessionalProntuariosClient({
           paciente_id: pront.paciente_id,
           profissional_id: pront.profissional_atual_id,
           data_consulta: pront.atualizado_em,
-          modalidade: "Prontuário Médico",
+          modalidade: "Prontuário ",
           status: "concluido",
           local: "",
           observacoes: `${pront.registros?.length || 0} registro(s) no prontuário`,
@@ -732,7 +732,7 @@ export function ProfessionalProntuariosClient({
                           <div className="flex items-center justify-between">
                             <div>
                               <DialogTitle className="text-blue-900">
-                                Consulta Médica
+                                Consulta 
                               </DialogTitle>
                               <DialogDescription className="text-gray-700">
                                 {prontuarioSelecionado?.paciente?.nome} -{" "}

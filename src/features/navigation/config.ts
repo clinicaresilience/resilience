@@ -44,7 +44,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
       title: "Prontuários",
       href: ROUTES.professional.prontuarios,
       icon: FileText,
-      description: "Acesse prontuários médicos",
+      description: "Acesse prontuários ",
     },
     {
       title: "Agenda",
@@ -82,7 +82,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
       title: "Histórico",
       href: ROUTES.user.historico,
       icon: FileText,
-      description: "Histórico médico",
+      description: "Histórico ",
     },
     {
       title: "Bem-estar",

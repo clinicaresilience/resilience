@@ -34,7 +34,7 @@ export default async function ProntuariosPage() {
     <div>
       {/* Welcome Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-azul-escuro">Prontuários Médicos</h1>
+        <h1 className="text-3xl font-bold text-azul-escuro">Prontuários </h1>
         <p className="mt-2 text-lg text-gray-600">
           Bem-vindo, <span className="font-semibold">{usuario.nome}</span> ({user.email})
         </p>
@@ -44,7 +44,7 @@ export default async function ProntuariosPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
           <p className="text-sm text-gray-600">
-            Acesso a todos os prontuários médicos
+            Acesso a todos os prontuários 
           </p>
         </div>
       </div>

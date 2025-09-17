@@ -55,13 +55,13 @@ export function PainelAdministrativoClient({
       id: "pacientes" as TabType,
       label: "Pacientes",
       icon: UserCheck,
-      description: "Gerenciar pacientes e histórico médico",
+      description: "Gerenciar pacientes e histórico ",
     },
     {
       id: "prontuarios" as TabType,
       label: "Prontuários",
       icon: FileText,
-      description: "Acesso a todos os prontuários médicos",
+      description: "Acesso a todos os prontuários ",
     },
     {
       id: "agendas" as TabType,
@@ -191,7 +191,9 @@ export function PainelAdministrativoClient({
                 }`}
               >
                 <Icon className="h-4 w-4" />
-                <span className="text-xs mt-0.5 leading-tight">{tab.label}</span>
+                <span className="text-xs mt-0.5 leading-tight">
+                  {tab.label}
+                </span>
               </button>
             );
           })}

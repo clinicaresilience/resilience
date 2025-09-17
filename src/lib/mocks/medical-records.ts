@@ -1,4 +1,4 @@
-// Tipos e mocks de prontuários médicos
+// Tipos e mocks de prontuários 
 
 export type ProntuarioMedico = {
   id: string

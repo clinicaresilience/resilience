@@ -61,7 +61,7 @@ export const exportarProntuarioPDF = async ({ prontuario, formatarData }: Export
     pdf.setFontSize(14);
     pdf.setTextColor(55, 65, 81);
     pdf.setFont("helvetica", "normal");
-    pdf.text("PRONTUÁRIO MÉDICO", pageWidth / 2, currentY, {
+    pdf.text("PRONTUÁRIO ", pageWidth / 2, currentY, {
       align: "center",
     });
       currentY += 15;
@@ -101,12 +101,12 @@ export const exportarProntuarioPDF = async ({ prontuario, formatarData }: Export
     pdf.text(formatarData(prontuario.criado_em), margin + 35, currentY);
     currentY += 15;
 
-    // Registros Médicos
+    // Registros 
     pdf.setFontSize(12);
     pdf.setTextColor(31, 41, 55);
     pdf.setFont("helvetica", "bold");
     pdf.text(
-      `REGISTROS MÉDICOS (${prontuario.registros.length})`,
+      `REGISTROS  (${prontuario.registros.length})`,
       margin,
       currentY
     );

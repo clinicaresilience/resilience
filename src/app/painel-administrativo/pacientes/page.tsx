@@ -44,7 +44,7 @@ export default async function PacientesPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
           <p className="text-sm text-gray-600">
-            Gerenciar pacientes e histórico médico
+            Gerenciar pacientes e histórico 
           </p>
         </div>
       </div>

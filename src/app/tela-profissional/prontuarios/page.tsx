@@ -42,7 +42,7 @@ export default async function ProntuariosProfissionalPage() {
 
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-azul-escuro">
-          Prontuários Médicos
+          Prontuários 
         </h1>
         <p className="mt-2 text-lg text-gray-600">
           Acesse, edite e gerencie os prontuários dos seus pacientes
