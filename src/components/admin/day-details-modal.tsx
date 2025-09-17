@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { formatTime, formatDateTimeObject, getDateOnly, isSameDay } from "@/utils/date-formatter"
+import { TimezoneUtils } from "@/utils/timezone"
 
 import {
   Calendar,
@@ -65,7 +65,9 @@ function PatientDetailsModal({ isOpen, onClose, agendamento }: PatientDetailsMod
 
   if (!agendamento) return null
 
-  const { date, time } = formatDateTimeObject(agendamento.dataISO)
+  const utcDateTime = TimezoneUtils.dbTimestampToUTC(agendamento.dataISO)
+  const date = TimezoneUtils.formatForDisplay(utcDateTime, undefined, 'date')
+  const time = TimezoneUtils.formatForDisplay(utcDateTime, undefined, 'time')
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -257,9 +259,9 @@ export function DayDetailsModal({ isOpen, onClose, selectedDate, agendamentos }:
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null)
   const [showPatientModal, setShowPatientModal] = useState(false)
 
-  // Filtrar agendamentos para a data selecionada usando utilitário universal
+  // Filtrar agendamentos para a data selecionada usando TimezoneUtils
   const dayAgendamentos = selectedDate ? agendamentos.filter(ag => {
-    const agDate = getDateOnly(ag.dataISO)
+    const agDate = TimezoneUtils.extractDate(TimezoneUtils.dbTimestampToUTC(ag.dataISO))
     const selectedDateStr = selectedDate.toISOString().split('T')[0]
     return agDate === selectedDateStr
   }).sort((a, b) => new Date(a.dataISO).getTime() - new Date(b.dataISO).getTime()) : []
@@ -341,7 +343,7 @@ export function DayDetailsModal({ isOpen, onClose, selectedDate, agendamentos }:
                                   <div className="flex items-center gap-2">
                                     <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
                                     <span className="font-medium text-sm">
-                                      {formatTime(agendamento.dataISO)}
+                                      {TimezoneUtils.formatForDisplay(TimezoneUtils.dbTimestampToUTC(agendamento.dataISO), undefined, 'time')}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2 min-w-0 flex-1">

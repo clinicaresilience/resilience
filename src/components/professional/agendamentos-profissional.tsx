@@ -4,7 +4,6 @@ import React, { useMemo, useState, useEffect } from "react";
 import { StatusAgendamento, type UiAgendamento } from "@/types/agendamento";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TimezoneUtils } from "@/utils/timezone";
-import { DateFormatter } from "@/utils/date-formatter";
 import {
   Card,
   CardContent,

@@ -4,10 +4,8 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
-import moment from "moment";
-import "moment/locale/pt-br";
-
-moment.locale("pt-br");
+import { TimezoneUtils } from "@/utils/timezone";
+import { DateTime } from "luxon";
 
 type AgendaSlot = {
   id: string;
@@ -37,34 +35,34 @@ export function MobileCalendar({
   onDateSelect,
   loading = false,
 }: MobileCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(moment());
+  const [currentDate, setCurrentDate] = useState(DateTime.now().setZone('America/Sao_Paulo'));
 
   // Gerar dias do mês atual
   const calendarDays = useMemo(() => {
-    const startOfMonth = currentDate.clone().startOf('month');
-    const endOfMonth = currentDate.clone().endOf('month');
-    const startOfWeek = startOfMonth.clone().startOf('week');
-    const endOfWeek = endOfMonth.clone().endOf('week');
+    const startOfMonth = currentDate.startOf('month');
+    const endOfMonth = currentDate.endOf('month');
+    const startOfWeek = startOfMonth.startOf('week');
+    const endOfWeek = endOfMonth.endOf('week');
 
     const days = [];
-    const current = startOfWeek.clone();
+    let current = startOfWeek;
 
-    while (current.isSameOrBefore(endOfWeek)) {
-      const dateStr = current.format('YYYY-MM-DD');
+    while (current <= endOfWeek) {
+      const dateStr = current.toISODate() || current.toFormat('yyyy-MM-dd');
       const slotsForDate = agendaSlots.filter(slot => slot.data === dateStr);
       const availableCount = slotsForDate.filter(slot => slot.disponivel).length;
       
       days.push({
-        date: current.clone(),
+        date: current,
         dateStr,
-        isCurrentMonth: current.month() === currentDate.month(),
-        isToday: current.isSame(moment(), 'day'),
-        isPast: current.isBefore(moment(), 'day'),
+        isCurrentMonth: current.month === currentDate.month,
+        isToday: current.hasSame(DateTime.now().setZone('America/Sao_Paulo'), 'day'),
+        isPast: current < DateTime.now().setZone('America/Sao_Paulo').startOf('day'),
         slots: slotsForDate,
         availableCount,
       });
       
-      current.add(1, 'day');
+      current = current.plus({ days: 1 });
     }
 
     return days;
@@ -73,15 +71,15 @@ export function MobileCalendar({
   const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
   const handlePrevMonth = () => {
-    setCurrentDate(prev => prev.clone().subtract(1, 'month'));
+    setCurrentDate(prev => prev.minus({ months: 1 }));
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(prev => prev.clone().add(1, 'month'));
+    setCurrentDate(prev => prev.plus({ months: 1 }));
   };
 
   type CalendarDay = {
-    date: moment.Moment;
+    date: DateTime;
     dateStr: string;
     isCurrentMonth: boolean;
     isToday: boolean;
@@ -134,7 +132,7 @@ export function MobileCalendar({
           </Button>
           
           <h3 className="text-base font-semibold">
-            {currentDate.format('MMMM YYYY')}
+            {currentDate.setLocale('pt-BR').toFormat('MMMM yyyy')}
           </h3>
           
           <Button
@@ -182,7 +180,7 @@ export function MobileCalendar({
                   ${day.isToday ? 'bg-blue-50 border-blue-200 border' : ''}
                 `}
               >
-                <span className="block">{day.date.date()}</span>
+                <span className="block">{day.date.day}</span>
                 {day.availableCount > 0 && day.isCurrentMonth && !day.isPast && (
                   <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>

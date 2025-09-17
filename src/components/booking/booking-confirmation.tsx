@@ -22,13 +22,12 @@ import {
   LogIn,
   Monitor,
 } from "lucide-react";
-import moment from "moment";
-import "moment/locale/pt-br";
+import { TimezoneUtils } from "@/utils/timezone";
 import { useAuth } from "@/features/auth/context/auth-context";
 import { PendingBookingManager } from "@/utils/pending-booking";
 import { useRouter } from "next/navigation";
 
-moment.locale("pt-br");
+
 
 type AgendaSlot = {
   id: string;
@@ -179,10 +178,10 @@ export function BookingConfirmation({
   };
 
   const formatDateTime = (data: string, hora: string) => {
-    const dateTime = moment(`${data} ${hora}`, "YYYY-MM-DD HH:mm");
+    const utcDateTime = TimezoneUtils.createDateTime(data, hora);
     return {
-      date: dateTime.format("dddd, DD [de] MMMM [de] YYYY"),
-      time: dateTime.format("HH:mm"),
+      date: TimezoneUtils.formatForDisplay(utcDateTime, undefined, 'full').replace(/,.*,/, ','),
+      time: TimezoneUtils.formatForDisplay(utcDateTime, undefined, 'time'),
     };
   };
 

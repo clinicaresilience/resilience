@@ -6,10 +6,8 @@ import { Button } from "@/components/ui/button"
 import { generateMockAgendamentos, type Agendamento } from "@/lib/mocks/agendamentos"
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, User, MapPin } from "lucide-react"
 import { DayDetailsModal } from "./day-details-modal"
-import moment from "moment"
-import "moment/locale/pt-br"
-
-moment.locale("pt-br")
+import { TimezoneUtils } from "@/utils/timezone"
+import { DateTime } from "luxon"
 
 type AgendamentoReal = {
   id: string
@@ -74,7 +72,7 @@ export function CalendarView({
   selectedProfessional = "todos",
   selectedStatus = "todos"
 }: CalendarViewProps) {
-  const [currentDate, setCurrentDate] = useState(moment())
+  const [currentDate, setCurrentDate] = useState(DateTime.now().setZone('America/Sao_Paulo'))
   const [viewMode, setViewMode] = useState<"month" | "week" | "day">("month")
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -164,24 +162,24 @@ export function CalendarView({
 
   // Navegação do calendário
   const navigateMonth = (direction: "prev" | "next") => {
-    setCurrentDate(prev => prev.clone().add(direction === "prev" ? -1 : 1, 'month'))
+    setCurrentDate(prev => prev.plus({ months: direction === "prev" ? -1 : 1 }))
   }
 
   const navigateWeek = (direction: "prev" | "next") => {
-    setCurrentDate(prev => prev.clone().add(direction === "prev" ? -1 : 1, 'week'))
+    setCurrentDate(prev => prev.plus({ weeks: direction === "prev" ? -1 : 1 }))
   }
 
   const navigateDay = (direction: "prev" | "next") => {
-    setCurrentDate(prev => prev.clone().add(direction === "prev" ? -1 : 1, 'day'))
+    setCurrentDate(prev => prev.plus({ days: direction === "prev" ? -1 : 1 }))
   }
 
   const goToToday = () => {
-    setCurrentDate(moment())
+    setCurrentDate(DateTime.now().setZone('America/Sao_Paulo'))
   }
 
   // Funções de formatação
-  const formatDate = (date: moment.Moment) => {
-    return date.format('MMMM YYYY')
+  const formatDate = (date: DateTime) => {
+    return date.setLocale('pt-BR').toFormat('MMMM yyyy')
   }
 
   const formatTime = (dateString: string) => {
@@ -199,15 +197,15 @@ export function CalendarView({
   }
 
   // Obter agendamentos para uma data específica
-  const getAgendamentosForDate = (date: moment.Moment) => {
-    const dateStr = date.format('YYYY-MM-DD')
+  const getAgendamentosForDate = (date: DateTime) => {
+    const dateStr = date.toISODate()
     return filteredAgendamentos.filter(ag => {
       // Para designações presenciais, extrair apenas a data sem conversão de timezone
       let agDate: string
       if (ag.dataISO.includes('T')) {
         agDate = ag.dataISO.split('T')[0]
       } else {
-        agDate = moment(ag.dataISO).format('YYYY-MM-DD')
+        agDate = TimezoneUtils.extractDate(TimezoneUtils.dbTimestampToUTC(ag.dataISO))
       }
       return agDate === dateStr
     }).sort((a, b) => new Date(a.dataISO).getTime() - new Date(b.dataISO).getTime())
@@ -215,17 +213,17 @@ export function CalendarView({
 
   // Gerar dias do mês para visualização mensal
   const getMonthDays = () => {
-    const startOfMonth = currentDate.clone().startOf('month')
-    const endOfMonth = currentDate.clone().endOf('month')
-    const startOfWeek = startOfMonth.clone().startOf('week')
-    const endOfWeek = endOfMonth.clone().endOf('week')
+    const startOfMonth = currentDate.startOf('month')
+    const endOfMonth = currentDate.endOf('month')
+    const startOfWeek = startOfMonth.startOf('week')
+    const endOfWeek = endOfMonth.endOf('week')
 
     const days = []
-    const current = startOfWeek.clone()
+    let current = startOfWeek
 
     for (let i = 0; i < 42; i++) {
-      days.push(current.clone())
-      current.add(1, 'day')
+      days.push(current)
+      current = current.plus({ days: 1 })
     }
 
     return days
@@ -233,11 +231,11 @@ export function CalendarView({
 
   // Gerar dias da semana para visualização semanal
   const getWeekDays = () => {
-    const startOfWeek = currentDate.clone().startOf('week')
+    const startOfWeek = currentDate.startOf('week')
 
     const days = []
     for (let i = 0; i < 7; i++) {
-      days.push(startOfWeek.clone().add(i, 'day'))
+      days.push(startOfWeek.plus({ days: i }))
     }
 
     return days
@@ -265,8 +263,8 @@ export function CalendarView({
         <div className="flex items-center gap-4">
           <h3 className="text-lg font-semibold text-azul-escuro">
             {viewMode === "month" && formatDate(currentDate)}
-            {viewMode === "week" && `Semana de ${formatDateShort(weekDays[0]?.toISOString() || "")} - ${formatDateShort(weekDays[6]?.toISOString() || "")}`}
-            {viewMode === "day" && currentDate.format('dddd, DD [de] MMMM [de] YYYY')}
+            {viewMode === "week" && `Semana de ${formatDateShort(weekDays[0]?.toISO() || "")} - ${formatDateShort(weekDays[6]?.toISO() || "")}`}
+            {viewMode === "day" && currentDate.setLocale('pt-BR').toFormat('cccc, dd \'de\' MMMM \'de\' yyyy')}
           </h3>
         </div>
 
@@ -356,7 +354,7 @@ export function CalendarView({
               </Button>
 
               <h3 className="text-base font-semibold">
-                {currentDate.format('MMMM YYYY')}
+                {currentDate.setLocale('pt-BR').toFormat('MMMM yyyy')}
               </h3>
 
               <Button
@@ -385,9 +383,9 @@ export function CalendarView({
             <div className="grid grid-cols-7 gap-1">
               {monthDays.map((day, index) => {
                 const agendamentos = getAgendamentosForDate(day)
-                const isCurrentMonth = day.month() === currentDate.month()
-                const isToday = day.isSame(moment(), 'day')
-                const isPast = day.isBefore(moment(), 'day')
+                const isCurrentMonth = day.month === currentDate.month
+                const isToday = day.hasSame(DateTime.now().setZone('America/Sao_Paulo'), 'day')
+                const isPast = day < DateTime.now().setZone('America/Sao_Paulo').startOf('day')
                 const hasAppointments = agendamentos.length > 0
 
                 const isClickable = !isPast && isCurrentMonth && hasAppointments
@@ -397,7 +395,7 @@ export function CalendarView({
                     key={index}
                     onClick={() => {
                       if (isClickable) {
-                        setSelectedDate(day.toDate())
+                        setSelectedDate(day.toJSDate())
                         setIsModalOpen(true)
                       }
                     }}
@@ -415,7 +413,7 @@ export function CalendarView({
                       ${isToday ? 'bg-blue-50 border-blue-200 border' : ''}
                     `}
                   >
-                    <span className="block">{day.date()}</span>
+                    <span className="block">{day.day}</span>
                     {hasAppointments && isCurrentMonth && !isPast && (
                       <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
                         <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
@@ -448,7 +446,7 @@ export function CalendarView({
             <div className="grid grid-cols-7 gap-2">
               {weekDays.map((day, index) => {
                 const agendamentos = getAgendamentosForDate(day)
-                const isToday = day.isSame(moment(), 'day')
+                const isToday = day.hasSame(DateTime.now().setZone('America/Sao_Paulo'), 'day')
 
                 return (
                   <div key={index} className="space-y-2">
@@ -456,10 +454,10 @@ export function CalendarView({
                       isToday ? "bg-blue-100 text-blue-800" : "bg-gray-50"
                     }`}>
                       <div className="text-xs text-gray-500">
-                        {day.format('ddd')}
+                        {day.setLocale('pt-BR').toFormat('ccc')}
                       </div>
                       <div className="text-lg font-semibold">
-                        {day.date()}
+                        {day.day}
                       </div>
                     </div>
 
