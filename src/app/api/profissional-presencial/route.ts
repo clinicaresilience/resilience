@@ -33,8 +33,7 @@ export async function GET(request: NextRequest) {
         usuarios:profissional_id (
           id,
           nome,
-          email,
-          informacoes_adicionais
+          email
         ),
         empresas:empresa_id (
           id,
@@ -185,8 +184,7 @@ export async function POST(request: NextRequest) {
         usuarios:profissional_id (
           id,
           nome,
-          email,
-          informacoes_adicionais
+          email
         ),
         empresas:empresa_id (
           id,
