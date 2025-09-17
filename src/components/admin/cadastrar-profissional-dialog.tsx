@@ -31,6 +31,30 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
   const [telefone, setTelefone] = useState("");
+
+  // Função para permitir apenas números e limitar caracteres
+  const handleNumericInput = (value: string, maxLength: number) => {
+    return value.replace(/\D/g, '').slice(0, maxLength);
+  };
+
+  // Função para formatar CPF
+  const formatCpf = (value: string) => {
+    const numericValue = handleNumericInput(value, 11);
+    return numericValue
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2');
+  };
+
+  // Função para formatar telefone
+  const formatTelefone = (value: string) => {
+    const numericValue = handleNumericInput(value, 11);
+    if (numericValue.length <= 10) {
+      return numericValue.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+    } else {
+      return numericValue.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+    }
+  };
   const [area, setArea] = useState("");
   const [especialidade, setEspecialidade] = useState("");
   const [crp, setCrp] = useState("");
@@ -62,8 +86,33 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
     setError(null);
     setSuccess(null);
 
-    if (!nome.trim() || !email.trim() || !cpf.trim() || !telefone.trim() || !especialidade.trim() || !crp.trim()) {
-      setError("Preencha todos os campos obrigatórios.");
+    // Validações do frontend
+    if (!nome.trim() || !email.trim() || !cpf.trim() || !telefone.trim() || !area.trim() || !especialidade.trim() || !crp.trim()) {
+      setError("Preencha todos os campos obrigatórios (Nome, Email, CPF, Telefone, Área, Especialidade e CRP).");
+      setLoading(false);
+      return;
+    }
+
+    // Validar CPF (11 dígitos)
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    if (cpfLimpo.length !== 11) {
+      setError("CPF deve conter exatamente 11 dígitos.");
+      setLoading(false);
+      return;
+    }
+
+    // Validar telefone (11 dígitos)
+    const telefoneLimpo = telefone.replace(/\D/g, '');
+    if (telefoneLimpo.length !== 11) {
+      setError("Telefone deve conter exatamente 11 dígitos (DDD + número com 9 dígitos).");
+      setLoading(false);
+      return;
+    }
+
+    // Validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Por favor, insira um email válido.");
       setLoading(false);
       return;
     }
@@ -86,7 +135,12 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
 
       setSuccess(`Profissional cadastrado com sucesso! Senha temporária: ${result.senha}`);
       onSuccess?.();
-      setOpen(false);
+      
+      // Fechar modal após 2 segundos para que o usuário veja a mensagem de sucesso
+      setTimeout(() => {
+        setOpen(false);
+        resetForm();
+      }, 2000);
     } catch (err: unknown) {
       console.error(err);
       const errorMessage = err instanceof Error ? err.message : "Erro ao cadastrar profissional.";
@@ -110,17 +164,17 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
           Cadastrar profissional
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-white">
+      <DialogContent className="bg-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Cadastrar profissional</DialogTitle>
           <DialogDescription>
-            Preencha os dados do novo profissional.
+            Preencha os dados do novo profissional. Campos marcados com * são obrigatórios.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="nome">Nome</Label>
+            <Label htmlFor="nome">Nome *</Label>
             <Input
               id="nome"
               value={nome}
@@ -130,7 +184,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
           </div>
 
           <div>
-            <Label htmlFor="email">E-mail</Label>
+            <Label htmlFor="email">E-mail *</Label>
             <Input
               id="email"
               type="email"
@@ -141,54 +195,63 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
           </div>
 
           <div>
-            <Label htmlFor="cpf">CPF</Label>
+            <Label htmlFor="cpf">CPF *</Label>
             <Input
               id="cpf"
               value={cpf}
-              onChange={(e) => setCpf(e.target.value)}
-              placeholder="000.000.000-00"
+              onChange={(e) => setCpf(formatCpf(e.target.value))}
+              placeholder="000.000.000-00 (11 dígitos obrigatórios)"
+              maxLength={14}
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="telefone">Telefone WhatsApp</Label>
+            <Label htmlFor="telefone">Telefone WhatsApp *</Label>
             <Input
               id="telefone"
               type="tel"
               value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
-              placeholder="(00) 00000-0000"
+              onChange={(e) => setTelefone(formatTelefone(e.target.value))}
+              placeholder="(11) 99999-9999 - 11 dígitos obrigatórios"
+              maxLength={15}
               required
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Deve conter DDD + 9 dígitos (formato WhatsApp)
+            </p>
           </div>
 
           <div>
-            <Label htmlFor="area">Área</Label>
+            <Label htmlFor="area">Área *</Label>
             <Input
               id="area"
               value={area}
               onChange={(e) => setArea(e.target.value)}
+              required
+              placeholder="Ex: Psicologia Clínica, Neuropsicologia, etc."
             />
           </div>
 
           <div>
-            <Label htmlFor="especialidade">Especialidade</Label>
+            <Label htmlFor="especialidade">Especialidade *</Label>
             <Input
               id="especialidade"
               value={especialidade}
               onChange={(e) => setEspecialidade(e.target.value)}
               required
+              placeholder="Ex: Terapia Cognitivo-Comportamental, Psicanálise, etc."
             />
           </div>
 
           <div>
-            <Label htmlFor="crp">CRP</Label>
+            <Label htmlFor="crp">CRP *</Label>
             <Input
               id="crp"
               value={crp}
               onChange={(e) => setCrp(e.target.value)}
               required
+              placeholder="Ex: 06/123456"
             />
           </div>
 
@@ -198,6 +261,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
               id="descricao"
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
+              placeholder="Descrição adicional (opcional)"
             />
           </div>
 

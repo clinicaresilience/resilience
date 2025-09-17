@@ -42,73 +42,55 @@ export default function AuthenticatedHeader() {
           display: none;
         }
       `}</style>
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
-        <div className="flex justify-between items-center h-16 min-w-0">
-          {/* Logo/Título - Mobile */}
-          <div className="flex items-center space-x-3 md:hidden">
-            <span className="text-lg font-semibold text-azul-escuro">
-              {usuario.tipo_usuario === "administrador"
-                ? "Admin"
-                : usuario.tipo_usuario === "profissional"
-                ? "Profissional"
-                : "Paciente"}
-            </span>
-          </div>
-
-          {/* Navegação Central - Desktop */}
-          <nav className="hidden md:flex items-center flex-1 justify-center px-2 min-w-0">
-            <div className="flex items-center space-x-1 lg:space-x-2 overflow-x-auto scrollbar-hide max-w-full">
-              {tabs.map((tab) => (
-                tab.path ? (
-                  <Link
-                    key={tab.id}
-                    href={tab.path}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-1 px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                      activeTab === tab.id
-                        ? "bg-azul-escuro text-white"
-                        : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
-                    }`}
-                  >
-                    <tab.icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="hidden lg:inline">{tab.label}</span>
-                  </Link>
-                ) : (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-1 px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                      activeTab === tab.id
-                        ? "bg-azul-escuro text-white"
-                        : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
-                    }`}
-                  >
-                    <tab.icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="hidden lg:inline">{tab.label}</span>
-                  </button>
-                )
-              ))}
+      <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8">
+        <div className="flex items-center h-16 min-w-0">
+          {/* Navegação Central - Desktop (layout vertical com texto embaixo) */}
+          <nav className="hidden md:flex items-center flex-1 min-w-0">
+            {/* Container com scroll horizontal responsivo */}
+            <div className="flex items-center justify-center overflow-x-auto scrollbar-hide w-full">
+              <div className="flex items-center space-x-1 lg:space-x-2 min-w-max">
+                {tabs.map((tab) =>
+                  tab.path ? (
+                    <Link
+                      key={tab.id}
+                      href={tab.path}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex flex-col items-center justify-center w-16 lg:w-20 xl:w-24 h-12 lg:h-14 p-1 rounded-lg text-xs font-medium transition-colors ${
+                        activeTab === tab.id
+                          ? "bg-azul-escuro text-white"
+                          : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
+                      }`}
+                    >
+                      <tab.icon className="w-4 h-4 lg:w-5 lg:h-5 flex-shrink-0 mb-0.5" />
+                      <span className="text-xs leading-tight text-center truncate w-full">
+                        {tab.label}
+                      </span>
+                    </Link>
+                  ) : (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex flex-col items-center justify-center w-16 lg:w-20 xl:w-24 h-12 lg:h-14 p-1 rounded-lg text-xs font-medium transition-colors ${
+                        activeTab === tab.id
+                          ? "bg-azul-escuro text-white"
+                          : "text-gray-600 hover:text-azul-escuro hover:bg-gray-100"
+                      }`}
+                    >
+                      <tab.icon className="w-4 h-4 lg:w-5 lg:h-5 flex-shrink-0 mb-0.5" />
+                      <span className="text-xs leading-tight text-center truncate w-full">
+                        {tab.label}
+                      </span>
+                    </button>
+                  )
+                )}
+              </div>
             </div>
           </nav>
 
-          {/* Avatar e Menu Hamburguer - Mobile */}
-          <div className="flex items-center space-x-3">
+          {/* Avatar e Menu Hamburguer - Mobile + Desktop */}
+          <div className="flex items-center space-x-3 flex-shrink-0">
             {/* Avatar do usuário */}
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                usuario.tipo_usuario === "administrador"
-                  ? "bg-gradient-to-r from-purple-400 to-purple-600"
-                  : usuario.tipo_usuario === "profissional"
-                  ? "bg-gradient-to-r from-blue-400 to-blue-600"
-                  : "bg-gradient-to-r from-green-400 to-green-600"
-              }`}
-            >
-              {usuario.tipo_usuario === "profissional" ? (
-                <Stethoscope className="w-4 h-4 text-white" />
-              ) : (
-                <User className="w-4 h-4 text-white" />
-              )}
-            </div>
+         
 
             {/* Menu Hamburguer - Mobile */}
             <button
@@ -149,13 +131,15 @@ export default function AuthenticatedHeader() {
               </div>
               <div>
                 <p className="font-semibold text-gray-900">{usuario.nome}</p>
-                <p className="text-sm text-gray-500 capitalize">{usuario.tipo_usuario}</p>
+                <p className="text-sm text-gray-500 capitalize">
+                  {usuario.tipo_usuario}
+                </p>
               </div>
             </div>
 
             {/* Navegação */}
             <nav className="space-y-2">
-              {tabs.map((tab) => (
+              {tabs.map((tab) =>
                 tab.path ? (
                   <Link
                     key={tab.id}
@@ -190,7 +174,7 @@ export default function AuthenticatedHeader() {
                     <span>{tab.label}</span>
                   </button>
                 )
-              ))}
+              )}
             </nav>
 
             {/* Botão para fechar */}
