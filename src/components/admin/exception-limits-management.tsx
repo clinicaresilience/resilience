@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -61,7 +61,6 @@ interface Professional {
 }
 
 export function ExceptionLimitsManagement() {
-  console.log("ExceptionLimitsManagement component rendering...");
   const [limits, setLimits] = useState<ExceptionLimit[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,16 +101,7 @@ export function ExceptionLimitsManagement() {
     { value: "4 hours", label: "4 horas" },
   ];
 
-  useEffect(() => {
-    fetchLimits();
-    fetchProfessionals();
-  }, []);
-
-  useEffect(() => {
-    fetchLimits();
-  }, [filterProfissional, filterTipo, filterAtivo]);
-
-  const fetchLimits = async () => {
+  const fetchLimits = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -133,9 +123,9 @@ export function ExceptionLimitsManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterProfissional, filterTipo, filterAtivo]);
 
-  const fetchProfessionals = async () => {
+  const fetchProfessionals = useCallback(async () => {
     try {
       const response = await fetch("/api/profissionais");
       const data = await response.json();
@@ -148,7 +138,12 @@ export function ExceptionLimitsManagement() {
     } catch (error) {
       console.error("Erro ao buscar profissionais:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchLimits();
+    fetchProfessionals();
+  }, [fetchLimits, fetchProfessionals]);
 
   const resetForm = () => {
     setProfissionalId("");
@@ -298,19 +293,23 @@ export function ExceptionLimitsManagement() {
       {/* Header */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Timer className="h-5 w-5 text-orange-600" />
-                Limites de Exceção
+          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <div className="min-w-0 flex-1">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Timer className="h-5 w-5 text-orange-600 flex-shrink-0" />
+                <span className="truncate">Limites de Exceção</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="mt-1 text-sm">
                 Configure o tempo máximo de exceção diário que profissionais podem ter
               </CardDescription>
             </div>
-            <Button onClick={openCreateModal} className="flex items-center gap-2">
+            <Button 
+              onClick={openCreateModal} 
+              className="flex items-center gap-2 w-full sm:w-auto"
+              size="sm"
+            >
               <Plus className="h-4 w-4" />
-              Novo Limite
+              <span className="sm:inline">Novo Limite</span>
             </Button>
           </div>
         </CardHeader>
@@ -337,11 +336,11 @@ export function ExceptionLimitsManagement() {
           <CardTitle className="text-base">Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label>Profissional</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Profissional</Label>
               <Select value={filterProfissional} onValueChange={setFilterProfissional}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -349,16 +348,16 @@ export function ExceptionLimitsManagement() {
                   <SelectItem value="global">Regras Globais</SelectItem>
                   {professionals.map((prof) => (
                     <SelectItem key={prof.id} value={prof.id}>
-                      {prof.nome}
+                      <span className="truncate">{prof.nome}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Tipo de Exceção</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Tipo de Exceção</Label>
               <Select value={filterTipo} onValueChange={setFilterTipo}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Todos os tipos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -371,10 +370,10 @@ export function ExceptionLimitsManagement() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Status</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Status</Label>
               <Select value={filterAtivo} onValueChange={setFilterAtivo}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -387,6 +386,7 @@ export function ExceptionLimitsManagement() {
             <div className="flex items-end">
               <Button
                 variant="outline"
+                className="w-full"
                 onClick={() => {
                   setFilterProfissional("");
                   setFilterTipo("");
@@ -430,23 +430,24 @@ export function ExceptionLimitsManagement() {
                     limit.ativo ? "hover:bg-gray-50" : "bg-gray-50 opacity-75"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  {/* Desktop Layout */}
+                  <div className="hidden md:flex items-center justify-between">
                     <div className="flex-1 space-y-2">
                       {/* Professional */}
                       <div className="flex items-center gap-2">
                         {limit.profissional_id ? (
                           <>
-                            <Users className="h-4 w-4 text-blue-600" />
-                            <div>
-                              <p className="font-medium">{limit.profissional?.nome}</p>
-                              <p className="text-sm text-gray-500">
+                            <Users className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{limit.profissional?.nome}</p>
+                              <p className="text-sm text-gray-500 truncate">
                                 {limit.profissional?.email}
                               </p>
                             </div>
                           </>
                         ) : (
                           <>
-                            <Globe className="h-4 w-4 text-green-600" />
+                            <Globe className="h-4 w-4 text-green-600 flex-shrink-0" />
                             <div>
                               <p className="font-medium text-green-900">Regra Global</p>
                               <p className="text-sm text-green-700">
@@ -458,7 +459,7 @@ export function ExceptionLimitsManagement() {
                       </div>
 
                       {/* Exception Details */}
-                      <div className="flex items-center gap-4 ml-6">
+                      <div className="flex items-center gap-4 ml-6 flex-wrap">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">Tipo:</span>
                           <Badge variant="outline">
@@ -491,8 +492,8 @@ export function ExceptionLimitsManagement() {
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-2">
+                    {/* Actions - Desktop */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <Button
                         variant="outline"
                         size="sm"
@@ -511,7 +512,7 @@ export function ExceptionLimitsManagement() {
                         onClick={() => openEditModal(limit)}
                       >
                         <Edit className="h-4 w-4" />
-                        Editar
+                        <span className="hidden lg:inline">Editar</span>
                       </Button>
                       <Button
                         variant="outline"
@@ -520,6 +521,103 @@ export function ExceptionLimitsManagement() {
                         className="text-red-600 border-red-200 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />
+                        <span className="hidden lg:inline">Remover</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Mobile Layout */}
+                  <div className="md:hidden space-y-3">
+                    {/* Professional Info */}
+                    <div className="flex items-start gap-3">
+                      {limit.profissional_id ? (
+                        <>
+                          <Users className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm leading-tight">{limit.profissional?.nome}</p>
+                            <p className="text-xs text-gray-500 mt-1 break-all">
+                              {limit.profissional?.email}
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <Globe className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-green-900 text-sm">Regra Global</p>
+                            <p className="text-xs text-green-700 mt-1">
+                              Para todos os profissionais
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Exception Details */}
+                    <div className="space-y-2 pl-8">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-gray-600">Tipo:</span>
+                          <Badge variant="outline" className="text-xs">
+                            {
+                              tiposExcecao.find((t) => t.value === limit.tipo_excecao)
+                                ?.label || limit.tipo_excecao
+                            }
+                          </Badge>
+                        </div>
+                        <Badge
+                          className={`text-xs ${
+                            limit.ativo
+                              ? "bg-green-100 text-green-800 border-green-200"
+                              : "bg-gray-200 text-gray-700 border-gray-300"
+                          }`}
+                        >
+                          {limit.ativo ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-3 w-3 text-orange-600" />
+                        <span className="text-sm font-medium text-orange-900">
+                          {formatLimit(limit.limite_diario)} por dia
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-gray-500">
+                        Criado em: {new Date(limit.criado_em).toLocaleDateString("pt-BR")}
+                      </div>
+                    </div>
+
+                    {/* Actions - Mobile */}
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleStatus(limit)}
+                        className={`flex-1 text-xs ${
+                          limit.ativo
+                            ? "text-yellow-600 border-yellow-200 hover:bg-yellow-50"
+                            : "text-green-600 border-green-200 hover:bg-green-50"
+                        }`}
+                      >
+                        {limit.ativo ? "Desativar" : "Ativar"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditModal(limit)}
+                        className="flex-1 text-xs"
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(limit)}
+                        className="flex-1 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
                         Remover
                       </Button>
                     </div>
@@ -533,12 +631,12 @@ export function ExceptionLimitsManagement() {
 
       {/* Create/Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={closeModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg">
               {editingLimit ? "Editar Limite de Exceção" : "Novo Limite de Exceção"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               {editingLimit
                 ? "Atualize os dados do limite de exceção"
                 : "Configure um novo limite de exceção diário"}
@@ -546,39 +644,43 @@ export function ExceptionLimitsManagement() {
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="profissional">Profissional (opcional)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="profissional" className="text-sm font-medium">
+                Profissional (opcional)
+              </Label>
               <Select value={profissionalId} onValueChange={setProfissionalId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um profissional ou deixe vazio para regra global" />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione um profissional..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="global-rule">
                     <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-green-600" />
-                      <span>Regra Global (todos os profissionais)</span>
+                      <Globe className="h-4 w-4 text-green-600 flex-shrink-0" />
+                      <span className="truncate">Regra Global</span>
                     </div>
                   </SelectItem>
                   {professionals.map((prof) => (
                     <SelectItem key={prof.id} value={prof.id}>
-                      <div className="flex flex-col">
-                        <span>{prof.nome}</span>
-                        <span className="text-sm text-gray-500">{prof.email}</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate font-medium">{prof.nome}</span>
+                        <span className="text-xs text-gray-500 truncate">{prof.email}</span>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500 mt-1">
-                Se vazio, será aplicado como regra global para todos os profissionais
+              <p className="text-xs text-gray-500">
+                Regra global aplica-se a todos os profissionais
               </p>
             </div>
 
-            <div>
-              <Label htmlFor="tipo">Tipo de Exceção *</Label>
+            <div className="space-y-2">
+              <Label htmlFor="tipo" className="text-sm font-medium">
+                Tipo de Exceção *
+              </Label>
               <Select value={tipoExcecao} onValueChange={setTipoExcecao}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo de exceção" />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o tipo..." />
                 </SelectTrigger>
                 <SelectContent>
                   {tiposExcecao.map((tipo) => (
@@ -590,11 +692,13 @@ export function ExceptionLimitsManagement() {
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="limite">Limite Diário *</Label>
+            <div className="space-y-2">
+              <Label htmlFor="limite" className="text-sm font-medium">
+                Limite Diário *
+              </Label>
               <Select value={limiteDiario} onValueChange={setLimiteDiario}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o limite diário" />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o limite..." />
                 </SelectTrigger>
                 <SelectContent>
                   {limitesPreDefinidos.map((limite) => (
@@ -606,7 +710,7 @@ export function ExceptionLimitsManagement() {
               </Select>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 py-2">
               <input
                 type="checkbox"
                 id="ativo"
@@ -614,21 +718,32 @@ export function ExceptionLimitsManagement() {
                 onChange={(e) => setAtivo(e.target.checked)}
                 className="rounded border-gray-300"
               />
-              <Label htmlFor="ativo">Limite ativo</Label>
+              <Label htmlFor="ativo" className="text-sm">
+                Limite ativo
+              </Label>
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <span className="text-sm text-red-700">{error}</span>
+              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-red-700 break-words">{error}</span>
               </div>
             )}
 
-            <DialogFooter className="flex gap-2">
-              <Button type="button" variant="outline" onClick={closeModal}>
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={closeModal}
+                className="w-full sm:w-auto"
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full sm:w-auto"
+              >
                 {isSubmitting
                   ? "Salvando..."
                   : editingLimit
