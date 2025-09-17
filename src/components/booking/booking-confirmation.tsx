@@ -27,8 +27,6 @@ import { useAuth } from "@/features/auth/context/auth-context";
 import { PendingBookingManager } from "@/utils/pending-booking";
 import { useRouter } from "next/navigation";
 
-
-
 type AgendaSlot = {
   id: string;
   profissional_id: string;
@@ -88,17 +86,6 @@ export function BookingConfirmation({
 
       // Usar o horário correto baseado na nova interface
       const horaSlot = slot.hora || slot.hora_inicio || "00:00";
-      const dataHora = `${slot.data}T${horaSlot}:00.000Z`;
-
-      console.log("Tentando criar agendamento:", {
-        profissional_id: profissionalId,
-        slot_id: slot.id,
-        data_consulta: dataHora,
-        modalidade,
-        notas: notas.trim(),
-        codigoEmpresa,
-        usuarioAutenticado: !!user,
-      });
 
       // Se o usuário não estiver logado, salvar dados e redirecionar para login
       if (!user) {
@@ -180,8 +167,12 @@ export function BookingConfirmation({
   const formatDateTime = (data: string, hora: string) => {
     const utcDateTime = TimezoneUtils.createDateTime(data, hora);
     return {
-      date: TimezoneUtils.formatForDisplay(utcDateTime, undefined, 'full').replace(/,.*,/, ','),
-      time: TimezoneUtils.formatForDisplay(utcDateTime, undefined, 'time'),
+      date: TimezoneUtils.formatForDisplay(
+        utcDateTime,
+        undefined,
+        "full"
+      ).replace(/,.*,/, ","),
+      time: TimezoneUtils.formatForDisplay(utcDateTime, undefined, "time"),
     };
   };
 

@@ -34,9 +34,10 @@ export default function TelaUsuario() {
   const [historico, setHistorico] = useState<Consulta[]>([]);
   const [usuario, setUsuario] = useState("");
   const [showPendingModal, setShowPendingModal] = useState(false);
-  
+
   // Welcome screen hook
-  const { showWelcome, hideWelcome, disableWelcomeForever } = useWelcomeScreen();
+  const { showWelcome, hideWelcome, disableWelcomeForever } =
+    useWelcomeScreen();
 
   useEffect(() => {
     async function fetchConsultas() {
@@ -79,7 +80,7 @@ export default function TelaUsuario() {
     // Também verificar após um pequeno delay para garantir que tudo carregou
     const timer = setTimeout(() => {
       const hasPending = PendingBookingManager.hasPending();
-      console.log("Verificação com delay - agendamento pendente:", hasPending);
+
       if (hasPending && !showPendingModal) {
         console.log(
           "Agendamento pendente encontrado no delay, mostrando modal"
@@ -112,23 +113,27 @@ export default function TelaUsuario() {
 
       if (response.ok) {
         // Limpar dados pendentes após sucesso
-        const { PendingBookingManager } = await import("@/utils/pending-booking");
+        const { PendingBookingManager } = await import(
+          "@/utils/pending-booking"
+        );
         PendingBookingManager.clear();
-        
+
         // Recarregar a página para mostrar o novo agendamento
         window.location.reload();
       } else {
         const errorData = await response.json();
         console.error("Erro ao confirmar agendamento pendente:", errorData);
-        alert(`Erro ao confirmar agendamento: ${errorData.error || 'Erro desconhecido'}`);
+        alert(
+          `Erro ao confirmar agendamento: ${
+            errorData.error || "Erro desconhecido"
+          }`
+        );
       }
     } catch (error) {
       console.error("Erro ao confirmar agendamento pendente:", error);
       alert("Erro interno ao confirmar agendamento. Tente novamente.");
     }
   };
-
-  console.log(usuario);
 
   return (
     <>

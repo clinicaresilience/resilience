@@ -11,7 +11,6 @@ export default async function ProtectedPage() {
   if (!user) redirect("/auth/login");
 
   const role = user.app_metadata?.role || "user";
-  console.log("role ", role);
 
   if (role !== "administrador") {
     redirect("/portal-publico");
