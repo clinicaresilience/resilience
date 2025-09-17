@@ -37,7 +37,9 @@ export async function updateSession(request: NextRequest) {
     '/auth/cadastro',
     '/auth/forgot-password',
     '/auth/error',
-    '/auth/sign-up-success'
+    '/auth/sign-up-success',
+    '/auth/confirm',
+    '/auth/update-password'
   ]
 
   // Rotas protegidas por tipo de usuário
@@ -87,33 +89,52 @@ export async function updateSession(request: NextRequest) {
   // Verificar permissões para rotas protegidas
   const { data: userData } = await supabase
     .from('usuarios')
-    .select('tipo_usuario')
+    .select('tipo_usuario, ativo, autenticado')
     .eq('id', user.id)
     .single()
 
-  if (userData) {
-    const userType = userData.tipo_usuario
+  if (!userData) {
+    // Usuário não encontrado na tabela usuarios, forçar logout
+    url.pathname = '/auth/login'
+    url.search = '?message=usuario-nao-encontrado'
+    return NextResponse.redirect(url)
+  }
 
-    // Verificar se usuário tem permissão para acessar a rota
-    const isAdminRoute = pathname.startsWith('/painel-administrativo')
-    const isProfessionalRoute = pathname.startsWith('/tela-profissional')
-    const isUserRoute = pathname.startsWith('/tela-usuario')
+  // Verificar se usuário está ativo
+  if (!userData.ativo) {
+    url.pathname = '/auth/error'
+    url.search = '?message=conta-inativa'
+    return NextResponse.redirect(url)
+  }
 
-    // Redirecionar para painel correto se estiver na rota errada
-    if (isAdminRoute && userType !== 'administrador') {
-      url.pathname = userType === 'profissional' ? '/tela-profissional' : '/tela-usuario'
-      return NextResponse.redirect(url)
-    }
+  // Verificar se usuário confirmou email
+  if (!userData.autenticado) {
+    url.pathname = '/auth/error'
+    url.search = '?message=email-nao-confirmado'
+    return NextResponse.redirect(url)
+  }
 
-    if (isProfessionalRoute && userType !== 'profissional') {
-      url.pathname = userType === 'administrador' ? '/painel-administrativo' : '/tela-usuario'
-      return NextResponse.redirect(url)
-    }
+  const userType = userData.tipo_usuario
 
-    if (isUserRoute && userType !== 'comum') {
-      url.pathname = userType === 'administrador' ? '/painel-administrativo' : '/tela-profissional'
-      return NextResponse.redirect(url)
-    }
+  // Verificar se usuário tem permissão para acessar a rota
+  const isAdminRoute = pathname.startsWith('/painel-administrativo')
+  const isProfessionalRoute = pathname.startsWith('/tela-profissional')
+  const isUserRoute = pathname.startsWith('/tela-usuario')
+
+  // Redirecionar para painel correto se estiver na rota errada
+  if (isAdminRoute && userType !== 'administrador') {
+    url.pathname = userType === 'profissional' ? '/tela-profissional' : '/tela-usuario'
+    return NextResponse.redirect(url)
+  }
+
+  if (isProfessionalRoute && userType !== 'profissional') {
+    url.pathname = userType === 'administrador' ? '/painel-administrativo' : '/tela-usuario'
+    return NextResponse.redirect(url)
+  }
+
+  if (isUserRoute && userType !== 'comum') {
+    url.pathname = userType === 'administrador' ? '/painel-administrativo' : '/tela-profissional'
+    return NextResponse.redirect(url)
   }
 
   return response

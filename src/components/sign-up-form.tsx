@@ -72,10 +72,13 @@ export function SignUpForm({
         throw new Error(data.error || 'Erro ao criar conta');
       }
 
-      setSuccess(true);
-      setTimeout(() => {
-        router.push("/auth/sign-up-success");
-      }, 1500);
+      // Exibir mensagem de sucesso da API
+      if (data.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          router.push("/auth/sign-up-success");
+        }, 2000);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar conta");
       setSuccess(false);
