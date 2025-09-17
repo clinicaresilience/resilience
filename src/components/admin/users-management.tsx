@@ -21,11 +21,10 @@ type Usuario = {
   ativo: boolean;
   criado_em: string;
   atualizado_em: string;
-  informacoes_adicionais: {
-    area?: string;
-    especialidade?: string;
-    [key: string]: unknown;
-  };
+  area?: string;
+  especialidade?: string;
+  bio?: string;
+  crp?: string;
 };
 
 function genPassword(): string {
@@ -99,8 +98,8 @@ export function UsersManagement() {
       (prof) =>
         prof.nome.toLowerCase().includes(termoLower) ||
         prof.email.toLowerCase().includes(termoLower) ||
-        (prof.informacoes_adicionais?.area?.toLowerCase().includes(termoLower)) ||
-        (prof.informacoes_adicionais?.especialidade?.toLowerCase().includes(termoLower))
+        (prof.area?.toLowerCase().includes(termoLower)) ||
+        (prof.especialidade?.toLowerCase().includes(termoLower))
     );
   }, [profissionais, searchProfissionais]);
 

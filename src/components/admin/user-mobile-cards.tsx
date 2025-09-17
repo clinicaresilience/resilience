@@ -10,11 +10,10 @@ type Usuario = {
   ativo: boolean;
   criado_em: string;
   atualizado_em: string;
-  informacoes_adicionais: {
-    area?: string;
-    especialidade?: string;
-    [key: string]: unknown;
-  };
+  area?: string;
+  especialidade?: string;
+  bio?: string;
+  crp?: string;
 };
 
 interface UserMobileCardsProps {
@@ -52,11 +51,11 @@ export function UserMobileCards({
             <div className="grid grid-cols-2 gap-2 text-sm mb-3">
               <div>
                 <span className="font-medium text-gray-700">Área:</span>
-                <p className="text-gray-600 truncate">{user.informacoes_adicionais?.area || "-"}</p>
+                <p className="text-gray-600 truncate">{user.area || "-"}</p>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Especialidade:</span>
-                <p className="text-gray-600 truncate">{user.informacoes_adicionais?.especialidade || "-"}</p>
+                <p className="text-gray-600 truncate">{user.especialidade || "-"}</p>
               </div>
             </div>
           )}

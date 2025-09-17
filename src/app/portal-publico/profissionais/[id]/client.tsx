@@ -23,12 +23,8 @@ type Profissional = {
   avatar_url?: string;
   bio?: string;
   especialidade?: string;
-  informacoes_adicionais: {
-    crp?: string;
-    especialidade?: string;
-    descricao?: string;
-    foto?: string;
-  };
+  area?: string;
+  crp?: string;
 };
 
 type Agenda = {
@@ -126,16 +122,12 @@ export function PerfilProfissionalClient({
         {/* Cabeçalho do Profissional */}
         <div className="flex flex-col items-center text-center mb-10">
           {/* Foto */}
-          {(profissional.avatar_url ||
-            profissional.informacoes_adicionais?.foto) && (
+          {profissional.avatar_url && (
             <div className="relative -mt-16 mb-6">
               <div className="absolute -inset-2 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-full blur-lg opacity-50"></div>
               <div className="relative w-36 h-36 rounded-full overflow-hidden border-4 border-white shadow-xl bg-white/90 backdrop-blur-sm">
                 <img
-                  src={
-                    profissional.avatar_url ||
-                    profissional.informacoes_adicionais.foto
-                  }
+                  src={profissional.avatar_url}
                   alt={`Foto de ${profissional.nome}`}
                   className="object-cover w-full h-full"
                 />
@@ -147,20 +139,17 @@ export function PerfilProfissionalClient({
             {profissional.nome}
           </h1>
           <p className="text-lg md:text-xl text-[#02b1aa] font-semibold mb-2">
-            {profissional.especialidade ||
-              profissional.informacoes_adicionais?.especialidade ||
-              "Psicólogo"}
+            {profissional.especialidade || "Psicólogo"}
           </p>
           <p className="text-sm md:text-base text-[#029fdf] font-medium mb-6 px-4 py-2 bg-gradient-to-r from-[#edfffe] to-blue-50/50 rounded-full border border-[#02b1aa]/20">
-            {profissional.informacoes_adicionais?.crp
-              ? `CRP ${profissional.informacoes_adicionais.crp}`
+            {profissional.crp
+              ? `CRP ${profissional.crp}`
               : "Profissional Certificado"}
           </p>
 
           <div className="max-w-3xl">
             <p className="text-gray-700 text-base leading-relaxed bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/30 shadow-lg">
               {profissional.bio ||
-                profissional.informacoes_adicionais?.descricao ||
                 "Profissional experiente em sua área de atuação."}
             </p>
           </div>

@@ -3,12 +3,11 @@ import { PerfilProfissionalClient } from "./client";
 type Profissional = {
   id: string;
   nome: string;
-  informacoes_adicionais: {
-    crp: string;
-    especialidade: string;
-    descricao: string;
-    foto: string;
-  };
+  avatar_url?: string;
+  bio?: string;
+  especialidade?: string;
+  area?: string;
+  crp?: string;
 };
 
 type Agenda = {

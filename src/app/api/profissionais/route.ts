@@ -25,11 +25,13 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: authError.message }, { status: 400 });
     }
 
-    // 2) Atualiza informacoes_adicionais na tabela "usuarios"
+    // 2) Atualiza campos diretos na tabela "usuarios"
     const { error: updateError } = await admin
         .from("usuarios")
         .update({
-            informacoes_adicionais: { crp, especialidade, descricao, foto: "" },
+            especialidade,
+            crp,
+            bio: descricao,
         })
         .eq("id", authUser.user.id);
 
@@ -48,7 +50,7 @@ export async function GET() {
 
     const { data: profissionais, error } = await supabase
         .from("usuarios")
-        .select("id, nome, email, informacoes_adicionais")
+        .select("id, nome, email, avatar_url, bio, especialidade, area, crp")
         .eq("tipo_usuario", "profissional")
         .order("nome");
 

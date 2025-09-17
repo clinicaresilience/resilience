@@ -18,12 +18,6 @@ type Profissional = {
   especialidade?: string;
   area?: string;
   crp?: string;
-  informacoes_adicionais?: {
-    crp?: string;
-    especialidade?: string;
-    descricao?: string;
-    foto?: string;
-  };
 };
 
 export default function ProfissionaisAgendamentos() {
@@ -102,9 +96,9 @@ export default function ProfissionaisAgendamentos() {
           <Card className="relative bg-white rounded-3xl shadow-2xl p-8 border border-[#edfffe] hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 flex flex-col justify-between text-center h-[600px]">
             {/* Foto */}
             <div className="w-40 h-40 -mt-16 mb-6 rounded-full overflow-hidden border-4 border-[#02b1aa] shadow-lg bg-gray-100 mx-auto group-hover:border-[#029fdf] transition-colors duration-300">
-              {prof.avatar_url || prof.informacoes_adicionais?.foto ? (
+              {prof.avatar_url ? (
                 <img
-                  src={prof.avatar_url || prof.informacoes_adicionais?.foto}
+                  src={prof.avatar_url}
                   alt={`Foto de ${prof.nome}`}
                   className="object-cover w-full h-full"
                 />
@@ -124,11 +118,11 @@ export default function ProfissionaisAgendamentos() {
               </CardTitle>
 
               <p className="text-base text-[#02b1aa] font-semibold mb-1">
-                {prof.especialidade || prof.informacoes_adicionais?.especialidade || "Psicólogo"}
+                {prof.especialidade || "Psicólogo"}
               </p>
 
               <p className="text-sm text-gray-500">
-                {prof.informacoes_adicionais?.crp ? `CRP: ${prof.informacoes_adicionais.crp}` : "Profissional Certificado"}
+                {prof.crp ? `CRP: ${prof.crp}` : "Profissional Certificado"}
               </p>
             </CardHeader>
 
@@ -140,7 +134,7 @@ export default function ProfissionaisAgendamentos() {
                 WebkitBoxOrient: 'vertical',
                 maxHeight: '6rem'
               }}>
-                {prof.bio || prof.informacoes_adicionais?.descricao || "Profissional experiente em sua área de atuação."}
+                {prof.bio || "Profissional experiente em sua área de atuação."}
               </div>
 
               <div className="mt-6 flex items-center text-[#02b1aa] font-semibold text-sm mb-4">

@@ -105,7 +105,7 @@ export class ConsultasService {
       const profissionalIds = [...new Set(consultas.map(c => c.profissional_id))];
       const { data: profissionais } = await supabase
         .from('usuarios')
-        .select('id, nome, informacoes_adicionais')
+        .select('id, nome, especialidade')
         .in('id', profissionalIds);
 
       // Buscar prontuários usando a tabela correta
@@ -139,7 +139,7 @@ export class ConsultasService {
             } : undefined,
             profissional: profissionalData ? {
               nome: profissionalData.nome,
-              especialidade: profissionalData.informacoes_adicionais?.especialidade || ''
+              especialidade: profissionalData.especialidade || ''
             } : undefined,
             prontuario: prontuarioData ? {
               id: prontuarioData.id,

@@ -62,7 +62,7 @@ export async function criarProfissional(data: {
     const { data: existingCrp } = await supabase
         .from("usuarios")
         .select("id")
-        .eq("informacoes_adicionais->>crp", data.crp.trim())
+        .eq("crp", data.crp.trim())
         .single();
     
     if (existingCrp) {
@@ -105,12 +105,10 @@ export async function criarProfissional(data: {
                     tipo_usuario: "profissional",
                     ativo: true,
                     primeiro_acesso: true,
-                    informacoes_adicionais: {
-                        area: data.area?.trim(),
-                        especialidade: data.especialidade?.trim(),
-                        crp: data.crp?.trim(),
-                        descricao: data.descricao?.trim() || null
-                    },
+                    area: data.area?.trim(),
+                    especialidade: data.especialidade?.trim(),
+                    crp: data.crp?.trim(),
+                    bio: data.descricao?.trim() || null,
                 })
                 .eq("id", userId);
 
@@ -129,12 +127,10 @@ export async function criarProfissional(data: {
                     tipo_usuario: "profissional",
                     ativo: true,
                     primeiro_acesso: true,
-                    informacoes_adicionais: {
-                        area: data.area?.trim(),
-                        especialidade: data.especialidade?.trim(),
-                        crp: data.crp?.trim(),
-                        descricao: data.descricao?.trim() || null
-                    },
+                    area: data.area?.trim(),
+                    especialidade: data.especialidade?.trim(),
+                    crp: data.crp?.trim(),
+                    bio: data.descricao?.trim() || null,
                 },
             ]);
 
