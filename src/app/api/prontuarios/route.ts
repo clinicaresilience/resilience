@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/server';
 import { ProntuariosService } from '@/services/database/prontuarios.service';
+import { hasAdminAccess, isProfessional, SECURITY_ERRORS } from '@/lib/security';
 
 // GET /api/prontuarios
 // Buscar prontuários do profissional ou todos (se admin)
@@ -33,15 +34,15 @@ export async function GET(req: NextRequest) {
 
     let prontuarios;
 
-    if (userData.tipo_usuario === "admin" || userData.tipo_usuario === "administrador") {
+    if (hasAdminAccess(userData.tipo_usuario)) {
       // Admin pode ver todos os prontuários
       prontuarios = await ProntuariosService.listarTodosProntuarios();
-    } else if (userData.tipo_usuario === "profissional") {
+    } else if (isProfessional(userData.tipo_usuario)) {
       // Profissional vê apenas os que tem acesso
       prontuarios = await ProntuariosService.listarProntuariosProfissional(user.id);
     } else {
       return NextResponse.json(
-        { error: "Tipo de usuário não autorizado" },
+        { error: SECURITY_ERRORS.FORBIDDEN },
         { status: 403 }
       );
     }
@@ -82,9 +83,9 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (userError || !userData || userData.tipo_usuario !== "profissional") {
+    if (userError || !userData || !isProfessional(userData.tipo_usuario)) {
       return NextResponse.json(
-        { error: "Apenas profissionais podem criar registros" },
+        { error: SECURITY_ERRORS.PROFESSIONAL_REQUIRED },
         { status: 403 }
       );
     }
