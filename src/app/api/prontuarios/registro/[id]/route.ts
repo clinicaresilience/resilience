@@ -7,7 +7,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { texto } = await request.json();
 
     if (!texto || !texto.trim()) {
@@ -81,7 +81,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const supabase = await createClient();
 
     // Verificar se o usuário é admin

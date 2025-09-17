@@ -319,7 +319,7 @@ export function EvolucoesPaciente({
                 Acompanhe a evolução clínica de {pacienteNome}
               </CardDescription>
             </div>
-            {podeAdicionarEvolucao() && (
+            {!isAdmin && podeAdicionarEvolucao() && (
               <Dialog open={mostrarNovaEvolucao} onOpenChange={setMostrarNovaEvolucao}>
                 <DialogTrigger asChild>
                   <Button onClick={() => setMostrarNovaEvolucao(true)}>

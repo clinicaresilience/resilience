@@ -8,6 +8,7 @@ export async function GET(
 ) {
   try {
     const supabase = await createClient();
+    const { id } = await params;
     
     const { data: evolucao, error } = await supabase
       .from('prontuario_evolucoes')
@@ -15,8 +16,7 @@ export async function GET(
         *,
         profissional:usuarios!profissional_id(
           id,
-          nome,
-          informacoes_adicionais
+          nome
         ),
         agendamento:agendamentos(
           id,
@@ -32,7 +32,7 @@ export async function GET(
           )
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (error) {
@@ -73,6 +73,7 @@ export async function PUT(
     }
 
     const supabase = await createClient();
+    const { id } = await params;
     
     // Verificar usuário atual
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -91,7 +92,7 @@ export async function PUT(
         *,
         prontuario:prontuarios(profissional_atual_id)
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (evolucaoError) {
@@ -115,7 +116,7 @@ export async function PUT(
       );
     }
 
-    const isAdmin = usuario.tipo_usuario === 'admin';
+    const isAdmin = usuario.tipo_usuario === 'admin' || usuario.tipo_usuario === 'administrador';
     const isProfissionalResponsavel = evolucaoAtual.prontuario.profissional_atual_id === user.id;
     const isAutorEvolucao = evolucaoAtual.profissional_id === user.id;
 
@@ -135,13 +136,12 @@ export async function PUT(
         dados_structurados,
         data_evolucao: data_evolucao || evolucaoAtual.data_evolucao,
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select(`
         *,
         profissional:usuarios!profissional_id(
           id,
-          nome,
-          informacoes_adicionais
+          nome
         ),
         agendamento:agendamentos(
           id,
@@ -180,6 +180,7 @@ export async function DELETE(
 ) {
   try {
     const supabase = await createClient();
+    const { id } = await params;
     
     // Verificar usuário atual
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -198,7 +199,7 @@ export async function DELETE(
         *,
         prontuario:prontuarios(profissional_atual_id)
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (evolucaoError) {
@@ -222,7 +223,7 @@ export async function DELETE(
       );
     }
 
-    const isAdmin = usuario.tipo_usuario === 'admin';
+    const isAdmin = usuario.tipo_usuario === 'admin' || usuario.tipo_usuario === 'administrador';
 
     if (!isAdmin) {
       return NextResponse.json(
@@ -235,7 +236,7 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from('prontuario_evolucoes')
       .delete()
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (deleteError) {
       console.error('Erro ao excluir evolução:', deleteError);

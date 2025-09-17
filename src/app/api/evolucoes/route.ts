@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar se é admin ou profissional responsável
+    // Verificar se é profissional responsável (admin NÃO pode criar evoluções)
     const { data: usuario, error: usuarioError } = await supabase
       .from('usuarios')
       .select('tipo_usuario')
@@ -129,12 +129,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isAdmin = hasAdminAccess(usuario.tipo_usuario);
     const isProfissionalResponsavel = prontuario.profissional_atual_id === user.id;
 
-    if (!isAdmin && !isProfissionalResponsavel) {
+    // Apenas o profissional responsável pode criar evoluções
+    if (!isProfissionalResponsavel) {
       return NextResponse.json(
-        { error: SECURITY_ERRORS.FORBIDDEN },
+        { error: 'Apenas o profissional responsável pelo prontuário pode criar evoluções' },
         { status: 403 }
       );
     }

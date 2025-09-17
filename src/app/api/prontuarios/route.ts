@@ -76,16 +76,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verificar se é profissional
+    // Verificar se é profissional (administradores NÃO podem criar prontuários)
     const { data: userData, error: userError } = await supabase
       .from('usuarios')
       .select('id, tipo_usuario')
       .eq('id', user.id)
       .single();
 
-    if (userError || !userData || !isProfessional(userData.tipo_usuario)) {
+    if (userError || !userData) {
       return NextResponse.json(
-        { error: SECURITY_ERRORS.PROFESSIONAL_REQUIRED },
+        { error: "Usuário não encontrado" },
+        { status: 404 }
+      );
+    }
+
+    // Apenas profissionais podem criar prontuários, administradores só podem editar
+    if (!isProfessional(userData.tipo_usuario)) {
+      return NextResponse.json(
+        { error: "Apenas profissionais podem criar novos registros em prontuários" },
         { status: 403 }
       );
     }

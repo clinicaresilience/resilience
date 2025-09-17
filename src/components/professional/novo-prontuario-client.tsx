@@ -527,27 +527,28 @@ export function NovoProntuarioClient({
         </Card>
       </div>
 
-      {/* Cabeçalho com Busca e Novo Registro */}
+      {/* Cabeçalho com Busca */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Prontuários </CardTitle>
-            <Dialog
-              open={mostrarNovoRegistro}
-              onOpenChange={setMostrarNovoRegistro}
-            >
-              <DialogTrigger asChild>
-                <Button
-                  onClick={() => {
-                    setMostrarNovoRegistro(true);
-                    buscarPacientesAtendidos();
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Novo Registro
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-[95vw] sm:max-w-2xl">
+            {!isAdmin && (
+              <Dialog
+                open={mostrarNovoRegistro}
+                onOpenChange={setMostrarNovoRegistro}
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => {
+                      setMostrarNovoRegistro(true);
+                      buscarPacientesAtendidos();
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Novo Registro
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Criar Novo Registro de Prontuário</DialogTitle>
                   <DialogDescription>
@@ -702,7 +703,8 @@ export function NovoProntuarioClient({
                   </div>
                 </div>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            )}
           </div>
         </CardHeader>
         <CardContent>
