@@ -25,7 +25,9 @@ export async function GET(request: NextRequest) {
         profissional:usuarios!profissional_id(
           id,
           nome,
-          informacoes_adicionais
+          especialidade,
+          area,
+          crp
         ),
         agendamento:agendamentos(
           id,
@@ -156,7 +158,9 @@ export async function POST(request: NextRequest) {
         profissional:usuarios!profissional_id(
           id,
           nome,
-          informacoes_adicionais
+          especialidade,
+          area,
+          crp
         ),
         agendamento:agendamentos(
           id,

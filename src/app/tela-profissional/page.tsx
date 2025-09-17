@@ -100,9 +100,9 @@ export default async function TelaProfissional() {
     .gte("data_consulta", new Date().toISOString());
   const totalPendentes = consultasPendentes?.length || 0;
 
-  // Próximas consultas (3 dias)
-  const proximosTresDias = new Date();
-  proximosTresDias.setDate(proximosTresDias.getDate() + 3);
+  // Próximas consultas (30 dias) - expandido para mostrar mais consultas
+  const proximosTrintaDiasConsultas = new Date();
+  proximosTrintaDiasConsultas.setDate(proximosTrintaDiasConsultas.getDate() + 30);
   const { data: proximasConsultas } = await supabase
     .from("agendamentos")
     .select(`
@@ -113,9 +113,9 @@ export default async function TelaProfissional() {
       paciente:usuarios!agendamentos_paciente_id_fkey(nome)
     `)
     .eq("profissional_id", user.id)
-    .eq("status", "confirmado")
+    .in("status", ["confirmado", "pendente"])
     .gte("data_consulta", new Date().toISOString())
-    .lt("data_consulta", proximosTresDias.toISOString())
+    .lt("data_consulta", proximosTrintaDiasConsultas.toISOString())
     .order("data_consulta", { ascending: true });
 
   // Buscar designações presenciais ativas (próximos 30 dias)
@@ -267,13 +267,13 @@ export default async function TelaProfissional() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Clock className="h-5 w-5" />
-            <span>Próximas Consultas</span>
+            <span>Próximas Consultas (30 dias)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {proximasConsultas && proximasConsultas.length > 0 ? (
-              proximasConsultas.map((consulta) => {
+              proximasConsultas.map((consulta: any) => {
                 const { horario, texto } = formatarData(consulta.data_consulta);
                 const nomePaciente = consulta.paciente?.nome || "Paciente não identificado";
 
@@ -282,6 +282,7 @@ export default async function TelaProfissional() {
                     <div>
                       <p className="font-medium">{nomePaciente}</p>
                       <p className="text-sm text-gray-600">{consulta.notas || "Consulta agendada"}</p>
+                      <p className="text-xs text-blue-600">Status: {consulta.status}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{horario}</p>
@@ -294,7 +295,10 @@ export default async function TelaProfissional() {
               <div className="text-center py-8 text-gray-500">
                 <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                 <p className="text-lg font-medium">Nenhuma consulta agendada</p>
-                <p className="text-sm">Você não tem consultas nos próximos dias</p>
+                <p className="text-sm">Você não tem consultas nos próximos 30 dias</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  Mostrando consultas confirmadas e pendentes
+                </p>
               </div>
             )}
           </div>
