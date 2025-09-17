@@ -15,6 +15,7 @@
 
 import { createClient } from '@/lib/server';
 import { TimezoneUtils } from '@/utils/timezone';
+import { gerarEmailBoasVindasProfissional } from '@/components/email/email-template';
 
 // Tipos para dados de agendamento
 export interface AgendamentoEmailData {
@@ -54,6 +55,36 @@ export class EmailService {
     // URL do serviço de email - sempre usar REST API do Resend
     serviceUrl: 'https://api.resend.com/emails'
   };
+
+  /**
+   * Envia email de boas-vindas para profissional recém-cadastrado
+   */
+  static async enviarBoasVindasProfissional(dados: {
+    nome: string;
+    email: string;
+    senha: string;
+    especialidade: string;
+    crp: string;
+  }): Promise<void> {
+    try {
+      console.log(`Enviando email de boas-vindas para profissional: ${dados.email}`);
+
+      const htmlContent = gerarEmailBoasVindasProfissional(dados);
+      
+      await this.enviarEmail({
+        to: dados.email,
+        subject: 'Bem-vindo à Clínica Resilience - Dados de Acesso',
+        html: htmlContent,
+        destinatario: 'profissional',
+        agendamentoId: 'boas-vindas-' + Date.now()
+      });
+
+      console.log(`✅ Email de boas-vindas enviado com sucesso para: ${dados.email}`);
+    } catch (error) {
+      console.error('Erro ao enviar email de boas-vindas:', error);
+      throw error;
+    }
+  }
 
   /**
    * Envia notificação de email para agendamento criado
@@ -311,172 +342,333 @@ export class EmailService {
   }
 
   /**
-   * Gera template HTML para email do paciente
+   * Gera template HTML minimalista para email do paciente
    */
   private static gerarTemplatePaciente(tipo: TipoNotificacao, agendamento: AgendamentoEmailData): string {
     const dataFormatada = TimezoneUtils.formatForDisplay(agendamento.data_consulta);
     const horaFormatada = TimezoneUtils.formatForDisplay(agendamento.data_consulta, undefined, 'time');
 
-    const baseTemplate = `
+    let titulo: string;
+    let corHeader: string;
+    let mensagem: string;
+    let informacoesExtras: string = '';
+
+    switch (tipo) {
+      case 'criacao':
+        titulo = 'Agendamento Confirmado';
+        corHeader = '#28a745'; // Verde para sucesso
+        mensagem = 'Seu agendamento foi confirmado com sucesso!';
+        informacoesExtras = agendamento.modalidade === 'presencial' 
+          ? '<div class="note">📍 <strong>Consulta Presencial:</strong> Chegue com 15 minutos de antecedência.</div>'
+          : '<div class="note">💻 <strong>Consulta Online:</strong> O link será enviado 30 minutos antes.</div>';
+        break;
+      case 'cancelamento':
+        titulo = 'Agendamento Cancelado';
+        corHeader = '#dc3545'; // Vermelho para cancelamento
+        mensagem = 'Informamos que seu agendamento foi cancelado.';
+        informacoesExtras = '<div class="note">Para reagendar sua consulta, entre em contato conosco.</div>';
+        break;
+      case 'reagendamento':
+        titulo = 'Agendamento Reagendado';
+        corHeader = '#456dc6'; // Azul para reagendamento
+        mensagem = 'Seu agendamento foi reagendado com sucesso!';
+        break;
+      default:
+        titulo = 'Notificação de Agendamento';
+        corHeader = '#456dc6';
+        mensagem = 'Este é um email de notificação sobre seu agendamento.';
+        break;
+    }
+
+    return `
       <!DOCTYPE html>
-      <html>
+      <html lang="pt-BR">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Clínica Resilience - Notificação</title>
+        <title>${titulo} | Clínica Resilience</title>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #f4f4f4; }
-          .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-          .header { text-align: center; margin-bottom: 30px; }
-          .logo { color: #2c5aa0; font-size: 24px; font-weight: bold; margin-bottom: 10px; }
-          .content { margin-bottom: 25px; }
-          .info-box { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2c5aa0; }
-          .footer { text-align: center; font-size: 12px; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
-          .btn { display: inline-block; padding: 12px 24px; background: #2c5aa0; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
-          .alert { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 15px 0; }
-          .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin: 15px 0; }
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+          }
+          
+          .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+          
+          .header {
+            background: ${corHeader};
+            padding: 25px 20px;
+            text-align: center;
+            color: white;
+          }
+          
+          .logo {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 8px;
+          }
+          
+          .content {
+            padding: 25px 20px;
+          }
+          
+          .title {
+            color: ${corHeader};
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+          }
+          
+          .info-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 18px;
+            margin: 18px 0;
+          }
+          
+          .info-item {
+            margin: 8px 0;
+            font-size: 14px;
+          }
+          
+          .info-label {
+            font-weight: bold;
+            color: #555;
+          }
+          
+          .info-value {
+            color: ${corHeader};
+            font-weight: 600;
+            margin-left: 10px;
+          }
+          
+          .note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 14px;
+          }
+          
+          .footer {
+            background: #f8f9fa;
+            padding: 18px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+          }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
             <div class="logo">Clínica Resilience</div>
-            <p>Sistema de Gestão de Consultas</p>
+            <p>Sistema de Gestão Clínica</p>
           </div>
-    `;
-
-    const footer = `
+          
+          <div class="content">
+            <h2 class="title">${titulo}</h2>
+            
+            <p>Olá <strong>${agendamento.paciente.nome}</strong>,</p>
+            <p>${mensagem}</p>
+            
+            <div class="info-box">
+              <div class="info-item">
+                <span class="info-label">Profissional:</span>
+                <span class="info-value">${agendamento.profissional.nome}</span>
+              </div>
+              ${agendamento.profissional.especialidade ? `
+              <div class="info-item">
+                <span class="info-label">Especialidade:</span>
+                <span class="info-value">${agendamento.profissional.especialidade}</span>
+              </div>` : ''}
+              <div class="info-item">
+                <span class="info-label">Data:</span>
+                <span class="info-value">${dataFormatada}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Horário:</span>
+                <span class="info-value">${horaFormatada}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Modalidade:</span>
+                <span class="info-value">${agendamento.modalidade === 'presencial' ? '🏥 Presencial' : '💻 Online'}</span>
+              </div>
+              ${agendamento.notas ? `
+              <div class="info-item">
+                <span class="info-label">Observações:</span>
+                <span class="info-value">${agendamento.notas}</span>
+              </div>` : ''}
+              ${agendamento.justificativa_cancelamento ? `
+              <div class="info-item">
+                <span class="info-label">Motivo do Cancelamento:</span>
+                <span class="info-value">${agendamento.justificativa_cancelamento}</span>
+              </div>` : ''}
+            </div>
+            
+            ${informacoesExtras}
+          </div>
+          
           <div class="footer">
-            <p>Este é um email automático, por favor não responda.</p>
-            <p>Para dúvidas ou alterações, entre em contato conosco:</p>
-            <p>📧 contato@clinicaresilience.com.br | 📱 (11) 99999-9999</p>
-            <p>&copy; 2024 Clínica Resilience. Todos os direitos reservados.</p>
+            <p><strong>Clínica Resilience</strong></p>
+            <p>contato@clinicaresilience.com.br | (11) 99999-9999</p>
+            <p>Este é um email automático. Não responda a esta mensagem.</p>
           </div>
         </div>
       </body>
       </html>
     `;
-
-    switch (tipo) {
-      case 'criacao':
-        return baseTemplate + `
-          <div class="content">
-            <div class="success">
-              <h2>✅ Agendamento Confirmado!</h2>
-            </div>
-            
-            <p>Olá <strong>${agendamento.paciente.nome}</strong>,</p>
-            
-            <p>Seu agendamento foi confirmado com sucesso! Seguem os detalhes:</p>
-            
-            <div class="info-box">
-              <h3>📅 Detalhes do Agendamento</h3>
-              <p><strong>Profissional:</strong> ${agendamento.profissional.nome}</p>
-              ${agendamento.profissional.especialidade ? `<p><strong>Especialidade:</strong> ${agendamento.profissional.especialidade}</p>` : ''}
-              <p><strong>Data:</strong> ${dataFormatada}</p>
-              <p><strong>Horário:</strong> ${horaFormatada}</p>
-              <p><strong>Modalidade:</strong> ${agendamento.modalidade === 'presencial' ? '🏥 Presencial' : '💻 Online'}</p>
-              ${agendamento.notas ? `<p><strong>Observações:</strong> ${agendamento.notas}</p>` : ''}
-            </div>
-            
-            ${agendamento.modalidade === 'presencial' ? `
-              <div class="info-box">
-                <h3>📍 Informações Importantes</h3>
-                <p><strong>Local:</strong> Clínica Resilience</p>
-                <p><strong>Endereço:</strong> [Inserir endereço da clínica]</p>
-                <p>Por favor, chegue com 15 minutos de antecedência.</p>
-              </div>
-            ` : `
-              <div class="info-box">
-                <h3>💻 Consulta Online</h3>
-                <p>O link para a consulta será enviado por email 30 minutos antes do horário agendado.</p>
-                <p>Certifique-se de ter uma conexão estável com a internet.</p>
-              </div>
-            `}
-          </div>
-        ` + footer;
-
-      case 'cancelamento':
-        return baseTemplate + `
-          <div class="content">
-            <div class="alert">
-              <h2>❌ Agendamento Cancelado</h2>
-            </div>
-            
-            <p>Olá <strong>${agendamento.paciente.nome}</strong>,</p>
-            
-            <p>Informamos que seu agendamento foi cancelado:</p>
-            
-            <div class="info-box">
-              <h3>📅 Agendamento Cancelado</h3>
-              <p><strong>Profissional:</strong> ${agendamento.profissional.nome}</p>
-              <p><strong>Data:</strong> ${dataFormatada}</p>
-              <p><strong>Horário:</strong> ${horaFormatada}</p>
-              <p><strong>Modalidade:</strong> ${agendamento.modalidade === 'presencial' ? '🏥 Presencial' : '💻 Online'}</p>
-              ${agendamento.justificativa_cancelamento ? `<p><strong>Motivo:</strong> ${agendamento.justificativa_cancelamento}</p>` : ''}
-            </div>
-            
-            <p>Para reagendar sua consulta ou esclarecer dúvidas, entre em contato conosco.</p>
-          </div>
-        ` + footer;
-
-      case 'reagendamento':
-        return baseTemplate + `
-          <div class="content">
-            <div class="success">
-              <h2>🔄 Agendamento Reagendado</h2>
-            </div>
-            
-            <p>Olá <strong>${agendamento.paciente.nome}</strong>,</p>
-            
-            <p>Seu agendamento foi reagendado com sucesso! Seguem os novos detalhes:</p>
-            
-            <div class="info-box">
-              <h3>📅 Nova Data e Horário</h3>
-              <p><strong>Profissional:</strong> ${agendamento.profissional.nome}</p>
-              <p><strong>Nova Data:</strong> ${dataFormatada}</p>
-              <p><strong>Novo Horário:</strong> ${horaFormatada}</p>
-              <p><strong>Modalidade:</strong> ${agendamento.modalidade === 'presencial' ? '🏥 Presencial' : '💻 Online'}</p>
-              ${agendamento.notas ? `<p><strong>Observações:</strong> ${agendamento.notas}</p>` : ''}
-            </div>
-          </div>
-        ` + footer;
-
-      default:
-        return baseTemplate + `
-          <div class="content">
-            <p>Olá <strong>${agendamento.paciente.nome}</strong>,</p>
-            <p>Este é um email de notificação sobre seu agendamento.</p>
-          </div>
-        ` + footer;
-    }
   }
 
   /**
-   * Gera template HTML para email do profissional
+   * Gera template HTML minimalista para email do profissional
    */
   private static gerarTemplateProfissional(tipo: TipoNotificacao, agendamento: AgendamentoEmailData): string {
     const dataFormatada = TimezoneUtils.formatForDisplay(agendamento.data_consulta);
     const horaFormatada = TimezoneUtils.formatForDisplay(agendamento.data_consulta, undefined, 'time');
 
-    const baseTemplate = `
+    let titulo: string;
+    let corHeader: string;
+    let mensagem: string;
+    let informacoesExtras: string = '';
+
+    switch (tipo) {
+      case 'criacao':
+        titulo = 'Novo Agendamento';
+        corHeader = '#28a745'; // Verde para sucesso
+        mensagem = 'Você tem um novo agendamento confirmado.';
+        break;
+      case 'cancelamento':
+        titulo = 'Agendamento Cancelado';
+        corHeader = '#dc3545'; // Vermelho para cancelamento
+        mensagem = 'Um agendamento foi cancelado.';
+        informacoesExtras = '<div class="note">O horário foi liberado automaticamente em sua agenda.</div>';
+        break;
+      case 'reagendamento':
+        titulo = 'Agendamento Reagendado';
+        corHeader = '#456dc6'; // Azul para reagendamento
+        mensagem = 'Um agendamento foi reagendado.';
+        break;
+      default:
+        titulo = 'Notificação de Agendamento';
+        corHeader = '#456dc6';
+        mensagem = 'Esta é uma notificação sobre um agendamento.';
+        break;
+    }
+
+    return `
       <!DOCTYPE html>
-      <html>
+      <html lang="pt-BR">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Clínica Resilience - Notificação Profissional</title>
+        <title>${titulo} | Clínica Resilience</title>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #f4f4f4; }
-          .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-          .header { text-align: center; margin-bottom: 30px; }
-          .logo { color: #2c5aa0; font-size: 24px; font-weight: bold; margin-bottom: 10px; }
-          .content { margin-bottom: 25px; }
-          .info-box { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2c5aa0; }
-          .footer { text-align: center; font-size: 12px; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
-          .professional { background: #e8f4f8; border-left-color: #17a2b8; }
-          .alert { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 15px 0; }
-          .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin: 15px 0; }
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+          }
+          
+          .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+          
+          .header {
+            background: ${corHeader};
+            padding: 25px 20px;
+            text-align: center;
+            color: white;
+          }
+          
+          .logo {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 8px;
+          }
+          
+          .content {
+            padding: 25px 20px;
+          }
+          
+          .title {
+            color: ${corHeader};
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+          }
+          
+          .patient-box {
+            background: #e8f4f8;
+            border: 1px solid #bee5eb;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+          }
+          
+          .info-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 18px;
+            margin: 18px 0;
+          }
+          
+          .info-item {
+            margin: 8px 0;
+            font-size: 14px;
+          }
+          
+          .info-label {
+            font-weight: bold;
+            color: #555;
+          }
+          
+          .info-value {
+            color: ${corHeader};
+            font-weight: 600;
+            margin-left: 10px;
+          }
+          
+          .note {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 14px;
+          }
+          
+          .footer {
+            background: #f8f9fa;
+            padding: 18px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+          }
         </style>
       </head>
       <body>
@@ -485,110 +677,62 @@ export class EmailService {
             <div class="logo">Clínica Resilience</div>
             <p>Notificação Profissional</p>
           </div>
-    `;
-
-    const footer = `
+          
+          <div class="content">
+            <h2 class="title">${titulo}</h2>
+            
+            <p>Olá <strong>Dr(a). ${agendamento.profissional.nome}</strong>,</p>
+            <p>${mensagem}</p>
+            
+            <div class="patient-box">
+              <strong>👤 Paciente:</strong>
+              <div class="info-item">
+                <span class="info-label">Nome:</span>
+                <span class="info-value">${agendamento.paciente.nome}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Email:</span>
+                <span class="info-value">${agendamento.paciente.email}</span>
+              </div>
+            </div>
+            
+            <div class="info-box">
+              <div class="info-item">
+                <span class="info-label">Data:</span>
+                <span class="info-value">${dataFormatada}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Horário:</span>
+                <span class="info-value">${horaFormatada}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Modalidade:</span>
+                <span class="info-value">${agendamento.modalidade === 'presencial' ? '🏥 Presencial' : '💻 Online'}</span>
+              </div>
+              ${agendamento.notas ? `
+              <div class="info-item">
+                <span class="info-label">Observações:</span>
+                <span class="info-value">${agendamento.notas}</span>
+              </div>` : ''}
+              ${agendamento.justificativa_cancelamento ? `
+              <div class="info-item">
+                <span class="info-label">Motivo do Cancelamento:</span>
+                <span class="info-value">${agendamento.justificativa_cancelamento}</span>
+              </div>` : ''}
+            </div>
+            
+            ${informacoesExtras}
+          </div>
+          
           <div class="footer">
-            <p>Sistema de Gestão Clínica Resilience</p>
+            <p><strong>Clínica Resilience</strong></p>
+            <p>Sistema de Gestão Clínica</p>
             <p>Este é um email automático de notificação.</p>
           </div>
         </div>
       </body>
       </html>
     `;
-
-    switch (tipo) {
-      case 'criacao':
-        return baseTemplate + `
-          <div class="content">
-            <div class="success">
-              <h2>📋 Novo Agendamento</h2>
-            </div>
-            
-            <p>Olá <strong>Dr(a). ${agendamento.profissional.nome}</strong>,</p>
-            
-            <p>Você tem um novo agendamento confirmado:</p>
-            
-            <div class="info-box professional">
-              <h3>👤 Dados do Paciente</h3>
-              <p><strong>Nome:</strong> ${agendamento.paciente.nome}</p>
-              <p><strong>Email:</strong> ${agendamento.paciente.email}</p>
-            </div>
-            
-            <div class="info-box">
-              <h3>📅 Detalhes da Consulta</h3>
-              <p><strong>Data:</strong> ${dataFormatada}</p>
-              <p><strong>Horário:</strong> ${horaFormatada}</p>
-              <p><strong>Modalidade:</strong> ${agendamento.modalidade === 'presencial' ? '🏥 Presencial' : '💻 Online'}</p>
-              ${agendamento.notas ? `<p><strong>Observações do Paciente:</strong> ${agendamento.notas}</p>` : ''}
-            </div>
-          </div>
-        ` + footer;
-
-      case 'cancelamento':
-        return baseTemplate + `
-          <div class="content">
-            <div class="alert">
-              <h2>❌ Agendamento Cancelado</h2>
-            </div>
-            
-            <p>Olá <strong>Dr(a). ${agendamento.profissional.nome}</strong>,</p>
-            
-            <p>Um agendamento foi cancelado:</p>
-            
-            <div class="info-box professional">
-              <h3>👤 Dados do Paciente</h3>
-              <p><strong>Nome:</strong> ${agendamento.paciente.nome}</p>
-              <p><strong>Email:</strong> ${agendamento.paciente.email}</p>
-            </div>
-            
-            <div class="info-box">
-              <h3>📅 Consulta Cancelada</h3>
-              <p><strong>Data:</strong> ${dataFormatada}</p>
-              <p><strong>Horário:</strong> ${horaFormatada}</p>
-              <p><strong>Modalidade:</strong> ${agendamento.modalidade === 'presencial' ? '🏥 Presencial' : '💻 Online'}</p>
-              ${agendamento.justificativa_cancelamento ? `<p><strong>Motivo:</strong> ${agendamento.justificativa_cancelamento}</p>` : ''}
-            </div>
-            
-            <p>O horário foi liberado em sua agenda automaticamente.</p>
-          </div>
-        ` + footer;
-
-      case 'reagendamento':
-        return baseTemplate + `
-          <div class="content">
-            <div class="success">
-              <h2>🔄 Agendamento Reagendado</h2>
-            </div>
-            
-            <p>Olá <strong>Dr(a). ${agendamento.profissional.nome}</strong>,</p>
-            
-            <p>Um agendamento foi reagendado:</p>
-            
-            <div class="info-box professional">
-              <h3>👤 Dados do Paciente</h3>
-              <p><strong>Nome:</strong> ${agendamento.paciente.nome}</p>
-              <p><strong>Email:</strong> ${agendamento.paciente.email}</p>
-            </div>
-            
-            <div class="info-box">
-              <h3>📅 Nova Data e Horário</h3>
-              <p><strong>Nova Data:</strong> ${dataFormatada}</p>
-              <p><strong>Novo Horário:</strong> ${horaFormatada}</p>
-              <p><strong>Modalidade:</strong> ${agendamento.modalidade === 'presencial' ? '🏥 Presencial' : '💻 Online'}</p>
-              ${agendamento.notas ? `<p><strong>Observações:</strong> ${agendamento.notas}</p>` : ''}
-            </div>
-          </div>
-        ` + footer;
-
-      default:
-        return baseTemplate + `
-          <div class="content">
-            <p>Olá <strong>Dr(a). ${agendamento.profissional.nome}</strong>,</p>
-            <p>Esta é uma notificação sobre um agendamento.</p>
-          </div>
-        ` + footer;
-    }
   }
 
   /**

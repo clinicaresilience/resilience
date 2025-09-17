@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/server-admin";
+import { EmailService } from "@/services/email/email.service";
 
 export async function criarProfissional(data: {
     nome: string;
@@ -137,6 +138,20 @@ export async function criarProfissional(data: {
             if (insertError) {
                 throw new Error(`Erro ao salvar dados do profissional: ${insertError.message}`);
             }
+        }
+
+        // Enviar email de boas-vindas para o profissional
+        try {
+            await EmailService.enviarBoasVindasProfissional({
+                nome: data.nome,
+                email: data.email,
+                senha: data.senha,
+                especialidade: data.especialidade!,
+                crp: data.crp!
+            });
+        } catch (emailError) {
+            console.warn('Aviso: Não foi possível enviar email de boas-vindas:', emailError);
+            // Não falhar a criação do profissional por erro de email
         }
 
         return { success: true, id: userId, senha: data.senha };
