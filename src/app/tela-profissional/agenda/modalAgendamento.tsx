@@ -21,18 +21,18 @@ interface AgendaModalProps {
 }
 
 export function AgendaModal({ profissionalId }: AgendaModalProps) {
-  const [diasSelecionados, setDiasSelecionados] = useState<any[]>([]);
+  const [diasSelecionados, setDiasSelecionados] = useState<Array<{ diaSemana: number; horaInicio: string; horaFim: string }>>([]);
   const [horaInicio, setHoraInicio] = useState("08:00");
   const [horaFim, setHoraFim] = useState("17:00");
   const [intervalo, setIntervalo] = useState(60);
   const [agendaExistente, setAgendaExistente] = useState(false);
-  const [slots, setSlots] = useState<any[]>([]); // 🔹 agora vamos guardar os slots reais
+  const [slots, setSlots] = useState<Array<{ data: string; horaInicio: string }>>([]);
 
   // 🔹 Carrega cronograma existente ao abrir modal
   useEffect(() => {
     fetch(`/api/profissionais/agenda?profissionalId=${profissionalId}`)
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: { configuracao?: { dias?: Array<{ diaSemana: number; horaInicio: string; horaFim: string }>; horaInicio?: string; horaFim?: string; intervalo_minutos?: number }; slots?: Array<{ data: string; horaInicio: string }> }) => {
         if (data?.configuracao) {
           setDiasSelecionados(data.configuracao.dias || []);
           setHoraInicio(data.configuracao.horaInicio || "08:00");
@@ -80,10 +80,10 @@ export function AgendaModal({ profissionalId }: AgendaModalProps) {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json() as { agenda?: { slots?: Array<{ data: string; horaInicio: string }> }; error?: string };
       if (res.ok) {
         setAgendaExistente(true);
-        setSlots(data.agenda.slots); // 🔹 salvar slots atualizados
+        setSlots(data.agenda?.slots || []); // 🔹 salvar slots atualizados
         alert("Agenda salva com sucesso!");
       } else {
         alert(data.error || "Erro ao salvar agenda");

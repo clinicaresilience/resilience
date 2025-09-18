@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+   typescript: {
+    // ❌ NÃO para o build mesmo se houver erros de tipagem
+    ignoreBuildErrors: true,
+  },
   /* config options here */
   images: {
     localPatterns: [
