@@ -77,6 +77,9 @@ export function PacientesListClient() {
 
       const pacienteId = agendamento.paciente.id || agendamento.paciente_id
       const pacienteNome = agendamento.paciente.nome || agendamento.pacienteNome
+      
+      if (!pacienteId || !pacienteNome) return
+      
       const pacienteEmail = agendamento.paciente.email || agendamento.paciente?.email || `${pacienteNome.toLowerCase().replace(/\s+/g, '.')}@email.com`
       const telefone = agendamento.paciente.telefone || "(00) 00000-0000"
 
@@ -99,16 +102,18 @@ export function PacientesListClient() {
 
       // Atualizar última consulta
       const dataConsulta = agendamento.data_consulta || agendamento.dataISO
-      if (!paciente.ultimaConsulta || new Date(dataConsulta) > new Date(paciente.ultimaConsulta)) {
-        paciente.ultimaConsulta = dataConsulta
-      }
+      if (dataConsulta) {
+        if (!paciente.ultimaConsulta || new Date(dataConsulta) > new Date(paciente.ultimaConsulta)) {
+          paciente.ultimaConsulta = dataConsulta
+        }
 
-      // Próxima consulta (futuras com status confirmado ou pendente)
-      const agora = new Date()
-      if (new Date(dataConsulta) > agora && 
-          (agendamento.status === "confirmado" || agendamento.status === "pendente")) {
-        if (!paciente.proximaConsulta || new Date(dataConsulta) < new Date(paciente.proximaConsulta)) {
-          paciente.proximaConsulta = dataConsulta
+        // Próxima consulta (futuras com status confirmado ou pendente)
+        const agora = new Date()
+        if (new Date(dataConsulta) > agora && 
+            (agendamento.status === "confirmado" || agendamento.status === "pendente")) {
+          if (!paciente.proximaConsulta || new Date(dataConsulta) < new Date(paciente.proximaConsulta)) {
+            paciente.proximaConsulta = dataConsulta
+          }
         }
       }
 

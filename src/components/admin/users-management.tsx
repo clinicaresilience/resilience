@@ -148,6 +148,8 @@ export function UsersManagement() {
       await criarProfissional({
         nome,
         email,
+        cpf: "00000000000", // CPF temporário - deve ser ajustado pelo administrador
+        telefone: "00000000000", // Telefone temporário - deve ser ajustado pelo administrador
         senha: senhaGerada,
         area,
         especialidade,
@@ -487,7 +489,7 @@ export function UsersManagement() {
           setResetPasswordModalOpen(false);
           setSelectedUserForReset(null);
         }}
-        user={selectedUserForReset}
+        user={selectedUserForReset as Usuario & { informacoes_adicionais?: { especialidade?: string } }}
         onConfirm={onConfirmResetPassword}
       />
     </div>

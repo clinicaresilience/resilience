@@ -26,7 +26,7 @@ export interface PDFSection {
 export interface PDFChartData {
   type: 'pie' | 'donut' | 'bar';
   title: string;
-  data: any[];
+  data: Array<Record<string, unknown>>;
   colors?: string[];
   options?: {
     showLegend?: boolean;
@@ -40,7 +40,7 @@ export interface PDFExportOptions {
   metrics?: PDFMetric[];
   sections?: PDFSection[];
   charts?: PDFChartData[];
-  evolutionData?: any[];
+  evolutionData?: Array<Record<string, unknown>>;
   customStyles?: string;
   autoprint?: boolean;
 }
@@ -251,7 +251,7 @@ export class PDFExporter {
   /**
    * Gera SVG para gráfico de pizza
    */
-  private static generatePieChart(data: any[], colors: string[], title: string): string {
+  private static generatePieChart(data: Array<Record<string, unknown>>, colors: string[], title: string): string {
     if (data.length === 0) return '';
 
     const total = data.reduce((sum, item) => sum + item.quantidade, 0);
@@ -321,7 +321,7 @@ export class PDFExporter {
   /**
    * Gera SVG para gráfico de rosca (donut)
    */
-  private static generateDonutChart(data: any[], colors: string[], title: string, centerText?: string): string {
+  private static generateDonutChart(data: Array<Record<string, unknown>>, colors: string[], title: string, centerText?: string): string {
     if (data.length === 0) return '';
 
     const total = data.reduce((sum, item) => sum + item.quantidade, 0);
@@ -402,7 +402,7 @@ export class PDFExporter {
   /**
    * Gera SVG para gráfico de barras
    */
-  private static generateBarChart(data: any[], colors: string[], title: string): string {
+  private static generateBarChart(data: Array<Record<string, unknown>>, colors: string[], title: string): string {
     if (data.length === 0) return '';
 
     const maxValue = Math.max(...data.map(item => item.quantidade));

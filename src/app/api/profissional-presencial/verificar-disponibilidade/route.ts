@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     const isPresencial = !!designacaoPresencial;
 
     // Se há designação presencial, verificar agendamentos existentes
-    let agendamentosExistentes = [];
+    let agendamentosExistentes: unknown[] = [];
     if (isPresencial) {
       const { data: agendamentos } = await supabase
         .from('agendamentos')
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       message: 'Verificação de disponibilidade realizada com sucesso'
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro ao verificar disponibilidade presencial:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       message: 'Verificação em lote realizada com sucesso'
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro ao verificar disponibilidade em lote:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },

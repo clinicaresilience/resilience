@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const companies = await CompaniesService.listCompanies(filters);
     
     return NextResponse.json(companies);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro ao buscar empresas:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(company, { status: 201 });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro ao criar empresa:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
@@ -159,7 +159,7 @@ export async function PUT(request: NextRequest) {
     const company = await CompaniesService.updateCompany(companyId, body);
 
     return NextResponse.json(company);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro ao atualizar empresa:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },

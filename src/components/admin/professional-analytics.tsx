@@ -65,7 +65,7 @@ export function ProfessionalAnalytics() {
           const prontuariosData = await prontuariosResponse.json()
           setProntuarios(prontuariosData.data || [])
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Erro ao buscar dados para analytics:', error)
       } finally {
         setLoading(false)
@@ -79,37 +79,45 @@ export function ProfessionalAnalytics() {
   const professionalAnalytics = useMemo(() => {
     if (agendamentos.length === 0) return []
 
-    const profissionais = Array.from(new Set(agendamentos.map((ag: any) => ag.profissional?.nome || 'Profissional não identificado')))
+    const profissionais = Array.from(new Set(agendamentos.map((ag: Agendamento) => 
+      (ag as unknown as Record<string, unknown>).profissional as string || 'Profissional não identificado'
+    )))
 
     return profissionais.map(nome => {
-      const agendamentosProfissional = agendamentos.filter((ag: any) => ag.profissional?.nome === nome)
-      const prontuariosProfissional = prontuarios.filter((p: any) => p.profissional?.nome === nome)
+      const agendamentosProfissional = agendamentos.filter((ag: Agendamento) => 
+        (ag as unknown as Record<string, unknown>).profissional === nome
+      )
+      const prontuariosProfissional = prontuarios.filter((p: ConsultaComProntuario) => 
+        (p as unknown as Record<string, unknown>).profissional === nome
+      )
 
       const totalAgendamentos = agendamentosProfissional.length
-      const confirmados = agendamentosProfissional.filter((ag: any) => ag.status === "confirmado").length
-      const cancelados = agendamentosProfissional.filter((ag: any) => ag.status === "cancelado").length
-      const concluidos = agendamentosProfissional.filter((ag: any) => ag.status === "concluido").length
-      const pendentes = agendamentosProfissional.filter((ag: any) => ag.status === "pendente").length
+      const confirmados = agendamentosProfissional.filter((ag: Agendamento) => ag.status === "confirmado").length
+      const cancelados = agendamentosProfissional.filter((ag: Agendamento) => ag.status === "cancelado").length
+      const concluidos = agendamentosProfissional.filter((ag: Agendamento) => ag.status === "concluido").length
+      const pendentes = agendamentosProfissional.filter((ag: Agendamento) => ag.status === "pendente").length
 
       const taxaComparecimento = totalAgendamentos > 0 ? (concluidos / totalAgendamentos) * 100 : 0
       const taxaCancelamento = totalAgendamentos > 0 ? (cancelados / totalAgendamentos) * 100 : 0
       const taxaConfirmacao = totalAgendamentos > 0 ? (confirmados / totalAgendamentos) * 100 : 0
 
       // Pacientes únicos
-      const pacientesUnicos = new Set(agendamentosProfissional.map((ag: any) => ag.paciente_id).filter(Boolean)).size
+      const pacientesUnicos = new Set(agendamentosProfissional.map((ag: Agendamento) => 
+        (ag as unknown as Record<string, unknown>).paciente_id as string
+      ).filter(Boolean)).size
       const mediaConsultasPorPaciente = pacientesUnicos > 0 ? totalAgendamentos / pacientesUnicos : 0
 
       // Próximos agendamentos
       const now = new Date()
-      const proximosAgendamentos = agendamentosProfissional.filter((ag: any) =>
-        new Date(ag.data_consulta) > now && (ag.status === "confirmado" || ag.status === "pendente")
+      const proximosAgendamentos = agendamentosProfissional.filter((ag: Agendamento) =>
+        ag.data_consulta && new Date(ag.data_consulta) > now && (ag.status === "confirmado" || ag.status === "pendente")
       ).length
 
       // Consultas últimos 30 dias
       const trinta_dias_atras = new Date()
       trinta_dias_atras.setDate(now.getDate() - 30)
-      const consultasUltimos30Dias = agendamentosProfissional.filter((ag: any) =>
-        new Date(ag.data_consulta) >= trinta_dias_atras && ag.status === "concluido"
+      const consultasUltimos30Dias = agendamentosProfissional.filter((ag: Agendamento) =>
+        ag.data_consulta && new Date(ag.data_consulta) >= trinta_dias_atras && ag.status === "concluido"
       ).length
 
       // Tendência baseada em dados reais

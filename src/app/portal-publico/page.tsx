@@ -126,7 +126,7 @@ export default async function AgendamentosPublico() {
           </p>
         </div>
 
-        <ProfissionaisAgendamentos data={profissionais ?? []} />
+        <ProfissionaisAgendamentos />
       </div>
     </div>
   );

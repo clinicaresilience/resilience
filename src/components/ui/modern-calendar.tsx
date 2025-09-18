@@ -35,10 +35,10 @@ const messages = {
 }
 
 type ModernCalendarProps = {
-  agendamentos?: any[]
+  agendamentos?: Array<Record<string, unknown>>
   selectedProfessional?: string
   selectedStatus?: string
-  onEventSelect?: (event: any) => void
+  onEventSelect?: (event: Record<string, unknown>) => void
 }
 
 export function ModernCalendar({ 
@@ -47,7 +47,7 @@ export function ModernCalendar({
   selectedStatus = "todos",
   onEventSelect
 }: ModernCalendarProps) {
-  const [selectedEvent, setSelectedEvent] = useState<any>(null)
+  const [selectedEvent, setSelectedEvent] = useState<Record<string, unknown> | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentDate, setCurrentDate] = useState(new Date())
 
@@ -90,14 +90,15 @@ export function ModernCalendar({
     ]
 
     return filteredAgendamentos.map(ag => {
-      const startDate = new Date(ag.dataISO || ag.data_hora_inicio)
+      const agData = ag as Record<string, unknown>
+      const startDate = new Date((agData.dataISO as string) || (agData.data_hora_inicio as string))
       
       // Calcular duração baseada nos dados do banco ou usar 1 hora como padrão
       let endDate: Date
       let duracaoTexto: string
       
-      if (ag.data_hora_fim) {
-        endDate = new Date(ag.data_hora_fim)
+      if (agData.data_hora_fim) {
+        endDate = new Date(agData.data_hora_fim as string)
         const duracaoMs = endDate.getTime() - startDate.getTime()
         const duracaoMinutos = Math.round(duracaoMs / (1000 * 60))
         duracaoTexto = `${duracaoMinutos} minutos`
@@ -108,20 +109,20 @@ export function ModernCalendar({
       }
 
       // Encontrar paciente correspondente ou criar um mock
-      const paciente = pacientes.find(p => p.id === ag.usuarioId) || {
-        id: ag.usuarioId || 'pac_mock',
+      const paciente = pacientes.find(p => p.id === agData.usuarioId) || {
+        id: (agData.usuarioId as string) || 'pac_mock',
         nome: `Paciente ${Math.floor(Math.random() * 100) + 1}`,
         email: `paciente${Math.floor(Math.random() * 100) + 1}@email.com`,
         telefone: `(11) 9${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}`
       }
 
       return {
-        id: ag.id,
-        title: `${paciente.nome} - ${ag.profissionalNome}`,
+        id: agData.id,
+        title: `${paciente.nome} - ${agData.profissionalNome}`,
         start: startDate,
         end: endDate,
         resource: {
-          ...ag,
+          ...agData,
           pacienteDetalhes: paciente,
           motivoConsulta: motivosConsulta[Math.floor(Math.random() * motivosConsulta.length)],
           duracao: duracaoTexto
@@ -131,8 +132,9 @@ export function ModernCalendar({
   }, [filteredAgendamentos, pacientes])
 
   // Função para estilizar eventos baseado no status
-  const eventStyleGetter = (event: any) => {
-    const status = event.resource.status
+  const eventStyleGetter = (event: Record<string, unknown>) => {
+    const resource = event.resource as Record<string, unknown>
+    const status = resource.status
     let backgroundColor = '#3174ad'
     let borderColor = '#3174ad'
 
@@ -169,7 +171,7 @@ export function ModernCalendar({
   }
 
   // Função chamada quando um evento é clicado
-  const handleSelectEvent = (event: any) => {
+  const handleSelectEvent = (event: Record<string, unknown>) => {
     setSelectedEvent(event)
     setIsModalOpen(true)
     if (onEventSelect) {
@@ -259,97 +261,103 @@ export function ModernCalendar({
             </DialogDescription>
           </DialogHeader>
 
-          {selectedEvent && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg">{selectedEvent.resource.profissionalNome}</h3>
-                <StatusBadge status={selectedEvent.resource.status} />
-              </div>
-
+          {selectedEvent && (() => {
+            const resource = selectedEvent.resource as Record<string, unknown>
+            const pacienteDetalhes = resource.pacienteDetalhes as Record<string, unknown>
+            const start = selectedEvent.start as Date
+            
+            return (
               <div className="space-y-4">
-                {/* Data e Hora */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium">Data e Hora:</span>
-                  </div>
-                  <p className="text-sm text-gray-700 ml-6">
-                    {formatDateTime(selectedEvent.start)}
-                  </p>
-                  <p className="text-xs text-gray-500 ml-6">
-                    Duração: {selectedEvent.resource.duracao}
-                  </p>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg">{String(resource.profissionalNome)}</h3>
+                  <StatusBadge status={String(resource.status)} />
                 </div>
 
-                {/* Profissional */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium">Profissional:</span>
+                <div className="space-y-4">
+                  {/* Data e Hora */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium">Data e Hora:</span>
+                    </div>
+                    <p className="text-sm text-gray-700 ml-6">
+                      {formatDateTime(start)}
+                    </p>
+                    <p className="text-xs text-gray-500 ml-6">
+                      Duração: {String(resource.duracao)}
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-700 ml-6">{selectedEvent.resource.profissionalNome}</p>
-                  {selectedEvent.resource.especialidade && (
-                    <p className="text-xs text-gray-500 ml-6">{selectedEvent.resource.especialidade}</p>
+
+                  {/* Profissional */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium">Profissional:</span>
+                    </div>
+                    <p className="text-sm text-gray-700 ml-6">{String(resource.profissionalNome)}</p>
+                    {resource.especialidade && (
+                      <p className="text-xs text-gray-500 ml-6">{String(resource.especialidade)}</p>
+                    )}
+                  </div>
+
+                  {/* Paciente */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-purple-600" />
+                      <span className="text-sm font-medium">Paciente:</span>
+                    </div>
+                    <div className="ml-6 space-y-1">
+                      <p className="text-sm text-gray-700">{String(pacienteDetalhes.nome)}</p>
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Mail className="h-3 w-3" />
+                        <span>{String(pacienteDetalhes.email)}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Phone className="h-3 w-3" />
+                        <span>{String(pacienteDetalhes.telefone)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Motivo da Consulta */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-orange-600" />
+                      <span className="text-sm font-medium">Motivo da Consulta:</span>
+                    </div>
+                    <p className="text-sm text-gray-700 ml-6">{String(resource.motivoConsulta)}</p>
+                  </div>
+
+                  {/* Local */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-red-600" />
+                      <span className="text-sm font-medium">Local:</span>
+                    </div>
+                    <p className="text-sm text-gray-700 ml-6">{String(resource.local)}</p>
+                  </div>
+
+                  {/* Observações */}
+                  {resource.notas && (
+                    <div className="space-y-2">
+                      <span className="text-sm font-medium">Observações:</span>
+                      <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">{String(resource.notas)}</p>
+                    </div>
                   )}
                 </div>
 
-                {/* Paciente */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-purple-600" />
-                    <span className="text-sm font-medium">Paciente:</span>
-                  </div>
-                  <div className="ml-6 space-y-1">
-                    <p className="text-sm text-gray-700">{selectedEvent.resource.pacienteDetalhes.nome}</p>
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      <Mail className="h-3 w-3" />
-                      <span>{selectedEvent.resource.pacienteDetalhes.email}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      <Phone className="h-3 w-3" />
-                      <span>{selectedEvent.resource.pacienteDetalhes.telefone}</span>
-                    </div>
-                  </div>
+                <div className="pt-4 border-t">
+                  <Button 
+                    onClick={() => setIsModalOpen(false)}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    Fechar
+                  </Button>
                 </div>
-
-                {/* Motivo da Consulta */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-orange-600" />
-                    <span className="text-sm font-medium">Motivo da Consulta:</span>
-                  </div>
-                  <p className="text-sm text-gray-700 ml-6">{selectedEvent.resource.motivoConsulta}</p>
-                </div>
-
-                {/* Local */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-red-600" />
-                    <span className="text-sm font-medium">Local:</span>
-                  </div>
-                  <p className="text-sm text-gray-700 ml-6">{selectedEvent.resource.local}</p>
-                </div>
-
-                {/* Observações */}
-                {selectedEvent.resource.notas && (
-                  <div className="space-y-2">
-                    <span className="text-sm font-medium">Observações:</span>
-                    <p className="text-sm text-gray-700 p-2 bg-gray-50 rounded">{selectedEvent.resource.notas}</p>
-                  </div>
-                )}
               </div>
-
-              <div className="pt-4 border-t">
-                <Button 
-                  onClick={() => setIsModalOpen(false)}
-                  className="w-full"
-                  variant="outline"
-                >
-                  Fechar
-                </Button>
-              </div>
-            </div>
-          )}
+            )
+          })()}
         </DialogContent>
       </Dialog>
     </div>

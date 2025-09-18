@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const excecoesFormatadas = (excecoes || []).map(excecao => {
       const dataExcecaoUTC = TimezoneUtils.dbTimestampToUTC(excecao.data_excecao);
       
-      const resultado: any = {
+      const resultado: Record<string, unknown> = {
         ...excecao,
         data_excecao: dataExcecaoUTC,
         // Campos formatados para exibição
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Preparar dados para inserção baseado no schema real
-    let insertData: any = {
+    const insertData: Record<string, unknown> = {
       profissional_id,
       tipo,
       motivo,
@@ -322,7 +322,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Formatar a exceção criada com dados de exibição
-    const excecaoFormatada: any = {
+    const excecaoFormatada: Record<string, unknown> = {
       ...excecao,
       // Garantir que timestamps estão em UTC
       data_excecao: TimezoneUtils.dbTimestampToUTC(excecao.data_excecao),

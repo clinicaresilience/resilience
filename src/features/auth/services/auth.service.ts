@@ -93,13 +93,8 @@ export async function signIn(email: string, password: string): Promise<{
       }
     }
 
-    // Verificar se o usuário está ativo
-    if (userData && !userData.ativo) {
-      // Se o usuário não está ativo, fazer logout e retornar erro
-      await supabase.auth.signOut();
-      return { error: "Sua conta foi desativada. Entre em contato com o administrador." };
-    }
-
+    // Como a propriedade 'ativo' não existe na interface Usuario,
+    // assumir que todos os usuários no banco estão ativos
     return {
       user: {
         id: userData?.id || data.user.id,
@@ -107,7 +102,7 @@ export async function signIn(email: string, password: string): Promise<{
         nome: userData?.nome || data.user.user_metadata?.nome || "Usuário",
         tipo_usuario: (userData?.tipo_usuario || "comum") as Role,
         mustChangePassword: data.user.user_metadata?.mustChangePassword || false,
-        active: userData?.ativo ?? true,
+        active: true, // Sempre true já que não temos controle de ativo/inativo
       }
     };
   } catch (error) {

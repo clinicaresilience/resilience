@@ -52,10 +52,10 @@ export async function GET() {
             data: consultas,
             usuario: user?.user_metadata?.nome || "Paciente",
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Erro ao buscar próximas consultas:", error);
         return NextResponse.json(
-            { error: "Erro ao buscar próximas consultas", detail: error?.message || String(error) },
+            { error: "Erro ao buscar próximas consultas", detail: error instanceof Error ? error.message : String(error) },
             { status: 500 }
         );
     }

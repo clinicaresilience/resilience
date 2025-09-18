@@ -38,8 +38,8 @@ export async function PUT(req: NextRequest) {
         }
 
         return NextResponse.json({ message: "Senha redefinida com sucesso" });
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("Erro inesperado:", err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        return NextResponse.json({ error: err instanceof Error ? err.message : "Erro desconhecido" }, { status: 500 });
     }
 }

@@ -62,7 +62,7 @@ export async function PATCH(
         notas: agendamento.notas,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Erro ao cancelar agendamento:", error);
     return NextResponse.json({ 
       error: "Erro ao cancelar agendamento", 
@@ -144,7 +144,7 @@ export async function GET() {
             dataFormatada: dataConsultaFormatted,
             horaFormatada: TimezoneUtils.formatForDisplay(dataConsultaUTC, undefined, 'time'),
           };
-        } catch (error) {
+        } catch (error: unknown) {
           console.warn('Erro ao buscar slot para agendamento:', ag.id, error);
           // Retornar agendamento sem dados de slot em caso de erro
           const dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(ag.data_consulta);
@@ -183,7 +183,7 @@ export async function GET() {
     );
 
     return NextResponse.json({ success: true, data: agendamentosComSlots }, { status: 200 });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Erro ao buscar agendamentos:", error);
     return NextResponse.json({ error: "Erro ao buscar agendamentos", detail: error instanceof Error ? error.message : "Erro desconhecido" }, { status: 500 });
   }
@@ -392,7 +392,7 @@ export async function POST(req: NextRequest) {
       } else {
         console.warn('Não foi possível buscar dados do agendamento para envio de email:', agendamento.id);
       }
-    } catch (emailError) {
+    } catch (emailError: unknown) {
       console.error('Erro ao enviar notificações de email:', emailError);
       // Não falhar o agendamento por erro de email
     }
@@ -415,7 +415,7 @@ export async function POST(req: NextRequest) {
       },
       message: "Agendamento criado com sucesso!"
     }, { status: 201 });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Erro ao criar agendamento:", error);
     
     // Se for um erro de validação (como o limite de 1 agendamento por dia), retornar com status 400

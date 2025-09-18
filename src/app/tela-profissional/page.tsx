@@ -294,16 +294,17 @@ export default async function TelaProfissional() {
         <CardContent>
           <div className="space-y-4">
             {proximasConsultas && proximasConsultas.length > 0 ? (
-              proximasConsultas.map((consulta: any) => {
-                const { horario, texto } = formatarData(consulta.data_consulta);
-                const nomePaciente = consulta.paciente?.nome || "Paciente não identificado";
+              proximasConsultas.map((consulta: Record<string, unknown>) => {
+                const { horario, texto } = formatarData(consulta.data_consulta as string);
+                const pacienteData = consulta.paciente as Record<string, unknown> | null;
+                const nomePaciente = pacienteData?.nome as string || "Paciente não identificado";
 
                 return (
-                  <div key={consulta.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={consulta.id as string} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <p className="font-medium">{nomePaciente}</p>
-                      <p className="text-sm text-gray-600">{consulta.notas || "Consulta agendada"}</p>
-                      <p className="text-xs text-blue-600">Status: {consulta.status}</p>
+                      <p className="text-sm text-gray-600">{(consulta.notas as string) || "Consulta agendada"}</p>
+                      <p className="text-xs text-blue-600">Status: {consulta.status as string}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{horario}</p>

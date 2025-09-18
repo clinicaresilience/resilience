@@ -49,12 +49,14 @@ export function AdminDashboard() {
   useEffect(() => {
     async function fetchDados() {
       // helper para extrair array de respostas diferentes (/api pode devolver { success: true, data: [...] } ou [] diretamente)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const getArray = (resJson: any) => {
+      const getArray = (resJson: unknown) => {
         if (!resJson) return [];
         if (Array.isArray(resJson)) return resJson;
-        if (Array.isArray(resJson?.data)) return resJson.data;
-        if (Array.isArray(resJson?.resultado)) return resJson.resultado;
+        if (typeof resJson === 'object' && resJson !== null) {
+          const obj = resJson as Record<string, unknown>;
+          if (Array.isArray(obj.data)) return obj.data;
+          if (Array.isArray(obj.resultado)) return obj.resultado;
+        }
         return [];
       };
 
@@ -64,27 +66,31 @@ export function AdminDashboard() {
         const jsonAg = await resAg.json().catch(() => null);
         const agArray = getArray(jsonAg);
 
-        const agNormalized: AgendamentoNorm[] = agArray.map((a: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
-          id: a.id,
-          profissional_id:
-            a.profissionalId ||
-            a.profissional_id ||
-            a.profissional?.id ||
-            a.profissional?.profissional_id ||
-            null,
-          profissional_nome:
-            a.profissionalNome ||
-            a.profissional?.nome ||
-            a.profissional_nome ||
-            a.profissional?.name ||
-            (typeof a.profissional === "string" ? a.profissional : null) ||
-            "Sem Profissional",
-          data_consulta:
-            a.dataISO || a.data_consulta || a.data_consulta || a.data || null,
-          status_agendamento: (a.status || a.status_agendamento || "")
-            .toString()
-            .toLowerCase(),
-        }));
+        const agNormalized: AgendamentoNorm[] = agArray.map((a: Record<string, unknown>) => {
+          const profissional = a.profissional as Record<string, unknown> | undefined;
+          return {
+            id: typeof a.id === 'string' ? a.id : String(a.id || ''),
+            profissional_id: (
+              (typeof a.profissionalId === 'string' ? a.profissionalId : null) ||
+              (typeof a.profissional_id === 'string' ? a.profissional_id : null) ||
+              (typeof profissional?.id === 'string' ? profissional.id : null) ||
+              (typeof profissional?.profissional_id === 'string' ? profissional.profissional_id : null)
+            ) || undefined,
+            profissional_nome: (
+              (typeof a.profissionalNome === 'string' ? a.profissionalNome : null) ||
+              (typeof profissional?.nome === 'string' ? profissional.nome : null) ||
+              (typeof a.profissional_nome === 'string' ? a.profissional_nome : null) ||
+              (typeof profissional?.name === 'string' ? profissional.name : null) ||
+              (typeof a.profissional === "string" ? a.profissional : null)
+            ) || "Sem Profissional",
+            data_consulta: (
+              (typeof a.dataISO === 'string' ? a.dataISO : null) ||
+              (typeof a.data_consulta === 'string' ? a.data_consulta : null) ||
+              (typeof a.data === 'string' ? a.data : null)
+            ) || undefined,
+            status_agendamento: String(a.status || a.status_agendamento || "").toLowerCase(),
+          };
+        });
         setAgendamentosNorm(agNormalized);
 
         // 2) Buscar consultas (fonte de "concluidas", "pendentes", "canceladas", etc)
@@ -92,26 +98,26 @@ export function AdminDashboard() {
         const jsonCons = await resCons.json().catch(() => null);
         const consArray = getArray(jsonCons?.consultas || jsonCons);
 
-        const consNormalized: ConsultaNorm[] = consArray.map((c: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
-          id: c.id,
-          profissional_id:
-            c.profissional?.id ||
-            c.profissional_id ||
-            null,
-          profissional_nome:
-            c.profissional?.nome ||
-            c.profissional_nome ||
-            "Sem Profissional",
-          data_consulta:
-            c.data_consulta || c.dataISO || c.data || null,
-          status_consulta: (
-            c.status ||
-            c.status_consulta ||
-            ""
-          )
-            .toString()
-            .toLowerCase(),
-        }));
+        const consNormalized: ConsultaNorm[] = consArray.map((c: Record<string, unknown>) => {
+          const profissional = c.profissional as Record<string, unknown> | undefined;
+          return {
+            id: typeof c.id === 'string' ? c.id : String(c.id || ''),
+            profissional_id: (
+              (typeof profissional?.id === 'string' ? profissional.id : null) ||
+              (typeof c.profissional_id === 'string' ? c.profissional_id : null)
+            ) || undefined,
+            profissional_nome: (
+              (typeof profissional?.nome === 'string' ? profissional.nome : null) ||
+              (typeof c.profissional_nome === 'string' ? c.profissional_nome : null)
+            ) || "Sem Profissional",
+            data_consulta: (
+              (typeof c.data_consulta === 'string' ? c.data_consulta : null) ||
+              (typeof c.dataISO === 'string' ? c.dataISO : null) ||
+              (typeof c.data === 'string' ? c.data : null)
+            ) || undefined,
+            status_consulta: String(c.status || c.status_consulta || "").toLowerCase(),
+          };
+        });
         setConsultasNorm(consNormalized);
 
         // 3) Profissionais (para garantir exibição mesmo sem agendamentos)
@@ -119,14 +125,25 @@ export function AdminDashboard() {
         const jsonProf = await resProf.json().catch(() => null);
         const profArray = getArray(jsonProf);
 
-        const profNorm: ProfissionalCadastro[] = profArray.map((p: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
-          id: p.id,
-          nome: p.nome || p.display_name || "Sem Nome",
-          email: p.email,
-          especialidade:
-            p.informacoes_adicionais?.especialidade || p.especialidade || "",
-          createdAt: p.created_at || p.createdAt || undefined,
-        }));
+        const profNorm: ProfissionalCadastro[] = profArray.map((p: Record<string, unknown>) => {
+          const informacoesAdicionais = p.informacoes_adicionais as Record<string, unknown> | undefined;
+          return {
+            id: typeof p.id === 'string' ? p.id : String(p.id || ''),
+            nome: (
+              (typeof p.nome === 'string' ? p.nome : null) ||
+              (typeof p.display_name === 'string' ? p.display_name : null)
+            ) || "Sem Nome",
+            email: typeof p.email === 'string' ? p.email : undefined,
+            especialidade: (
+              (typeof informacoesAdicionais?.especialidade === 'string' ? informacoesAdicionais.especialidade : null) ||
+              (typeof p.especialidade === 'string' ? p.especialidade : null)
+            ) || "",
+            createdAt: (
+              (typeof p.created_at === 'string' ? p.created_at : null) ||
+              (typeof p.createdAt === 'string' ? p.createdAt : null)
+            ) || undefined,
+          };
+        });
         setProfissionais(profNorm);
       } catch (err) {
         console.error("Erro ao buscar dados do dashboard:", err);

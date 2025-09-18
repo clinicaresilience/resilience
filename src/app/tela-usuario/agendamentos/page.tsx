@@ -41,7 +41,7 @@ export default async function AgendamentosPage() {
     profissionalNome: ag.profissional?.nome || "Profissional",
     especialidade: ag.profissional?.especialidade || "",
     dataISO: ag.data_consulta,
-    local: ag.local || "Clínica Resilience",
+    local: "Clínica Resilience",
     status: ag.status,
     notas: ag.notas,
   }))

@@ -59,7 +59,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
       description: "Métricas e desempenho",
     },
   ],
-  usuario: [
+  comum: [
     {
       title: "Início",
       href: ROUTES.user.root,

@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
 
     // Realizar a transferência usando nova tabela paciente_profissional
     const supabaseTransaction = await createClient();
-    let prontuarioAtualizado: any;
+    let prontuarioAtualizado: Record<string, unknown>;
     
     try {
       // 1. Desativar relação anterior

@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const company = await CompaniesService.updateCompany(companyId, cleanedData);
 
     return NextResponse.json(company);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro ao atualizar empresa:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },

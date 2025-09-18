@@ -106,23 +106,23 @@ export function CalendarBooking({
         const slotsFromAPI = await res.json();
         
         // A nova API já retorna slots formatados com Luxon
-        const slotsProcessados = (slotsFromAPI || []).map((slot: any): AgendaSlot => ({
-          id: slot.id,
-          profissional_id: slot.profissional_id,
-          data: slot.data, // Já convertido para timezone local pela API
-          hora_inicio: slot.hora_inicio, // Já convertido para timezone local
-          hora_fim: slot.hora_fim, // Já convertido para timezone local
-          status: slot.status,
-          paciente_id: slot.paciente_id,
+        const slotsProcessados = (slotsFromAPI || []).map((slot: Record<string, unknown>): AgendaSlot => ({
+          id: String(slot.id || ''),
+          profissional_id: String(slot.profissional_id || ''),
+          data: String(slot.data || ''), // Já convertido para timezone local pela API
+          hora_inicio: String(slot.hora_inicio || ''), // Já convertido para timezone local
+          hora_fim: String(slot.hora_fim || ''), // Já convertido para timezone local
+          status: String(slot.status || 'livre') as 'livre' | 'ocupado' | 'cancelado',
+          paciente_id: slot.paciente_id ? String(slot.paciente_id) : undefined,
           // Campos de compatibilidade para não quebrar a interface
-          hora: slot.hora_inicio,
-          horaInicio: slot.hora_inicio,
-          disponivel: slot.disponivel,
-          diaSemana: TimezoneUtils.fromUTC(slot.data_hora_inicio).weekday % 7, // Luxon weekday (1=segunda) -> JS (0=domingo)
+          hora: String(slot.hora_inicio || ''),
+          horaInicio: String(slot.hora_inicio || ''),
+          disponivel: Boolean(slot.disponivel),
+          diaSemana: slot.data_hora_inicio ? TimezoneUtils.fromUTC(String(slot.data_hora_inicio)).weekday % 7 : 0, // Luxon weekday (1=segunda) -> JS (0=domingo)
         }));
         
         // Filtrar apenas slots disponíveis
-        const slotsDisponiveis = slotsProcessados.filter(slot => slot.disponivel);
+        const slotsDisponiveis = slotsProcessados.filter((slot: AgendaSlot) => slot.disponivel);
         
         setAgendaSlots(slotsDisponiveis);
       }

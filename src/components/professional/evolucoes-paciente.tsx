@@ -49,7 +49,7 @@ interface Evolucao {
   data_evolucao: string;
   tipo_evolucao: string;
   texto: string;
-  dados_structurados?: any;
+  dados_structurados?: Record<string, unknown>;
   criado_em: string;
   atualizado_em: string;
   profissional: {
