@@ -12,18 +12,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    const timer = setTimeout(() => {
+      // Fallback: set loading to false after 2 seconds even if auth fails
+      if (active && loading) {
+        setLoading(false);
+      }
+    }, 2000);
+
     (async () => {
       try {
         const u = await getCurrentUser();
         if (active) setUser(u);
+      } catch (error) {
+        console.error("Auth error:", error);
+        // Continue without auth if there's an error
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          clearTimeout(timer);
+        }
       }
     })();
+    
     return () => {
       active = false;
+      clearTimeout(timer);
     };
-  }, []);
+  }, [loading]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const res = await serviceSignIn(email, password);

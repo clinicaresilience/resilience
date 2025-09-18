@@ -6,12 +6,12 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) return null;
 
     // Buscar dados completos do usuário no banco
     const userData = await UsersServiceClient.getCurrentUser();
-    
+
     if (!userData) {
       // Se não encontrar no banco, usar dados básicos do auth
       return {
@@ -38,19 +38,19 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   }
 }
 
-export async function signIn(email: string, password: string): Promise<{ 
-  error?: string; 
-  user?: AuthUser 
+export async function signIn(email: string, password: string): Promise<{
+  error?: string;
+  user?: AuthUser
 }> {
   try {
     const supabase = createClient();
-    
+
     // Autenticar com Supabase Auth
-    const { data, error } = await supabase.auth.signInWithPassword({ 
-      email, 
-      password 
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
     });
-    
+
     if (error) {
       return { error: error.message || "Falha ao autenticar" };
     }
@@ -119,7 +119,7 @@ export async function signUp(data: {
 }): Promise<{ error?: string; user?: AuthUser }> {
   try {
     const supabase = createClient();
-    
+
     // Criar conta no Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,
@@ -182,9 +182,9 @@ export async function signOut(): Promise<void> {
 export async function resetPassword(email: string): Promise<{ error?: string }> {
   try {
     const supabase = createClient();
-    
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `http://localhost:3000/auth/update-password`,
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/update-password`,
     });
 
     if (error) {
@@ -201,7 +201,7 @@ export async function resetPassword(email: string): Promise<{ error?: string }> 
 export async function updatePassword(newPassword: string): Promise<{ error?: string }> {
   try {
     const supabase = createClient();
-    
+
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });

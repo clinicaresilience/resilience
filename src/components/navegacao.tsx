@@ -142,50 +142,46 @@ export default function Navegacao() {
 
           {/* Ações de autenticação */}
           <div className="items-center flex gap-2 sm:gap-3">
-            {!loading && (
+            {!loading && user ? (
               <>
-                {user ? (
-                  <>
-                    <div className={`${estiloBotao} ${estiloBotaoAtivo} px-3`}>
-                      <Link
-                        href={getPainelLink()}
-                        className="flex items-center gap-2 text-xs sm:text-sm w-full h-full justify-center"
-                      >
-                        <User size={14} />
-                        Meu Painel
-                      </Link>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className={`${estiloBotao} bg-red-500 text-white flex items-center gap-2 px-3 hover:bg-red-600 w-full h-full justify-center rounded-xl`}
-                    >
-                      <LogOut size={14} />
-                      Sair
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div className={`${estiloBotao} ${estiloBotaoAtivo} px-3`}>
-                      <Link
-                        href="/auth/login"
-                        className="text-xs sm:text-sm w-full h-full flex items-center justify-center"
-                      >
-                        Login
-                      </Link>
-                    </div>
-                    <div className="hidden sm:block w-px h-7 bg-gray-300"></div>
-                    <div
-                      className={`${estiloBotao} !w-auto px-4 border-2 border-[#02b1aa] text-[#02b1aa] hover:bg-[#02b1aa] hover:text-white hover:border-[#02b1aa] transition-all duration-300`}
-                    >
-                      <Link
-                        href="/portal-publico"
-                        className="text-xs sm:text-sm whitespace-nowrap w-full h-full flex items-center justify-center"
-                      >
-                        Agendamento
-                      </Link>
-                    </div>
-                  </>
-                )}
+                <div className={`${estiloBotao} ${estiloBotaoAtivo} px-3`}>
+                  <Link
+                    href={getPainelLink()}
+                    className="flex items-center gap-2 text-xs sm:text-sm w-full h-full justify-center"
+                  >
+                    <User size={14} />
+                    Meu Painel
+                  </Link>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className={`${estiloBotao} bg-red-500 text-white flex items-center gap-2 px-3 hover:bg-red-600 w-full h-full justify-center rounded-xl`}
+                >
+                  <LogOut size={14} />
+                  Sair
+                </button>
+              </>
+            ) : (
+              <>
+                <div className={`${estiloBotao} ${estiloBotaoAtivo} px-3`}>
+                  <Link
+                    href="/auth/login"
+                    className="text-xs sm:text-sm w-full h-full flex items-center justify-center"
+                  >
+                    Login
+                  </Link>
+                </div>
+                <div className="hidden sm:block w-px h-7 bg-gray-300"></div>
+                <div
+                  className={`${estiloBotao} !w-auto px-4 border-2 border-[#02b1aa] text-[#02b1aa] hover:bg-[#02b1aa] hover:text-white hover:border-[#02b1aa] transition-all duration-300`}
+                >
+                  <Link
+                    href="/portal-publico"
+                    className="text-xs sm:text-sm whitespace-nowrap w-full h-full flex items-center justify-center"
+                  >
+                    Agendamento
+                  </Link>
+                </div>
               </>
             )}
           </div>
@@ -221,44 +217,40 @@ export default function Navegacao() {
 
               <div className="h-px bg-gradient-to-r from-transparent via-[#02b1aa]/30 to-transparent mx-4 my-3"></div>
 
-              {!loading && (
+              {!loading && user ? (
                 <>
-                  {user ? (
-                    <>
-                      <Link
-                        href={getPainelLink()}
-                        onClick={() => setMenuAberto(false)}
-                        className="flex items-center gap-3 px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#02b1aa] transition-all duration-300"
-                      >
-                        <User size={16} />
-                        Meu Painel
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 px-5 py-3 mx-2 w-full text-left rounded-xl bg-red-500 text-white hover:bg-red-600 transition-all duration-300 shadow-md"
-                      >
-                        <LogOut size={16} />
-                        Sair
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link
-                        href="/auth/login"
-                        onClick={() => setMenuAberto(false)}
-                        className="block px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white hover:from-[#029fdf] hover:to-[#01c2e3] transition-all duration-300 shadow-lg shadow-[#02b1aa]/25 hover:shadow-xl hover:shadow-[#02b1aa]/30"
-                      >
-                        Login
-                      </Link>
-                      <Link
-                        href="/portal-publico"
-                        onClick={() => setMenuAberto(false)}
-                        className="block px-5 py-3 mx-2 rounded-xl text-sm font-medium border-2 border-[#02b1aa] text-[#02b1aa] hover:bg-[#02b1aa] hover:text-white hover:border-[#02b1aa] transition-all duration-300"
-                      >
-                        Agendamento
-                      </Link>
-                    </>
-                  )}
+                  <Link
+                    href={getPainelLink()}
+                    onClick={() => setMenuAberto(false)}
+                    className="flex items-center gap-3 px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#02b1aa] transition-all duration-300"
+                  >
+                    <User size={16} />
+                    Meu Painel
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 px-5 py-3 mx-2 w-full text-left rounded-xl bg-red-500 text-white hover:bg-red-600 transition-all duration-300 shadow-md"
+                  >
+                    <LogOut size={16} />
+                    Sair
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/login"
+                    onClick={() => setMenuAberto(false)}
+                    className="block px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white hover:from-[#029fdf] hover:to-[#01c2e3] transition-all duration-300 shadow-lg shadow-[#02b1aa]/25 hover:shadow-xl hover:shadow-[#02b1aa]/30"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/portal-publico"
+                    onClick={() => setMenuAberto(false)}
+                    className="block px-5 py-3 mx-2 rounded-xl text-sm font-medium border-2 border-[#02b1aa] text-[#02b1aa] hover:bg-[#02b1aa] hover:text-white hover:border-[#02b1aa] transition-all duration-300"
+                  >
+                    Agendamento
+                  </Link>
                 </>
               )}
             </div>

@@ -12,10 +12,13 @@ import {
   Mail,
   MapPin,
 } from "lucide-react";
+import Navegacao from "@/components/navegacao";
 
 export default function Inicio() {
   return (
-    <div className="w-full min-h-screen flex flex-col font-['Red_Hat_Display']">
+    <>
+      <Navegacao />
+      <div className="w-full min-h-screen flex flex-col font-['Red_Hat_Display']">
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-[#edfffe]/30 to-[#f5b26b]/5 overflow-hidden">
         {/* Background Elements */}
@@ -393,5 +396,6 @@ export default function Inicio() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

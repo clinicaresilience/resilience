@@ -4,6 +4,7 @@
 import Image from "next/image";
 import LogoResilience from "../../app/assets/icones/logoResilience.png";
 import ProfissionaisAgendamentos from "./profissionais/page";
+import Navegacao from "@/components/navegacao";
 
 export default async function AgendamentosPublico() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -16,7 +17,9 @@ export default async function AgendamentosPublico() {
   if (!res.ok) {
     console.error("Erro ao buscar profissionais:", res.statusText);
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-[#edfffe] to-[#f5b26b]/10 relative overflow-hidden font-['Red_Hat_Display']">
+      <>
+        <Navegacao />
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-[#edfffe] to-[#f5b26b]/10 relative overflow-hidden font-['Red_Hat_Display']">
         {/* Logo no canto inferior direito */}
         <div className="fixed bottom-6 right-6 z-50">
           <div className="relative group">
@@ -66,13 +69,14 @@ export default async function AgendamentosPublico() {
           <p className="text-red-500 text-center">Erro ao carregar profissionais.</p>
         </div>
       </div>
+      </>
     );
   }
 
-  const profissionais = await res.json();
-
   return (
-    <div className="min-h-screen bg-gradient-to-br py-16 from-slate-50 via-[#edfffe] to-[#f5b26b]/10 relative overflow-hidden font-['Red_Hat_Display']">
+    <>
+      <Navegacao />
+      <div className="min-h-screen bg-gradient-to-br py-16 from-slate-50 via-[#edfffe] to-[#f5b26b]/10 relative overflow-hidden font-['Red_Hat_Display']">
       {/* Logo no canto inferior direito */}
       <div className="fixed bottom-6 right-6 z-50">
         <div className="relative group">
@@ -124,5 +128,6 @@ export default async function AgendamentosPublico() {
         <ProfissionaisAgendamentos />
       </div>
     </div>
+    </>
   );
 }
