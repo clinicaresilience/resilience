@@ -357,24 +357,27 @@ export class ConsultasService {
         throw error;
       }
 
-      return prontuarios.map((p: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
-        id: p.agendamento.id,
-        paciente_id: p.agendamento.paciente_id,
-        profissional_id: p.agendamento.profissional_id,
-        data_consulta: p.agendamento.data_consulta,
-        status: p.agendamento.status,
-        modalidade: p.agendamento.modalidade,
-        observacoes: p.agendamento.notas || undefined,
-        paciente: p.agendamento.paciente || undefined,
-        prontuario: {
-          id: p.id,
-          consulta_id: p.consulta_id,
-          texto: p.texto,
-          arquivo: p.arquivo,
-          criado_em: p.criado_em,
-          atualizado_em: p.atualizado_em
-        }
-      }));
+      return prontuarios.map((p: Record<string, unknown>) => {
+        const agendamento = p.agendamento as Record<string, unknown>;
+        return {
+          id: agendamento.id as string,
+          paciente_id: agendamento.paciente_id as string,
+          profissional_id: agendamento.profissional_id as string,
+          data_consulta: agendamento.data_consulta as string,
+          status: agendamento.status as string,
+          modalidade: agendamento.modalidade as string,
+          observacoes: (agendamento.notas as string) || undefined,
+          paciente: agendamento.paciente as { nome: string; email: string } || undefined,
+          prontuario: {
+            id: p.id as string,
+            consulta_id: p.consulta_id as string,
+            texto: p.texto as string | null,
+            arquivo: p.arquivo as Buffer | null,
+            criado_em: p.criado_em as string,
+            atualizado_em: p.atualizado_em as string
+          }
+        };
+      });
 
     } catch (error) {
       console.error('Erro no getProntuarios:', error);

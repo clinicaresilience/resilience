@@ -158,7 +158,7 @@ export default function AgendamentosProfissional({
           const result = await responseAgendamentos.json();
           if (result.success && result.data) {
             // Mapear corretamente os campos de data e paciente
-            agendamentosOnline = result.data.map((ag: Record<string, any>) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+            agendamentosOnline = result.data.map((ag: Record<string, unknown>) => {
               // Extrair nome do paciente corretamente
               let pacienteNome = 'Paciente não identificado';
               if (ag.pacienteNome) {
@@ -209,7 +209,7 @@ export default function AgendamentosProfissional({
           const result = await responsePresencial.json();
           if (result.data) {
             // Mapear designações presenciais para o formato de agendamento
-            designacoesPresenciais = result.data.map((designacao: Record<string, any>) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+            designacoesPresenciais = result.data.map((designacao: Record<string, unknown>) => { 
               // Criar string de data/hora para designação presencial de forma mais robusta
               const dataPresencial = designacao.data_presencial as string;
               const horaInicio = designacao.hora_inicio as string;

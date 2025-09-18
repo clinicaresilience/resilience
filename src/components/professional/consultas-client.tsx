@@ -79,8 +79,7 @@ export function ProfessionalConsultasClient({
 
         // Mapear agendamentos para formato de consultas
         const consultasMapeadas = (result.data || []).map(
-          (agendamento: any) => ({
-            // eslint-disable-line @typescript-eslint/no-explicit-any
+          (agendamento: Record<string, unknown>) => ({
             id: agendamento.id,
             usuario_id: agendamento.usuarioId || agendamento.paciente_id,
             usuario: {
@@ -142,7 +141,7 @@ export function ProfessionalConsultasClient({
     acao: "concluir" | "cancelar"
   ) => {
     let statusNovo = consulta.status;
-    let requestBody: any = { status: statusNovo }; // eslint-disable-line @typescript-eslint/no-explicit-any
+    let requestBody: Record<string, unknown> = { status: statusNovo };
 
     if (acao === "concluir") {
       statusNovo = "concluido";
