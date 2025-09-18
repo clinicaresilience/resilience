@@ -904,8 +904,8 @@ cd resilience
 # 2. Instale dependências
 npm install
 
-# 3. Configure variáveis de ambiente
-cp .env.example .env.local
+# 3. Configure variáveis de ambientes
+cp .env.example .env.local 
 # Edite .env.local com suas configurações
 
 # 4. Configure banco de dados
