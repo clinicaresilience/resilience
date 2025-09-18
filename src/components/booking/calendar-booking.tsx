@@ -7,10 +7,10 @@ import "moment/locale/pt-br";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "@/styles/calendar.css";
 import "@/styles/calendar-mobile.css";
-import { TimezoneUtils, formatarDataHora } from "@/utils/timezone";
+import { TimezoneUtils } from "@/utils/timezone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Clock, LogIn } from "lucide-react";
+import { Calendar as CalendarIcon, Clock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/features/auth/context/auth-context";
-import { PendingBookingManager } from "@/utils/pending-booking";
 import { useRouter } from "next/navigation";
 import { MobileCalendar } from "./mobile-calendar";
 

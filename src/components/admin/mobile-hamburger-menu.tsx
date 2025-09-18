@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Menu, X, TrendingUp, Building2, Timer } from "lucide-react";
+import React from "react";
+import { X, TrendingUp, Building2, Timer } from "lucide-react";
 import { useTabStore, TabType } from "../../app/store/useTabStore";
 
 interface MobileHamburgerMenuProps {

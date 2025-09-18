@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/server';
-import { hasAdminAccess, SECURITY_ERRORS } from '@/lib/security';
 
 // GET - Buscar evoluções de um prontuário
 export async function GET(request: NextRequest) {

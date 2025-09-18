@@ -17,17 +17,14 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Star,
   Calendar,
   User,
-  MessageSquare,
   Send,
   AlertTriangle,
   CheckCircle2,
-  Clock,
 } from "lucide-react";
 
 interface AgendamentoParaAvaliar {

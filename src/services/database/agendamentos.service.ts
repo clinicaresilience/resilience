@@ -1,7 +1,6 @@
 
 import { createClient } from '@/lib/server';
 import { createClient as createClientBrowser } from '@/lib/client';
-import { TimezoneUtils } from '@/utils/timezone';
 
 export type StatusAgendamento = 'confirmado' | 'cancelado' | 'pendente' | 'concluido';
 export type Modalidade = 'presencial' | 'online';

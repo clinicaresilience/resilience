@@ -22,7 +22,6 @@ import {
   ArrowRight,
   CheckCircle,
   Star,
-  Clock,
   Sparkles,
   Brain,
   MessageCircle,

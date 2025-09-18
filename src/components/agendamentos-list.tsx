@@ -5,7 +5,7 @@ import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { StatusAgendamento, type UiAgendamento } from "@/types/agendamento";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { TimezoneUtils, formatarDataHora } from "@/utils/timezone";
+import { TimezoneUtils } from "@/utils/timezone";
 import {
   Card,
   CardContent,

@@ -18,15 +18,11 @@ import {
   Save,
   X,
   GraduationCap,
-  Briefcase,
   Award,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
-  normalizarCRP, 
-  validarCRP, 
-  aplicarMascaraCRP, 
-  validarCRPEmTempoReal 
+  validarCRP 
 } from "@/utils/crp-validation";
 
 interface User {

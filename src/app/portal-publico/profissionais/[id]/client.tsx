@@ -15,7 +15,6 @@ import {
 import { User, Lock } from "lucide-react";
 import Link from "next/link";
 import { PendingBookingManager } from "@/utils/pending-booking";
-import { useRouter } from "next/navigation";
 
 type Profissional = {
   id: string;

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { WelcomeScreen } from "@/components/welcome-screen";
 import { useWelcomeScreen } from "@/hooks/useWelcomeScreen";
 

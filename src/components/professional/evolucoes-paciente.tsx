@@ -38,7 +38,6 @@ import {
   Save,
   X,
   AlertTriangle,
-  FileText,
 } from "lucide-react";
 
 interface Evolucao {

@@ -49,6 +49,31 @@ export interface AgendamentoParaAvaliar {
   };
 }
 
+interface AvaliacaoRawData {
+  id: string;
+  agendamento_id: string;
+  profissional_id: string;
+  paciente_id: string;
+  nota: number;
+  comentario: string | null;
+  criado_em: string;
+  atualizado_em: string;
+  paciente: {
+    nome: string;
+    email: string;
+  } | {
+    nome: string;
+    email: string;
+  }[];
+  agendamento: {
+    data_consulta: string;
+    modalidade: string;
+  } | {
+    data_consulta: string;
+    modalidade: string;
+  }[];
+}
+
 export class AvaliacoesService {
   
   /**
@@ -191,7 +216,7 @@ export class AvaliacoesService {
         throw error;
       }
 
-      return (avaliacoes || []).map((avaliacao: any) => {
+      return (avaliacoes || []).map((avaliacao: AvaliacaoRawData) => {
         const pacienteData = Array.isArray(avaliacao.paciente) ? avaliacao.paciente[0] : avaliacao.paciente;
         const agendamentoData = Array.isArray(avaliacao.agendamento) ? avaliacao.agendamento[0] : avaliacao.agendamento;
 
@@ -201,7 +226,7 @@ export class AvaliacoesService {
           profissional_id: avaliacao.profissional_id,
           paciente_id: avaliacao.paciente_id,
           nota: avaliacao.nota,
-          comentario: avaliacao.comentario,
+          comentario: avaliacao.comentario || undefined,
           criado_em: avaliacao.criado_em,
           atualizado_em: avaliacao.atualizado_em,
           paciente: {
@@ -337,7 +362,7 @@ export class AvaliacoesService {
         throw error;
       }
 
-      return (avaliacoes || []).map((avaliacao: any) => {
+      return (avaliacoes || []).map((avaliacao: AvaliacaoRawData) => {
         const pacienteData = Array.isArray(avaliacao.paciente) ? avaliacao.paciente[0] : avaliacao.paciente;
         const agendamentoData = Array.isArray(avaliacao.agendamento) ? avaliacao.agendamento[0] : avaliacao.agendamento;
 
@@ -347,7 +372,7 @@ export class AvaliacoesService {
           profissional_id: avaliacao.profissional_id,
           paciente_id: avaliacao.paciente_id,
           nota: avaliacao.nota,
-          comentario: avaliacao.comentario,
+          comentario: avaliacao.comentario || undefined,
           criado_em: avaliacao.criado_em,
           atualizado_em: avaliacao.atualizado_em,
           paciente: {

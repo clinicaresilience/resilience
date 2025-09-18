@@ -4,8 +4,8 @@ import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AgendamentosService, type Agendamento } from "@/services/database/agendamentos.service"
-import { ConsultasService, type ConsultaComProntuario } from "@/services/database/consultas.service"
+import { type Agendamento } from "@/services/database/agendamentos.service"
+import { type ConsultaComProntuario } from "@/services/database/consultas.service"
 import { 
   TrendingUp, 
   Users, 

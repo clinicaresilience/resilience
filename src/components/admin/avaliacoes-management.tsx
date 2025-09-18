@@ -25,9 +25,6 @@ import {
   TrendingUp,
   MessageSquare,
   Calendar,
-  Filter,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 
 interface MediaAvaliacao {

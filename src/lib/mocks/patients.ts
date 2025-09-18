@@ -1,5 +1,11 @@
 // Tipos e mocks de pacientes
 
+type Agendamento = {
+  status: string
+  usuarioId: string
+  dataISO: string
+}
+
 export type Paciente = {
   id: string
   nome: string
@@ -121,7 +127,7 @@ export function generateMockPacientes(): Paciente[] {
 }
 
 // Função para obter pacientes únicos que tiveram consultas concluídas
-export function getPacientesAtendidos(agendamentos: any[]): string[] {
+export function getPacientesAtendidos(agendamentos: Agendamento[]): string[] {
   const pacientesAtendidos = new Set<string>()
   
   agendamentos.forEach(ag => {
@@ -134,7 +140,7 @@ export function getPacientesAtendidos(agendamentos: any[]): string[] {
 }
 
 // Função para obter pacientes atendidos hoje
-export function getPacientesAtendidosHoje(agendamentos: any[]): string[] {
+export function getPacientesAtendidosHoje(agendamentos: Agendamento[]): string[] {
   const hoje = new Date()
   const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
   const fimHoje = new Date(inicioHoje.getTime() + 24 * 60 * 60 * 1000)

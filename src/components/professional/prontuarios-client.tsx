@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -30,7 +29,6 @@ import {
 import {
   FileText,
   Edit,
-  Save,
   Plus,
   Calendar,
   User,
@@ -39,7 +37,6 @@ import {
   AlertCircle,
   CheckCircle,
   X,
-  ArrowRightLeft,
 } from "lucide-react";
 import {
   PacienteAtendido,
@@ -71,7 +68,7 @@ export function ProfessionalProntuariosClient({
   const [dadosEdicao, setDadosEdicao] = useState<Partial<Consulta>>({});
   
   // Estados para funcionalidade admin de transferência
-  const [professionals, setProfessionals] = useState<any[]>([]);
+  const [professionals, setProfessionals] = useState<{ id: string; nome: string; tipo_usuario: string }[]>([]);
   const [transferModal, setTransferModal] = useState<{ consulta: Consulta; newProfessionalId: string } | null>(null);
   const [transferring, setTransferring] = useState<string | null>(null);
 
@@ -108,7 +105,7 @@ export function ProfessionalProntuariosClient({
       
       // Se for admin, transformar dados do formato de prontuários para formato de consultas
       if (isAdmin) {
-        const prontuariosTransformados = data.data?.map((pront: any) => ({
+        const prontuariosTransformados = data.data?.map((pront: { id: string; paciente_id: string; profissional_atual_id: string; atualizado_em: string; registros?: unknown[]; paciente: { nome: string } }) => ({
           id: pront.id,
           paciente_id: pront.paciente_id,
           profissional_id: pront.profissional_atual_id,
@@ -123,7 +120,7 @@ export function ProfessionalProntuariosClient({
             nome: "Profissional",
             especialidade: "Especialidade"
           },
-          prontuario: pront.registros?.length > 0 ? { id: pront.id, arquivo: "disponivel" } : null
+          prontuario: (pront.registros?.length ?? 0) > 0 ? { id: pront.id, arquivo: "disponivel" } : null
         })) || [];
         setProntuarios(prontuariosTransformados);
       } else {
@@ -145,7 +142,7 @@ export function ProfessionalProntuariosClient({
       const response = await fetch("/api/profissionais");
       if (response.ok) {
         const data = await response.json();
-        setProfessionals(data.filter((p: any) => p.tipo_usuario === 'profissional') || []);
+        setProfessionals(data.filter((p: { tipo_usuario: string }) => p.tipo_usuario === 'profissional') || []);
       }
     } catch (error) {
       console.error("Erro ao buscar profissionais:", error);

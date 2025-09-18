@@ -19,7 +19,6 @@ import {
   MapPin,
   CheckCircle,
   AlertCircle,
-  LogIn,
   Monitor,
 } from "lucide-react";
 import { TimezoneUtils } from "@/utils/timezone";

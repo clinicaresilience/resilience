@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/server";
 import { BackButton } from "@/components/ui/back-button";
 import { EditProfileForm } from "@/components/profile/edit-profile-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function ProfissionalPerfilPage() {
   const supabase = await createClient();

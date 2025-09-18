@@ -93,7 +93,7 @@ export function NovoProntuarioClient({
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   // Estados para transferência de paciente (admin apenas)
-  const [professionals, setProfessionals] = useState<any[]>([]);
+  const [professionals, setProfessionals] = useState<{ id: string; nome: string; informacoes_adicionais?: { especialidade?: string }; especialidade?: string }[]>([]);
   const [transferModal, setTransferModal] = useState<{
     prontuario: ProntuarioCompleto;
     newProfessionalId: string;
@@ -265,7 +265,7 @@ export function NovoProntuarioClient({
           const response = await fetch("/api/prontuarios");
           const data = await response.json();
           if (response.ok && data.data) {
-            const prontuarioAtualizado = data.data.find((p: any) => p.id === prontuarioSelecionado.id);
+            const prontuarioAtualizado = data.data.find((p: { id: string }) => p.id === prontuarioSelecionado.id);
             if (prontuarioAtualizado) {
               setProntuarioSelecionado(prontuarioAtualizado);
             }

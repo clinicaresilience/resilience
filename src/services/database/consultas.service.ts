@@ -8,18 +8,6 @@ export interface PacienteAtendido {
   totalConsultas: number;
 }
 
-interface ConsultaComPaciente {
-  id: string;
-  paciente_id: string;
-  data_consulta: string;
-  status: string;
-  paciente: {
-    id: string;
-    nome: string;
-    email: string;
-  };
-}
-
 export interface Consulta {
   id: string;
   paciente_id: string;

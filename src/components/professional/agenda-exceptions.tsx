@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, Calendar, X, Plus, Edit2, Trash2 } from "lucide-react";
+import { Clock, Calendar, Plus, Edit2, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface AgendaException {

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { generateMockAgendamentos, type Agendamento } from "@/lib/mocks/agendamentos"
+import { generateMockAgendamentos } from "@/lib/mocks/agendamentos"
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, User, MapPin } from "lucide-react"
 import { DayDetailsModal } from "./day-details-modal"
 import { TimezoneUtils } from "@/utils/timezone"

@@ -1,11 +1,6 @@
 // src/app/portal-publico/page.tsx
-import {
-  Users,
-  Target,
-  Heart,
-  Award,
-  CheckCircle,
-} from "lucide-react";
+
+
 import Image from "next/image";
 import LogoResilience from "../../app/assets/icones/logoResilience.png";
 import ProfissionaisAgendamentos from "./profissionais/page";

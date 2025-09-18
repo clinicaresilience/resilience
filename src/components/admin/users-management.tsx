@@ -3,9 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { criarProfissional } from "../../app/actions/criar-profissional"; // sua server action
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CadastrarProfissionalDialog } from "@/components/admin/cadastrar-profissional-dialog";
 import { Users, UserCheck } from "lucide-react";

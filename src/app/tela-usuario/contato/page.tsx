@@ -199,7 +199,7 @@ export default async function ContatoPage() {
             <div className="border-b border-gray-200 pb-4">
               <h4 className="font-medium text-azul-escuro mb-2">Como posso agendar uma consulta?</h4>
               <p className="text-sm text-gray-600">
-                Você pode agendar através da área "Agendamentos" no seu painel ou entrando em contato conosco.
+                Você pode agendar através da área &quot;Agendamentos&quot; no seu painel ou entrando em contato conosco.
               </p>
             </div>
             

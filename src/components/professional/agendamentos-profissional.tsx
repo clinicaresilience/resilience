@@ -32,7 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, Building2, Monitor } from "lucide-react";
+import { Calendar, Building2, Monitor } from "lucide-react";
 
 type Props = {
   profissionalId: string;

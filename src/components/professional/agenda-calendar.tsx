@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button"
 import { Calendar as CalendarIcon, Clock, User, MapPin, Phone, Mail, FileText, Building2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { StatusBadge } from "@/components/ui/status-badge"
-import { TimezoneUtils } from '@/utils/timezone'
 import '../../styles/calendar.css'
 
 // Configurar moment para português
@@ -51,6 +50,18 @@ type Agendamento = {
   data_hora_fim?: string
 }
 
+type Empresa = {
+  nome?: string
+  codigo?: string
+  endereco_logradouro?: string
+  endereco_numero?: string
+  endereco_complemento?: string
+  endereco_bairro?: string
+  endereco_cidade?: string
+  endereco_estado?: string
+  endereco_cep?: string
+}
+
 type CalendarEvent = {
   id: string
   title: string
@@ -58,6 +69,7 @@ type CalendarEvent = {
   end: Date
   resource: Agendamento & {
     duracao: string
+    empresa?: Empresa | null
   }
   type: 'appointment' | 'presential'
 }
@@ -148,8 +160,8 @@ export function AgendaCalendar() {
               status: 'presencial',
               notas: `Presencial ${designation.hora_inicio && designation.hora_fim 
                 ? `das ${horaInicio.substring(0, 5)} às ${horaFim.substring(0, 5)}` 
-                : 'dia inteiro'}${designation.empresas && (designation.empresas as any).nome ? ` - ${(designation.empresas as any).nome}` : ''}`,
-              pacienteNome: `🏥 Presencial${designation.empresas && (designation.empresas as any).nome ? ` - ${(designation.empresas as any).nome}` : ''}`,
+                : 'dia inteiro'}${designation.empresas && (designation.empresas as { nome?: string }).nome ? ` - ${(designation.empresas as { nome?: string }).nome}` : ''}`,
+              pacienteNome: `🏥 Presencial${designation.empresas && (designation.empresas as { nome?: string }).nome ? ` - ${(designation.empresas as { nome?: string }).nome}` : ''}`,
               pacienteEmail: '',
               pacienteTelefone: '',
               data_consulta: dataPresencial,
@@ -505,7 +517,7 @@ export function AgendaCalendar() {
                     )}
 
                     {/* Endereço da Empresa */}
-                    {(selectedEvent.resource as any).empresa && (
+                    {selectedEvent.resource.empresa && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-purple-600" />
@@ -513,10 +525,10 @@ export function AgendaCalendar() {
                         </div>
                         <div className="ml-6 space-y-1">
                           <p className="text-sm font-medium text-purple-900">
-                            {(selectedEvent.resource as any).empresa.nome} ({(selectedEvent.resource as any).empresa.codigo})
+                            {selectedEvent.resource.empresa.nome} ({selectedEvent.resource.empresa.codigo})
                           </p>
                           {(() => {
-                            const empresa = (selectedEvent.resource as any).empresa;
+                            const empresa = selectedEvent.resource.empresa;
                             const enderecoParts = [];
                             
                             if (empresa.endereco_logradouro) {
