@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
    typescript: {
@@ -30,6 +31,11 @@ const nextConfig: NextConfig = {
   
   // Configure webpack to ignore problematic modules in development
   webpack: (config, { dev, isServer }) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias ?? {}),
+      "@": path.resolve(__dirname, "src"),
+    };
+
     if (dev && !isServer) {
       // Ignore source map requests for external libraries
       config.devtool = false;
