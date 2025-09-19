@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarBooking } from "@/components/booking/calendar-booking";
 import { BookingConfirmation } from "@/components/booking/booking-confirmation";
