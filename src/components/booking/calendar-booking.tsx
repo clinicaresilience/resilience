@@ -62,7 +62,7 @@ type CalendarBookingProps = {
   onBookingSelect?: (slot: AgendaSlot) => void;
 };
 
-function CalendarBooking({
+export function CalendarBooking({
   profissionalId,
   profissionalNome,
   onBookingSelect,
@@ -370,5 +370,3 @@ function CalendarBooking({
     </div>
   );
 }
-
-export { CalendarBooking };
