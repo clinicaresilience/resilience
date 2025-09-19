@@ -76,7 +76,7 @@ export function Sidebar({
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed left-0 top-0 h-screen bg-white border-r border-gray-200 shadow-sm transition-all duration-500 ease-in-out z-30",
+          "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 shadow-sm transition-all duration-500 ease-in-out z-20",
           isCollapsed ? "w-16" : "w-64",
           isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
@@ -85,7 +85,7 @@ export function Sidebar({
         <Button
           variant="ghost"
           size="sm"
-          className="absolute -right-3 top-6 hidden md:flex h-6 w-6 rounded-full border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow z-40"
+          className="absolute -right-3 top-8 hidden md:flex h-6 w-6 rounded-full border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow z-50"
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
           {isCollapsed ? (

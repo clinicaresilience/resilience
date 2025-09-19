@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/context/auth-context";
 import { Menu, X, User, Stethoscope } from "lucide-react";
+import { useSidebar } from "@/components/layout/authenticated-layout";
 
 import { useTabStore } from "@/app/store/useTabStore";
 
@@ -12,6 +13,7 @@ export default function AuthenticatedHeader() {
   const { user: usuario } = useAuth();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { collapsed } = useSidebar();
   const { activeTab, setActiveTab, getTabsByUserType, syncTabFromPath } =
     useTabStore();
 
@@ -32,7 +34,7 @@ export default function AuthenticatedHeader() {
   );
 
   return (
-    <header className="w-full bg-white border-b border-gray-200 shadow-sm overflow-x-hidden md:relative fixed top-0 z-30">
+    <header className="w-full bg-white border-b border-gray-200 shadow-sm overflow-x-hidden md:relative fixed top-0 z-40">
       <style jsx global>{`
         .scrollbar-hide {
           -ms-overflow-style: none;
@@ -42,7 +44,7 @@ export default function AuthenticatedHeader() {
           display: none;
         }
       `}</style>
-      <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8">
+      <div className={`w-full px-2 sm:px-4 lg:px-6 xl:px-8 transition-all duration-500 ${collapsed ? "md:ml-16" : "md:ml-64"}`}>
         <div className="flex items-center h-16 min-w-0">
           {/* Navegação Central - Desktop (layout vertical com texto embaixo) */}
           <nav className="hidden md:flex items-center flex-1 min-w-0">
