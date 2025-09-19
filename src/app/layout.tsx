@@ -9,15 +9,17 @@ import { DynamicWhatsAppFloat } from "@/components/ui/dynamic-whatsapp-float";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  display: 'swap',
-  fallback: ['system-ui', 'sans-serif'],
+  display: "swap",
+  fallback: ["system-ui", "sans-serif"],
+  adjustFontFallback: false,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-  display: 'swap',
-  fallback: ['monospace'],
+  display: "swap",
+  fallback: ["monospace"],
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
