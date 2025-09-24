@@ -166,3 +166,88 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+// DELETE /api/drps
+// Deletar uma submissão DRPS (apenas para administradores)
+export async function DELETE(req: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    // Verificar autenticação
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Não autenticado" },
+        { status: 401 }
+      );
+    }
+
+    // Verificar se é administrador
+    const { data: userData, error: userError } = await supabase
+      .from('usuarios')
+      .select('id, tipo_usuario')
+      .eq('id', user.id)
+      .single();
+
+    if (userError || !userData || userData.tipo_usuario !== 'administrador') {
+      return NextResponse.json(
+        { error: "Acesso negado. Apenas administradores podem deletar respostas DRPS." },
+        { status: 403 }
+      );
+    }
+
+    // Obter o ID da submissão da URL
+    const url = new URL(req.url);
+    const submissionId = url.searchParams.get('id');
+
+    if (!submissionId) {
+      return NextResponse.json(
+        { error: "ID da submissão é obrigatório" },
+        { status: 400 }
+      );
+    }
+
+    // Verificar se a submissão existe
+    const { data: existing, error: checkError } = await supabase
+      .from('drps_submissions')
+      .select('id')
+      .eq('id', submissionId)
+      .single();
+
+    if (checkError || !existing) {
+      return NextResponse.json(
+        { error: "Submissão não encontrada" },
+        { status: 404 }
+      );
+    }
+
+    // Deletar a submissão
+    const { error: deleteError } = await supabase
+      .from('drps_submissions')
+      .delete()
+      .eq('id', submissionId);
+
+    if (deleteError) {
+      console.error('Erro ao deletar submission DRPS:', deleteError);
+      return NextResponse.json(
+        { error: "Erro interno do servidor" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Submissão DRPS deletada com sucesso!"
+      },
+      { status: 200 }
+    );
+
+  } catch (error) {
+    console.error('Erro na API DRPS DELETE:', error);
+    return NextResponse.json(
+      { error: "Erro interno do servidor" },
+      { status: 500 }
+    );
+  }
+}
