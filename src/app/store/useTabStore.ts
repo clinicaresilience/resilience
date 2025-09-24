@@ -3,7 +3,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { Home, FileText, Calendar, TrendingUp, Users, Building2, Clock, User, Timer, Star, LucideIcon } from "lucide-react"
 
-export type adminTab = "dashboard" | "pacientes" | "prontuarios" | "agendas" | "analytics" | "profissionais" | "usuarios" | "empresas" | "limites-excecao" | "clinica-info" | "avaliacoes" | "perfil"
+export type adminTab = "dashboard" | "pacientes" | "prontuarios" | "agendas" | "analytics" | "profissionais" | "usuarios" | "empresas" | "limites-excecao" | "clinica-info" | "avaliacoes" | "perfil" | "drps"
 export type profissionalTab = "dashboard" | "prontuarios" | "agendas" | "pacientes" | "perfil"
 export type pacienteTab = "inicio" | "agendas" | "perfil"
 export type TabType = adminTab | profissionalTab | pacienteTab

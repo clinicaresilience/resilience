@@ -54,6 +54,11 @@ export default function Navegacao() {
       link: "/portal-publico/sobre",
       ativo: pathname === "/portal-publico/sobre",
     },
+    {
+      rotulo: "DRPS",
+      link: "/portal-publico/drps",
+      ativo: pathname === "/portal-publico/drps",
+    },
   ];
 
   const getPainelLink = () => {

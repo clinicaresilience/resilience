@@ -14,6 +14,7 @@ import { CompaniesManagement } from "@/components/admin/companies-management";
 import { ExceptionLimitsManagement } from "@/components/admin/exception-limits-management";
 import { AvaliacoesManagement } from "@/components/admin/avaliacoes-management";
 import { PacientesListClient } from "@/components/admin/pacientes-list-client";
+import DrpsAdminPage from "@/app/painel-administrativo/drps/page";
 import {
   FileText,
   Calendar,
@@ -26,6 +27,7 @@ import {
   Menu,
   Timer,
   Star,
+  ClipboardList,
 } from "lucide-react";
 
 interface PainelAdministrativoClientProps {
@@ -105,6 +107,12 @@ export function PainelAdministrativoClient({
       icon: Timer,
       description: "Configure limites de exceção diários para profissionais",
     },
+    {
+      id: "drps" as TabType,
+      label: "DRPS",
+      icon: ClipboardList,
+      description: "Diagnóstico de Riscos Psicossociais - Gerenciar avaliações",
+    },
   ];
 
   const renderContent = () => {
@@ -127,6 +135,8 @@ export function PainelAdministrativoClient({
         return <ExceptionLimitsManagement />;
       case "avaliacoes":
         return <AvaliacoesManagement />;
+      case "drps":
+        return <DrpsAdminPage />;
       default:
         return <AdminDashboard />;
     }
