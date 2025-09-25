@@ -1,7 +1,7 @@
 // stores/useTabStore.ts
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { Home, FileText, Calendar, TrendingUp, Users, Building2, Clock, User, Timer, Star, LucideIcon } from "lucide-react"
+import { Home, FileText, Calendar, TrendingUp, Users, Building2, Clock, User, Timer, Star, ClipboardList, LucideIcon } from "lucide-react"
 
 export type adminTab = "dashboard" | "pacientes" | "prontuarios" | "agendas" | "analytics" | "profissionais" | "usuarios" | "empresas" | "limites-excecao" | "clinica-info" | "avaliacoes" | "perfil" | "drps"
 export type profissionalTab = "dashboard" | "prontuarios" | "agendas" | "pacientes" | "perfil"
@@ -67,6 +67,7 @@ export const useTabStore = create<TabStore>()(
                             { id: "empresas", label: "Empresas", icon: Building2, path: "/painel-administrativo/empresas" },
                             { id: "clinica-info", label: "Clínica", icon: Building2, path: "/painel-administrativo/clinica-info" },
                             { id: "limites-excecao", label: "Limites", icon: Timer, path: "/painel-administrativo/limites-excecao" },
+                            { id: "drps", label: "DRPS", icon: ClipboardList, path: "/painel-administrativo/drps" },
                             { id: "perfil", label: "Perfil", icon: User, path: "/painel-administrativo/perfil" },
                         ]
                     case "profissional":

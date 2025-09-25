@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { X, TrendingUp, Building2, Timer } from "lucide-react";
+import { X, TrendingUp, Building2, Timer, ClipboardList } from "lucide-react";
 import { useTabStore, TabType } from "../../app/store/useTabStore";
 
 interface MobileHamburgerMenuProps {
@@ -30,6 +30,12 @@ export function MobileHamburgerMenu({ isOpen, onToggle }: MobileHamburgerMenuPro
       label: "Limites",
       icon: Timer,
       description: "Configure limites de exceção diários para profissionais",
+    },
+    {
+      id: "drps" as TabType,
+      label: "DRPS",
+      icon: ClipboardList,
+      description: "Diagnóstico de Riscos Psicossociais - Gerenciar avaliações",
     },
   ];
 
