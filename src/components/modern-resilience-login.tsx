@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import Image from "next/image";
-import Resilience from "../app/assets/icones/logo.png";
+// Remove the import since we'll use the src directly
 
 export function ModernResilienceLogin({
   className,
@@ -94,7 +94,7 @@ export function ModernResilienceLogin({
         {/* Logo de fundo transparente */}
         <div className="absolute inset-0 flex items-center justify-center opacity-30">
           <Image
-            src={Resilience}
+            src="/logo.png"
             alt="Background Logo"
             width={600}
             height={600}

@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import logo from "../../assets/icones/logo.png";
+// Remove import since we'll use src directly
 import Image from "next/image";
 import { CheckCircle, Users } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -104,8 +104,10 @@ export default function ProfissionaisAgendamentos() {
                 />
               ) : (
                 <Image
-                  src={logo}
+                  src="/logo.png"
                   alt={`Foto de ${prof.nome}`}
+                  width={160}
+                  height={160}
                   className="object-cover w-full h-full"
                 />
               )}

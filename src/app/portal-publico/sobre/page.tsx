@@ -13,9 +13,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import Image from "next/image";
-import LogoResilience from "../../../app/assets/icones/logoResilience.png";
-import ReuniaoImg from "../../assets/template/reuniao.png";
-import UnionImg from "../../assets/template/union.png";
+// Remove imports since we'll use src directly
 
 export default function SobrePage() {
   return (
@@ -26,7 +24,7 @@ export default function SobrePage() {
           <div className="absolute -inset-1 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-2xl blur-lg opacity-60 group-hover:opacity-80 transition duration-500"></div>
           <div className="relative bg-white/20 backdrop-blur-xl rounded-2xl p-4 border border-white/30 shadow-2xl">
             <Image
-              src={LogoResilience}
+              src="/logoResilience.png"
               alt="Logo Clínica Resilience"
               width={80}
               height={40}
@@ -137,7 +135,7 @@ export default function SobrePage() {
                 <div className="relative bg-white rounded-3xl shadow-2xl p-8 border border-[#edfffe] hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-3 overflow-hidden">
                   <div className="relative">
                     <Image
-                      src={ReuniaoImg}
+                      src="/reuniao.png"
                       alt="Reunião profissional - Clínica Resilience"
                       width={600}
                       height={400}
@@ -628,7 +626,7 @@ export default function SobrePage() {
                 <div className="relative bg-white rounded-3xl p-8 shadow-2xl border border-[#edfffe] hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2">
                   <div className="relative">
                     <Image
-                      src={UnionImg}
+                      src="/union.png"
                       alt="Union - Colaboração e trabalho em equipe"
                       width={500}
                       height={350}

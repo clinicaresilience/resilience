@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import IconeLogo from "../app/assets/icones/logo.png";
 import Image from "next/image";
 import Cabecalho from "./ui/cabecalho";
 import Link from "next/link";
@@ -102,7 +101,7 @@ export default function Navegacao() {
               <div className="absolute -inset-1 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
               <div className="relative bg-white/90 backdrop-blur-sm rounded-xl p-2 border border-white/30 shadow-lg">
                 <Image
-                  src={IconeLogo}
+                  src="/logo.png"
                   alt="Logo Clínica Resilience"
                   width={42}
                   height={42}

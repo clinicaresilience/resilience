@@ -2,7 +2,7 @@
 
 
 import Image from "next/image";
-import LogoResilience from "../../app/assets/icones/logoResilience.png";
+// Remove import since we'll use src directly
 import ProfissionaisAgendamentos from "./profissionais/page";
 import Navegacao from "@/components/navegacao";
 
@@ -26,7 +26,7 @@ export default async function AgendamentosPublico() {
             <div className="absolute -inset-1 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-2xl blur-lg opacity-60 group-hover:opacity-80 transition duration-500"></div>
             <div className="relative bg-white/20 backdrop-blur-xl rounded-2xl p-4 border border-white/30 shadow-2xl">
               <Image
-                src={LogoResilience}
+                src="/logoResilience.png"
                 alt="Logo Clínica Resilience"
                 width={80}
                 height={40}
@@ -83,7 +83,7 @@ export default async function AgendamentosPublico() {
           <div className="absolute -inset-1 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-2xl blur-lg opacity-60 group-hover:opacity-80 transition duration-500"></div>
           <div className="relative bg-white/20 backdrop-blur-xl rounded-2xl p-4 border border-white/30 shadow-2xl">
             <Image
-              src={LogoResilience}
+              src="/logoResilience.png"
               alt="Logo Clínica Resilience"
               width={80}
               height={40}

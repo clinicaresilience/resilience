@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   title: "Clinica Resilience",
   description: "Uma ferramenta para centralizar as operações da clinica",
   icons: {
-    icon: "./assets/icones/logo.png",
+    icon: "/logo.png",
   },
 };
 
