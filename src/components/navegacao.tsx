@@ -136,7 +136,7 @@ export default function Navegacao() {
               >
                 <Link
                   href={link}
-                  className="block w-full h-full px-5 py-2.5 flex items-center justify-center"
+                  className=" w-full h-full px-5 py-2.5 flex items-center justify-center"
                 >
                   {rotulo}
                 </Link>
