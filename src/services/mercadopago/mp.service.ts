@@ -40,8 +40,6 @@ export class MercadoPagoService {
             currency_id: 'BRL',
           },
         ],
-        // Payer info removido para permitir checkout como convidado
-        // Se enviar email, MP pode tentar vincular a conta existente
         payment_methods: {
           excluded_payment_types: [
             { id: 'ticket' }, // Excluir boleto
@@ -56,6 +54,8 @@ export class MercadoPagoService {
           pending: `${baseUrl}/tela-usuario/agendamentos`,
         },
         auto_return: 'approved' as const,
+        binary_mode: false, // Permite todos os status (aprovado, pendente, rejeitado)
+        purpose: 'wallet_purchase', // Força checkout como compra (não transferência entre contas)
         external_reference: data.compraPacoteId,
         notification_url: `https://www.clinicaresilience.com/api/mercadopago/webhook`,
         statement_descriptor: 'CLINICA RESILIENCE',

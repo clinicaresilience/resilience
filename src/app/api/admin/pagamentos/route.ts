@@ -14,11 +14,11 @@ export async function GET(req: NextRequest) {
     // Verificar se é admin
     const { data: usuario } = await supabase
       .from('usuarios')
-      .select('tipo')
+      .select('tipo_usuario')
       .eq('id', user.id)
       .single();
 
-    if (!usuario || usuario.tipo !== 'admin') {
+    if (!usuario || usuario.tipo_usuario !== 'administrador') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
