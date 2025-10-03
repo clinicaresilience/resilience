@@ -132,33 +132,30 @@ export default function SobrePage() {
               {/* Imagem de Reunião */}
               <div className="group relative">
                 <div className="absolute -inset-2 bg-gradient-to-r from-[#7762b6]/25 to-[#f5b26b]/25 rounded-3xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
-                <div className="relative bg-white rounded-3xl shadow-2xl p-8 border border-[#edfffe] hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-3 overflow-hidden">
-                  <div className="relative">
-                    <Image src="/fotossite/clinica-2.jpeg"
-                      alt="Ambiente Profissional - Clínica Resilience"
-                      width={600}
-                      height={400}
-                      className="w-full h-64 object-cover rounded-2xl opacity-90 group-hover:opacity-100 transition-opacity duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#02b1aa]/15 via-transparent to-transparent rounded-2xl"></div>
-                    <div className="absolute bottom-6 left-6 right-6">
-                      <div className="bg-black/40 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                        <p className="text-sm sm:text-base md:text-white text-lg font-semibold mb-2">
-                          Sessões de trabalho colaborativo
-                        </p>
-                        <p className="text-sm sm:text-base md:text-white/90 text-sm">
-                          Ambiente profissional e acolhedor para discussões
-                          sobre saúde mental organizacional
-                        </p>
-                      </div>
+                <div className="relative bg-white rounded-3xl shadow-2xl p-8 border border-[#edfffe] hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-3">
+                  <div className="grid md:grid-cols-2 gap-6 items-center">
+                    <div>
+                      <Image src="/fotossite/clinica-2.jpeg"
+                        alt="Ambiente Profissional - Clínica Resilience"
+                        width={300}
+                        height={250}
+                        className="w-full h-48 object-cover rounded-2xl opacity-90 group-hover:opacity-100 transition-opacity duration-300"
+                      />
                     </div>
-                  </div>
-                  <div className="mt-6 text-center">
-                    <div className="inline-flex items-center bg-gradient-to-r from-[#7762b6]/10 to-[#f5b26b]/10 rounded-full px-4 py-2">
-                      <Users className="w-4 h-4 text-[#7762b6] mr-2" />
-                      <span className="text-sm sm:text-base md:text-[#7762b6] font-medium text-sm">
-                        Colaboração em Foco
-                      </span>
+                    <div className="space-y-3">
+                      <p className="text-gray-900 text-lg font-semibold">
+                        Sessões de trabalho colaborativo
+                      </p>
+                      <p className="text-gray-600 text-sm">
+                        Ambiente profissional e acolhedor para discussões
+                        sobre saúde mental organizacional
+                      </p>
+                      <div className="inline-flex items-center bg-gradient-to-r from-[#7762b6]/10 to-[#f5b26b]/10 rounded-full px-4 py-2">
+                        <Users className="w-4 h-4 text-[#7762b6] mr-2" />
+                        <span className="text-[#7762b6] font-medium text-sm">
+                          Colaboração em Foco
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -299,18 +296,12 @@ export default function SobrePage() {
                   <div className="relative h-96 lg:h-auto">
                     <Image
                       src="/fotossite/clinica-1.jpeg"
-                      alt="Kelly Lessa - Sócia Administrativa"
+                      alt="Kelly Lessa"
                       width={600}
                       height={800}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#7762b6]/40 via-transparent to-transparent"></div>
-                    <div className="absolute bottom-8 left-8 right-8">
-                      <div className="bg-white/20 backdrop-blur-xl rounded-2xl p-6 border border-white/30">
-                        <h3 className="text-3xl font-black text-white mb-2">Kelly Lessa</h3>
-                        <p className="text-white/90 text-lg font-medium">Sócia Administrativa</p>
-                      </div>
-                    </div>
                   </div>
 
                   {/* Content Section */}
@@ -786,35 +777,32 @@ export default function SobrePage() {
 
             {/* Imagem Union */}
             <div className="flex justify-center mb-16">
-              <div className="relative group">
+              <div className="relative group w-full max-w-4xl">
                 <div className="absolute -inset-3 bg-gradient-to-r from-[#7762b6]/20 to-[#f5b26b]/20 rounded-3xl blur opacity-30 group-hover:opacity-45 transition duration-500"></div>
-                <div className="relative bg-white rounded-3xl p-8 shadow-2xl border border-[#edfffe] hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2">
-                  <div className="relative">
-                    <Image src="/fotossite/clinica-1.jpeg"
-                      alt="Clínica Resilience - Espaço Acolhedor e trabalho em equipe"
-                      width={500}
-                      height={350}
-                      className="w-full h-72 object-cover rounded-2xl opacity-90 group-hover:opacity-100 transition-opacity duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#456dc6]/10 via-transparent to-transparent rounded-2xl"></div>
-                    <div className="absolute bottom-6 left-6 right-6">
-                      <div className="bg-black/50 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                        <p className="text-sm sm:text-base md:text-white text-xl font-bold mb-2">
-                          Colaboração e Trabalho em Equipe
-                        </p>
-                        <p className="text-sm sm:text-base md:text-white/90 text-base">
-                          Potencializando resultados através da união e sinergia
-                          organizacional
-                        </p>
-                      </div>
+                <div className="relative bg-white rounded-3xl p-8 shadow-2xl border border-[#edfffe] hover:shadow-3xl transition-all duration-500">
+                  <div className="grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                      <Image src="/fotossite/clinica-1.jpeg"
+                        alt="Clínica Resilience - Espaço Acolhedor e trabalho em equipe"
+                        width={400}
+                        height={300}
+                        className="w-full h-64 object-cover rounded-2xl opacity-90 group-hover:opacity-100 transition-opacity duration-300"
+                      />
                     </div>
-                  </div>
-                  <div className="mt-6 text-center">
-                    <div className="inline-flex items-center bg-gradient-to-r from-[#7762b6]/10 to-[#f5b26b]/10 rounded-full px-4 py-2">
-                      <Heart className="w-4 h-4 text-[#7762b6] mr-2" />
-                      <span className="text-sm sm:text-base md:text-[#7762b6] font-medium text-sm">
-                        Sinergia Organizacional
-                      </span>
+                    <div className="space-y-4">
+                      <p className="text-gray-900 text-2xl font-bold">
+                        Colaboração e Trabalho em Equipe
+                      </p>
+                      <p className="text-gray-600 text-base leading-relaxed">
+                        Potencializando resultados através da união e sinergia
+                        organizacional
+                      </p>
+                      <div className="inline-flex items-center bg-gradient-to-r from-[#7762b6]/10 to-[#f5b26b]/10 rounded-full px-4 py-2">
+                        <Heart className="w-4 h-4 text-[#7762b6] mr-2" />
+                        <span className="text-[#7762b6] font-medium text-sm">
+                          Sinergia Organizacional
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
