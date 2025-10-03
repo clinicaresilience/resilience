@@ -40,10 +40,8 @@ export class MercadoPagoService {
             currency_id: 'BRL',
           },
         ],
-        payer: {
-          name: data.pacienteNome,
-          email: data.pacienteEmail,
-        },
+        // Payer info removido para permitir checkout como convidado
+        // Se enviar email, MP pode tentar vincular a conta existente
         payment_methods: {
           excluded_payment_types: [
             { id: 'ticket' }, // Excluir boleto

@@ -181,8 +181,8 @@ export default function PagamentosPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Pagamentos</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold text-black">Pagamentos</h1>
+          <p className="text-black">
             Gerencie todos os pagamentos e compras de pacotes
           </p>
         </div>
