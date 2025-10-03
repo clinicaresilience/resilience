@@ -13,7 +13,6 @@
   --font-mono: var(--font-geist-mono);
   --font-red-hat: 'Red Hat Display', sans-serif;
 
-  /*cores customizadas*/
   --color-azul-vivido: #01c2e3;
   --color-azul-medio: #029fdf;
   --color-azul-escuro: #456dc6;
@@ -22,6 +21,12 @@
   --color-laranja: #f5b26b;
   --color-azul-ciano-claro: #edfffe;
   --color-azul-escuro-secundario: #232c55;
+  
+  --gradient-primary: linear-gradient(135deg, #02b1aa 0%, #029fdf 50%, #01c2e3 100%);
+  --gradient-secondary: linear-gradient(135deg, #7762b6 0%, #456dc6 50%, #f5b26b 100%);
+  --gradient-accent: linear-gradient(135deg, #01c2e3 0%, #02b1aa 100%);
+  --gradient-hero: linear-gradient(135deg, rgba(2, 177, 170, 0.1) 0%, rgba(2, 159, 223, 0.1) 100%);
+  --gradient-soft: linear-gradient(135deg, #f8fafc 0%, rgba(237, 255, 254, 0.3) 50%, rgba(245, 178, 107, 0.05) 100%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -34,5 +39,39 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Red Hat Display', Arial, Helvetica, sans-serif;
+}
+
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #02b1aa 0%, #029fdf 50%, #01c2e3 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.shadow-colored-primary {
+  box-shadow: 0 10px 40px -10px rgba(2, 177, 170, 0.3);
+}
+
+.shadow-colored-secondary {
+  box-shadow: 0 10px 40px -10px rgba(119, 98, 182, 0.3);
+}
+
+.floating-animation {
+  animation: floating 3s ease-in-out infinite;
+}
+
+@keyframes floating {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }

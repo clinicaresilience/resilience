@@ -49,6 +49,8 @@ type BookingConfirmationProps = {
   slot: AgendaSlot | null;
   profissionalNome: string;
   profissionalId: string;
+  tipoPaciente?: 'fisica' | 'juridica' | null;
+  compraPacoteId?: string | null;
   onConfirm?: (agendamento: {
     id: string;
     usuarioId: string;
@@ -65,6 +67,8 @@ export function BookingConfirmation({
   slot,
   profissionalNome,
   profissionalId,
+  tipoPaciente,
+  compraPacoteId,
   onConfirm,
 }: BookingConfirmationProps) {
   const { user } = useAuth();
@@ -115,8 +119,8 @@ export function BookingConfirmation({
         return;
       }
 
-      // Validar código da empresa antes de enviar
-      if (!codigoEmpresa.trim()) {
+      // Validar código da empresa apenas para pessoa jurídica
+      if (tipoPaciente === 'juridica' && !codigoEmpresa.trim()) {
         setError("Código da empresa é obrigatório");
         return;
       }
@@ -127,10 +131,12 @@ export function BookingConfirmation({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profissional_id: profissionalId,
-          slot_id: slot.id, // ✅ Usar slot_id específico
+          slot_id: slot.id,
           modalidade,
           notas: notas.trim() || undefined,
-          codigo_empresa: codigoEmpresa.trim(),
+          codigo_empresa: tipoPaciente === 'juridica' ? codigoEmpresa.trim() : undefined,
+          tipo_paciente: tipoPaciente || 'juridica',
+          compra_pacote_id: compraPacoteId,
         }),
       });
 
@@ -182,22 +188,22 @@ export function BookingConfirmation({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg font-['Red_Hat_Display']">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-lg font-['Red_Hat_Display'] p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             {success ? (
               <>
-                <CheckCircle className="h-5 w-5 text-green-600" />
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                 Agendamento Confirmado!
               </>
             ) : (
               <>
-                <Calendar className="h-5 w-5" />
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
                 Confirmar Agendamento
               </>
             )}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             {success
               ? "Seu agendamento foi criado com sucesso!"
               : "Revise os detalhes do seu agendamento antes de confirmar"}
@@ -264,28 +270,42 @@ export function BookingConfirmation({
                   </div>
                 </div>
 
-                {/* Código da Empresa */}
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="codigoEmpresa">Código da Empresa *</Label>
-                  <input
-                    id="codigoEmpresa"
-                    type="text"
-                    placeholder="Digite o código da empresa"
-                    value={codigoEmpresa}
-                    onChange={(e) => setCodigoEmpresa(e.target.value)}
-                    className="border rounded px-3 py-2"
-                    maxLength={50}
-                    required
-                  />
-                  <p className="text-xs text-gray-500">
-                    Campo obrigatório para agendamentos corporativos
-                  </p>
-                  {codigoEmpresa.trim().length === 0 && (
-                    <p className="text-xs text-red-600">
-                      O código da empresa é obrigatório
+                {/* Código da Empresa - Apenas para pessoa jurídica */}
+                {tipoPaciente === 'juridica' && (
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="codigoEmpresa">Código da Empresa *</Label>
+                    <input
+                      id="codigoEmpresa"
+                      type="text"
+                      placeholder="Digite o código da empresa"
+                      value={codigoEmpresa}
+                      onChange={(e) => setCodigoEmpresa(e.target.value)}
+                      className="border rounded px-3 py-2"
+                      maxLength={50}
+                      required
+                    />
+                    <p className="text-xs text-gray-500">
+                      Campo obrigatório para agendamentos corporativos
                     </p>
-                  )}
-                </div>
+                    {codigoEmpresa.trim().length === 0 && (
+                      <p className="text-xs text-red-600">
+                        O código da empresa é obrigatório
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Info para pessoa física */}
+                {tipoPaciente === 'fisica' && compraPacoteId && (
+                  <div className="flex flex-col gap-1 p-3 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-sm text-green-700 font-medium">
+                      Pacote de sessões ativo
+                    </p>
+                    <p className="text-xs text-green-600">
+                      Você está usando uma sessão do seu pacote pré-pago
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

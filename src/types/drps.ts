@@ -22,7 +22,8 @@ export interface DrpsFormData {
   telefone: string;
   funcao: string;
   setor: string;
-  
+  nome_empresa: string;
+
   // Respostas por tópico
   respostas: Record<string, DrpsScore>; // questionId -> score
 }
@@ -34,6 +35,7 @@ export interface DrpsSubmission {
   telefone: string;
   funcao: string;
   setor: string;
+  nome_empresa: string;
   respostas: Record<string, DrpsScore>;
   created_at: string;
 }

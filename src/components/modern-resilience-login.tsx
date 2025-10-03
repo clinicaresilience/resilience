@@ -90,7 +90,7 @@ export function ModernResilienceLogin({
   return (
     <div className={cn("w-full min-h-screen relative overflow-hidden select-none ", className)} {...props}>
       {/* Background com gradiente moderno */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-[#edfffe] to-[#f5b26b]/10">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-[#edfffe]/40 to-[#f5b26b]/8">
         {/* Logo de fundo transparente */}
         <div className="absolute inset-0 flex items-center justify-center opacity-30">
           <Image
@@ -104,8 +104,8 @@ export function ModernResilienceLogin({
         </div>
 
         {/* Elementos decorativos modernos */}
-        <div className="absolute top-20 right-20 w-40 h-40 bg-gradient-to-r from-[#02b1aa]/10 to-[#029fdf]/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-32 left-20 w-48 h-48 bg-gradient-to-r from-[#7762b6]/8 to-[#f5b26b]/8 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 right-20 w-72 h-72 bg-gradient-to-r from-[#02b1aa]/15 to-[#029fdf]/15 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-32 left-20 w-96 h-96 bg-gradient-to-r from-[#7762b6]/10 to-[#f5b26b]/10 rounded-full blur-3xl"></div>
         <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-gradient-to-r from-[#01c2e3]/10 to-[#02b1aa]/10 rounded-full blur-2xl"></div>
       </div>
 
@@ -204,7 +204,7 @@ export function ModernResilienceLogin({
                 <Button
                   type="submit"
                   disabled={loading || success}
-                  className="w-full h-14 text-white font-semibold text-base rounded-2xl bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] hover:from-[#02b1aa]/90 hover:via-[#029fdf]/90 hover:to-[#01c2e3]/90 disabled:opacity-50 transition-all duration-300 shadow-lg shadow-[#02b1aa]/25 hover:shadow-xl hover:shadow-[#02b1aa]/30 border-0"
+                  className="w-full h-14 text-white font-semibold text-base rounded-2xl bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] hover:from-[#02b1aa]/90 hover:via-[#029fdf]/90 hover:to-[#01c2e3]/90 disabled:opacity-50 transition-all duration-300 shadow-2xl shadow-[#02b1aa]/40 hover:shadow-xl hover:shadow-[#02b1aa]/30 border-0"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center space-x-2">

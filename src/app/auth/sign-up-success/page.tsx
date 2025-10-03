@@ -14,18 +14,22 @@ export default function Page() {
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">
-                Obrigado por se cadastrar
+                Cadastro realizado com sucesso!
               </CardTitle>
               <CardDescription>
-                Verifique o seu email para confirmar
+                Sua conta foi criada
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Enviamos um email para o endereço fornecido durante o cadastro.
-                Por favor, clique no link de confirmação dentro do email para
-                ativar sua conta e começar a usar nossos serviços.
+              <p className="text-sm text-muted-foreground mb-4">
+                Sua conta foi criada com sucesso. Você já pode fazer login e começar a usar nossos serviços.
               </p>
+              <a
+                href="/auth/login"
+                className="inline-block w-full text-center px-4 py-2 bg-azul-vivido text-white rounded-lg hover:bg-azul-escuro transition-colors"
+              >
+                Fazer Login
+              </a>
             </CardContent>
           </Card>
         </div>

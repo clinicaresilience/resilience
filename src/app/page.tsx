@@ -13,6 +13,7 @@ import {
   MapPin,
 } from "lucide-react";
 import Navegacao from "@/components/navegacao";
+import GaleriaClinica from "@/components/galeria-clinica";
 
 export default function Inicio() {
   return (
@@ -23,8 +24,8 @@ export default function Inicio() {
       <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-[#edfffe]/30 to-[#f5b26b]/5 overflow-hidden">
         {/* Background Elements */}
         <div className="absolute inset-0">
-          <div className="absolute top-20 right-20 w-40 h-40 bg-gradient-to-r from-[#02b1aa]/10 to-[#029fdf]/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-32 left-20 w-48 h-48 bg-gradient-to-r from-[#7762b6]/8 to-[#f5b26b]/8 rounded-full blur-3xl"></div>
+          <div className="absolute top-20 right-20 w-72 h-72 bg-gradient-to-r from-[#02b1aa]/15 to-[#029fdf]/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-32 left-20 w-96 h-96 bg-gradient-to-r from-[#7762b6]/10 to-[#f5b26b]/8 rounded-full blur-3xl"></div>
           <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-gradient-to-r from-[#01c2e3]/10 to-[#02b1aa]/10 rounded-full blur-2xl"></div>
         </div>
 
@@ -70,7 +71,7 @@ export default function Inicio() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
               <Button
                 asChild
-                className="px-8 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] hover:from-[#02b1aa]/90 hover:via-[#029fdf]/90 hover:to-[#01c2e3]/90 shadow-lg shadow-[#02b1aa]/25 hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-0"
+                className="px-8 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] hover:from-[#02b1aa]/90 hover:via-[#029fdf]/90 hover:to-[#01c2e3]/90 shadow-xl shadow-[#02b1aa]/30 hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-0"
               >
                 <Link href="/portal-publico">
                   Agendar Consulta
@@ -97,10 +98,12 @@ export default function Inicio() {
       </section>
 
       {/* Services Section */}
+      <GaleriaClinica />
+
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent mb-4">
+            <h2 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent mb-4">
               Nossos Serviços
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -168,7 +171,7 @@ export default function Inicio() {
       <section className="py-20 bg-gradient-to-br from-slate-50 via-[#edfffe]/30 to-[#f5b26b]/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent mb-4">
+            <h2 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent mb-4">
               Nossos Valores
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">

@@ -68,6 +68,8 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
   const [crpAviso, setCrpAviso] = useState("");
   const [descricao, setDescricao] = useState("");
   const [senha, setSenha] = useState("");
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
 
   const resetForm = () => {
     setNome("");
@@ -79,6 +81,8 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
     setCrp("");
     setDescricao("");
     setSenha("");
+    setFotoFile(null);
+    setFotoPreview(null);
     setError(null);
     setSuccess(null);
   };
@@ -86,6 +90,29 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
   const generatePassword = () => {
     const newPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
     setSenha(newPassword);
+  };
+
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("A foto deve ter no máximo 5MB");
+        return;
+      }
+
+      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      if (!validTypes.includes(file.type)) {
+        setError("Formato de imagem inválido. Use JPG, PNG ou WEBP");
+        return;
+      }
+
+      setFotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -137,6 +164,26 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
       // Usar senha do estado ou gerar uma se estiver vazia
       const senhaFinal = senha.trim() || Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
 
+      // Upload da foto, se fornecida
+      let fotoUrl: string | undefined;
+      if (fotoFile) {
+        const formData = new FormData();
+        formData.append("file", fotoFile);
+
+        const uploadResponse = await fetch("/api/upload-foto-profissional", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const uploadError = await uploadResponse.json();
+          throw new Error(uploadError.error || "Erro ao fazer upload da foto");
+        }
+
+        const uploadData = await uploadResponse.json();
+        fotoUrl = uploadData.url;
+      }
+
       const result = await criarProfissional({
         nome,
         email,
@@ -147,6 +194,7 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
         especialidade,
         crp: normalizarCRP(crp), // Normalizar antes de enviar
         descricao,
+        foto_url: fotoUrl,
       });
 
       setSuccess(`Profissional cadastrado com sucesso! Senha temporária: ${result.senha}`);
@@ -298,13 +346,38 @@ export function CadastrarProfissionalDialog({ onSuccess, onError }: CadastrarPro
           </div>
 
           <div>
-            <Label htmlFor="descricao">Descrição</Label>
+            <Label htmlFor="descricao">Mini Bio</Label>
             <Input
               id="descricao"
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Descrição adicional (opcional)"
+              placeholder="Breve biografia do profissional (opcional)"
             />
+          </div>
+
+          <div>
+            <Label htmlFor="foto">Foto do Profissional</Label>
+            <div className="space-y-3">
+              {fotoPreview && (
+                <div className="flex justify-center">
+                  <img
+                    src={fotoPreview}
+                    alt="Preview da foto"
+                    className="w-32 h-32 rounded-full object-cover border-2 border-azul-escuro"
+                  />
+                </div>
+              )}
+              <Input
+                id="foto"
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleFotoChange}
+                className="cursor-pointer"
+              />
+              <p className="text-xs text-gray-500">
+                Formatos aceitos: JPG, PNG, WEBP (máx. 5MB)
+              </p>
+            </div>
           </div>
 
           <div>

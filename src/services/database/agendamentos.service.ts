@@ -26,6 +26,9 @@ export interface CreateAgendamentoDTO {
   modalidade: Modalidade;
   data_consulta: string;
   notas?: string;
+  tipo_paciente?: 'fisica' | 'juridica';
+  compra_pacote_id?: string;
+  codigo_empresa?: string;
 }
 
 export class AgendamentosService {
@@ -126,6 +129,9 @@ export class AgendamentosService {
             status: 'confirmado',
             modalidade: data.modalidade,
             notas: data.notas,
+            tipo_paciente: data.tipo_paciente || 'juridica',
+            compra_pacote_id: data.compra_pacote_id,
+            codigo_empresa: data.codigo_empresa,
           })
           .select()
           .single();

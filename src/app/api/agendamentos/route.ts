@@ -196,23 +196,47 @@ export async function POST(req: NextRequest) {
     if (userError || !user) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    const { profissional_id, slot_id, data_consulta, modalidade, notas, codigo_empresa } = body || {};
+    const {
+      profissional_id,
+      slot_id,
+      data_consulta,
+      modalidade,
+      notas,
+      codigo_empresa,
+      tipo_paciente = 'juridica',
+      compra_pacote_id
+    } = body || {};
 
     if (!profissional_id || (!slot_id && !data_consulta)) {
       return NextResponse.json({ error: "Campos obrigatórios ausentes", required: ["profissional_id", "slot_id ou data_consulta"] }, { status: 400 });
     }
 
-    // Validar código da empresa obrigatório
-    if (!codigo_empresa?.trim()) {
-      return NextResponse.json({ error: "Código da empresa é obrigatório para agendamentos" }, { status: 400 });
-    }
+    // Validação condicional baseada no tipo de paciente
+    if (tipo_paciente === 'juridica') {
+      if (!codigo_empresa?.trim()) {
+        return NextResponse.json({ error: "Código da empresa é obrigatório para empresas" }, { status: 400 });
+      }
+      const isValidCompanyCode = await CompaniesService.isValidCompanyCode(codigo_empresa.trim());
+      if (!isValidCompanyCode) {
+        return NextResponse.json({
+          error: "Código da empresa inválido ou empresa inativa. Verifique com sua empresa o código correto."
+        }, { status: 400 });
+      }
+    } else if (tipo_paciente === 'fisica') {
+      if (!compra_pacote_id) {
+        return NextResponse.json({ error: "ID da compra de pacote é obrigatório para pessoa física" }, { status: 400 });
+      }
 
-    // Verificar se o código da empresa é válido (existe e está ativa)
-    const isValidCompanyCode = await CompaniesService.isValidCompanyCode(codigo_empresa.trim());
-    if (!isValidCompanyCode) {
-      return NextResponse.json({ 
-        error: "Código da empresa inválido ou empresa inativa. Verifique com sua empresa o código correto." 
-      }, { status: 400 });
+      // Validar compra de pacote
+      const { PacotesService } = await import('@/services/database/pacotes.service');
+      const compra = await PacotesService.buscarCompraAtivaComSessoes(user.id, profissional_id);
+      if (!compra || compra.id !== compra_pacote_id) {
+        return NextResponse.json({ error: "Compra de pacote inválida ou sem sessões disponíveis" }, { status: 400 });
+      }
+
+      if (compra.sessoes_restantes <= 0) {
+        return NextResponse.json({ error: "Não há sessões disponíveis neste pacote" }, { status: 400 });
+      }
     }
 
     // NOVA LÓGICA: Verificar se é primeiro agendamento ou validar profissional padrão
@@ -356,6 +380,9 @@ export async function POST(req: NextRequest) {
         data_consulta: dataConsultaUTC,
         modalidade: validModalidade,
         notas,
+        tipo_paciente,
+        compra_pacote_id,
+        codigo_empresa,
       });
 
     } else {
@@ -379,7 +406,16 @@ export async function POST(req: NextRequest) {
         data_consulta: dataConsultaUTC,
         modalidade: validModalidade,
         notas,
+        tipo_paciente,
+        compra_pacote_id,
+        codigo_empresa,
       });
+    }
+
+    // Se for pessoa física com pacote, incrementar sessões utilizadas
+    if (tipo_paciente === 'fisica' && compra_pacote_id) {
+      const { PacotesService } = await import('@/services/database/pacotes.service');
+      await PacotesService.incrementarSessoesUtilizadas(compra_pacote_id);
     }
 
     const dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(agendamento.data_consulta);

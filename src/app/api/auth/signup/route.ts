@@ -99,30 +99,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Criar usuário na auth do Supabase
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // Criar usuário na auth do Supabase usando admin client
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password: senha,
-      options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}`,
-        data: {
-          nome,
-          tipo_usuario: 'comum'
-        }
-      },
+      email_confirm: true,
+      user_metadata: {
+        nome,
+        tipo_usuario: 'comum'
+      }
     });
 
     if (authError) {
       console.error('Erro na criação do usuário:', authError);
-      
+
       // Tratar erros específicos
-      if (authError.message.includes('User already registered')) {
+      if (authError.message.includes('User already registered') || authError.message.includes('already been registered')) {
         return NextResponse.json(
           { error: 'Este email já está cadastrado' },
           { status: 400 }
         );
       }
-      
+
       return NextResponse.json(
         { error: authError.message },
         { status: 400 }
@@ -136,10 +134,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Criar perfil na tabela usuarios usando cliente admin
+    // Criar ou atualizar perfil na tabela usuarios usando cliente admin
     const { error: profileError } = await supabaseAdmin
       .from('usuarios')
-      .insert({
+      .upsert({
         id: authData.user.id,
         nome,
         email,
@@ -148,13 +146,15 @@ export async function POST(request: NextRequest) {
         tipo_usuario: 'comum',
         ativo: true,
         primeiro_acesso: true,
-        autenticado: false, // Será true apenas após confirmação do email
+        autenticado: true,
         boas_vindas: true
+      }, {
+        onConflict: 'id'
       });
 
     if (profileError) {
       console.error('Erro ao criar perfil:', profileError);
-      
+
       // Se falhou ao criar perfil, tentar deletar o usuário da auth usando admin client
       try {
         const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
       } catch (deleteErr) {
         console.error('Erro ao tentar deletar usuário:', deleteErr);
       }
-      
+
       // Tratar erros específicos de constraint
       if (profileError.message.includes('usuarios_email_key')) {
         return NextResponse.json(
@@ -172,14 +172,14 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       if (profileError.message.includes('usuarios_cpf_key')) {
         return NextResponse.json(
           { error: 'Este CPF já está cadastrado' },
           { status: 400 }
         );
       }
-      
+
       return NextResponse.json(
         { error: 'Erro ao criar perfil do usuário' },
         { status: 500 }
@@ -194,11 +194,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Usuário criado com sucesso. Verifique seu email para confirmar a conta.',
+      message: 'Usuário criado com sucesso.',
       user: {
         id: authData.user.id,
         email: authData.user.email,
-        email_confirmed: !!authData.user.email_confirmed_at
+        email_confirmed: true
       },
     });
 

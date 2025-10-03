@@ -18,6 +18,7 @@ export default function DrpsFormPage() {
     telefone: '',
     funcao: '',
     setor: '',
+    nome_empresa: '',
     respostas: {}
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,7 +43,7 @@ export default function DrpsFormPage() {
     }))
   ];
 
-  const handlePersonalDataChange = (field: keyof Pick<DrpsFormData, 'nome' | 'email' | 'telefone' | 'funcao' | 'setor'>, value: string) => {
+  const handlePersonalDataChange = (field: keyof Pick<DrpsFormData, 'nome' | 'email' | 'telefone' | 'funcao' | 'setor' | 'nome_empresa'>, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -60,16 +61,16 @@ export default function DrpsFormPage() {
   };
 
   const validatePersonalData = () => {
-    const { nome, email, telefone, funcao, setor } = formData;
-    if (!nome.trim() || !email.trim() || !telefone.trim() || !funcao.trim() || !setor.trim()) {
+    const { email, telefone, funcao, setor, nome_empresa } = formData;
+    if (!email.trim() || !telefone.trim() || !funcao.trim() || !setor.trim() || !nome_empresa.trim()) {
       return false;
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return false;
     }
-    
+
     return true;
   };
 
@@ -90,15 +91,15 @@ export default function DrpsFormPage() {
 
   const nextStep = () => {
     setError('');
-    
+
     // Validação específica para etapa de identificação
     if (currentStep === 1) {
-      const { nome, email, telefone, funcao, setor } = formData;
-      if (!nome.trim() || !email.trim() || !telefone.trim() || !funcao.trim() || !setor.trim()) {
-        setError('Todos os campos são obrigatórios');
+      const { email, telefone, funcao, setor, nome_empresa } = formData;
+      if (!email.trim() || !telefone.trim() || !funcao.trim() || !setor.trim() || !nome_empresa.trim()) {
+        setError('Todos os campos marcados com * são obrigatórios');
         return;
       }
-      
+
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         setError('Email inválido');
@@ -130,17 +131,23 @@ export default function DrpsFormPage() {
 
   const handleSubmit = async () => {
     if (!canProceed()) return;
-    
+
     setIsSubmitting(true);
     setError('');
 
     try {
+      // Se o nome estiver vazio, preenche com "Anônimo"
+      const dataToSubmit = {
+        ...formData,
+        nome: formData.nome.trim() || 'Anônimo'
+      };
+
       const response = await fetch('/api/drps', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSubmit)
       });
 
       const data = await response.json();
@@ -238,16 +245,15 @@ export default function DrpsFormPage() {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="nome" className="text-sm font-medium text-gray-700">
-                Nome Completo *
+                Nome Completo
               </Label>
               <Input
                 id="nome"
                 type="text"
                 value={formData.nome}
                 onChange={(e) => handlePersonalDataChange('nome', e.target.value)}
-                placeholder="Digite seu nome completo"
+                placeholder="Digite seu nome completo (opcional)"
                 className="w-full"
-                required
               />
             </div>
 
@@ -284,6 +290,23 @@ export default function DrpsFormPage() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="nome_empresa" className="text-sm font-medium text-gray-700">
+                Nome da Empresa *
+              </Label>
+              <Input
+                id="nome_empresa"
+                type="text"
+                value={formData.nome_empresa}
+                onChange={(e) => handlePersonalDataChange('nome_empresa', e.target.value)}
+                placeholder="Digite o nome da empresa"
+                className="w-full"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
               <Label htmlFor="setor" className="text-sm font-medium text-gray-700">
                 Setor *
               </Label>
@@ -297,21 +320,21 @@ export default function DrpsFormPage() {
                 required
               />
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="funcao" className="text-sm font-medium text-gray-700">
-              Função *
-            </Label>
-            <Input
-              id="funcao"
-              type="text"
-              value={formData.funcao}
-              onChange={(e) => handlePersonalDataChange('funcao', e.target.value)}
-              placeholder="Ex: Analista, Coordenador, Assistente..."
-              className="w-full"
-              required
-            />
+            <div className="space-y-2">
+              <Label htmlFor="funcao" className="text-sm font-medium text-gray-700">
+                Função *
+              </Label>
+              <Input
+                id="funcao"
+                type="text"
+                value={formData.funcao}
+                onChange={(e) => handlePersonalDataChange('funcao', e.target.value)}
+                placeholder="Ex: Analista, Coordenador, Assistente..."
+                className="w-full"
+                required
+              />
+            </div>
           </div>
 
           <div className="text-sm text-gray-500 bg-blue-50 p-4 rounded-lg">

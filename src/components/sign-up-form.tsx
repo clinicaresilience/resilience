@@ -76,7 +76,7 @@ export function SignUpForm({
       if (data.success) {
         setSuccess(true);
         setTimeout(() => {
-          router.push("/auth/sign-up-success");
+          router.push("/auth/login");
         }, 2000);
       }
     } catch (err) {

@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DrpsSubmission, DRPS_TOPICS, SCORE_LABELS } from '@/types/drps';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  FileText, 
-  Search, 
-  Filter, 
-  Download, 
-  Eye, 
+import {
+  FileText,
+  Search,
+  Filter,
+  Download,
+  Eye,
   Calendar,
   User,
   Building2,
@@ -19,15 +19,21 @@ import {
   Trash2,
   FileDown
 } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export default function DrpsAdminPage() {
   const [submissions, setSubmissions] = useState<DrpsSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEmpresa, setSelectedEmpresa] = useState<string>('');
+  const [selectedSetor, setSelectedSetor] = useState<string>('');
   const [selectedSubmission, setSelectedSubmission] = useState<DrpsSubmission | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   useEffect(() => {
     fetchSubmissions();
@@ -51,12 +57,31 @@ export default function DrpsAdminPage() {
     }
   };
 
-  const filteredSubmissions = submissions.filter(submission =>
-    submission.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    submission.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    submission.funcao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    submission.setor.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Obter empresas únicas
+  const empresas = Array.from(new Set(submissions.map(s => s.nome_empresa))).sort();
+
+  // Obter setores únicos com base na empresa selecionada
+  const setores = selectedEmpresa
+    ? Array.from(new Set(
+        submissions
+          .filter(s => s.nome_empresa === selectedEmpresa)
+          .map(s => s.setor)
+      )).sort()
+    : [];
+
+  const filteredSubmissions = submissions.filter(submission => {
+    const matchesSearch =
+      submission.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      submission.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      submission.funcao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      submission.setor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      submission.nome_empresa.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesEmpresa = !selectedEmpresa || submission.nome_empresa === selectedEmpresa;
+    const matchesSetor = !selectedSetor || submission.setor === selectedSetor;
+
+    return matchesSearch && matchesEmpresa && matchesSetor;
+  });
 
   const calculateScores = (respostas: Record<string, number>) => {
     const topicScores: Record<string, { total: number; count: number; average: number }> = {};
@@ -90,16 +115,41 @@ export default function DrpsAdminPage() {
     return { level: 'Crítico', color: 'text-red-600 bg-red-50' };
   };
 
+  const getProbability = (average: number) => {
+    if (average <= 1) return 'Baixa';
+    if (average <= 2) return 'Média';
+    if (average <= 3) return 'Alta';
+    return 'Alta';
+  };
+
+  const getRiskMatrix = (severity: string, probability: string) => {
+    const matrix: Record<string, Record<string, string>> = {
+      'Baixo': { 'Baixa': 'Baixo', 'Média': 'Baixo', 'Alta': 'Médio' },
+      'Médio': { 'Baixa': 'Baixo', 'Média': 'Médio', 'Alta': 'Alto' },
+      'Alto': { 'Baixa': 'Médio', 'Média': 'Alto', 'Alta': 'Crítico' },
+      'Crítico': { 'Baixa': 'Alto', 'Média': 'Crítico', 'Alta': 'Crítico' }
+    };
+    return matrix[severity]?.[probability] || 'Médio';
+  };
+
+  const RISK_COLORS = {
+    'Baixo': '#22c55e',
+    'Médio': '#eab308',
+    'Alto': '#f97316',
+    'Crítico': '#ef4444'
+  };
+
   const exportToCSV = () => {
     const csvData = filteredSubmissions.map(submission => ({
       Nome: submission.nome,
       Email: submission.email,
       Telefone: submission.telefone,
+      'Nome da Empresa': submission.nome_empresa,
       Função: submission.funcao,
       Setor: submission.setor,
       'Data de Submissão': new Date(submission.created_at).toLocaleDateString('pt-BR'),
       ...Object.entries(submission.respostas).reduce((acc, [questionId, score]) => {
-        acc[questionId] = score;
+        acc[questionId] = score as number;
         return acc;
       }, {} as Record<string, number>)
     }));
@@ -152,452 +202,353 @@ export default function DrpsAdminPage() {
   };
 
   const exportToPDF = async (submission: DrpsSubmission) => {
-    const topicScores = calculateScores(submission.respostas);
-    const overallAverage = Object.values(topicScores).reduce((acc, score) => acc + score.average, 0) / Object.keys(topicScores).length;
-    const overallRisk = getRiskLevel(overallAverage);
+    setGeneratingPdf(true);
 
-    // Create a professional HTML content for PDF
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Relatório DRPS - ${submission.nome}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          
-          body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            line-height: 1.6; 
-            color: #333; 
-            background: #fff;
-            padding: 40px 30px;
-            max-width: 1000px;
-            margin: 0 auto;
-          }
-          
-          .header { 
-            text-align: center; 
-            margin-bottom: 40px; 
-            padding: 30px 0;
-            border-bottom: 3px solid #02b1aa;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-          }
-          
-          .header h1 { 
-            font-size: 2.5em; 
-            color: #02b1aa; 
-            margin-bottom: 10px; 
-            font-weight: 700;
-          }
-          
-          .header h2 { 
-            font-size: 1.5em; 
-            color: #6c757d; 
-            margin-bottom: 15px;
-            font-weight: 400;
-          }
-          
-          .header p { 
-            font-size: 1.1em; 
-            color: #495057;
-            background: #fff;
-            display: inline-block;
-            padding: 8px 20px;
-            border-radius: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-          }
-          
-          .section { 
-            margin-bottom: 35px; 
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-          }
-          
-          .section h2 { 
-            background: linear-gradient(135deg, #02b1aa 0%, #029fdf 100%);
-            color: white;
-            padding: 20px 25px;
-            margin: 0;
-            font-size: 1.4em;
-            font-weight: 600;
-          }
-          
-          .section-content {
-            padding: 25px;
-          }
-          
-          .participant-info table { 
-            width: 100%; 
-            border-collapse: separate;
-            border-spacing: 0;
-            background: #fff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-          }
-          
-          .participant-info th { 
-            background: #f8f9fa; 
-            padding: 15px 20px; 
-            font-weight: 600;
-            color: #495057;
-            border-bottom: 2px solid #dee2e6;
-            width: 30%;
-          }
-          
-          .participant-info td { 
-            padding: 15px 20px; 
-            border-bottom: 1px solid #f1f3f4;
-            color: #212529;
-          }
-          
-          .participant-info tr:last-child td,
-          .participant-info tr:last-child th {
-            border-bottom: none;
-          }
-          
-          .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-          }
-          
-          .summary-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            border-left: 5px solid #02b1aa;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-          }
-          
-          .summary-card h3 {
-            color: #02b1aa;
-            margin-bottom: 8px;
-            font-size: 1.1em;
-          }
-          
-          .summary-card p {
-            margin: 5px 0;
-            color: #495057;
-          }
-          
-          .risk-analysis {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-          }
-          
-          .risk-card { 
-            border: 2px solid #e9ecef;
-            padding: 20px; 
-            border-radius: 12px; 
-            background: #fff;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-          }
-          
-          .risk-card h3 {
-            font-size: 1.2em;
-            margin-bottom: 15px;
-            color: #212529;
-          }
-          
-          .risk-badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 600;
-            margin-bottom: 10px;
-          }
-          
-          .risk-low { 
-            border-color: #28a745;
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-          }
-          .risk-low .risk-badge {
-            background: #28a745;
-            color: white;
-          }
-          
-          .risk-medium { 
-            border-color: #ffc107;
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-          }
-          .risk-medium .risk-badge {
-            background: #ffc107;
-            color: #212529;
-          }
-          
-          .risk-high, .risk-critical { 
-            border-color: #dc3545;
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-          }
-          .risk-high .risk-badge, .risk-critical .risk-badge {
-            background: #dc3545;
-            color: white;
-          }
-          
-          .risk-stats {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.9em;
-            color: #6c757d;
-            margin-top: 10px;
-          }
-          
-          .topic-section {
-            margin-bottom: 30px;
-            border: 1px solid #e9ecef;
-            border-radius: 10px;
-            overflow: hidden;
-          }
-          
-          .topic-header {
-            background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
-            color: white;
-            padding: 15px 20px;
-          }
-          
-          .topic-header h3 {
-            font-size: 1.3em;
-            margin-bottom: 5px;
-          }
-          
-          .topic-header p {
-            opacity: 0.9;
-            font-size: 0.95em;
-          }
-          
-          .questions-container {
-            padding: 20px;
-            background: #fff;
-          }
-          
-          .question { 
-            margin-bottom: 20px; 
-            padding: 15px; 
-            border-left: 4px solid #02b1aa;
-            background: #f8f9fa;
-            border-radius: 0 8px 8px 0;
-          }
-          
-          .question p {
-            margin-bottom: 10px;
-            color: #212529;
-            font-weight: 500;
-          }
-          
-          .answer { 
-            display: inline-block;
-            background: linear-gradient(135deg, #02b1aa 0%, #029fdf 100%);
-            color: white;
-            padding: 8px 16px; 
-            border-radius: 20px;
-            font-size: 0.9em;
-            font-weight: 600;
-            box-shadow: 0 2px 5px rgba(2, 177, 170, 0.3);
-          }
-          
-          .no-answer {
-            color: #6c757d;
-            font-style: italic;
-            background: #e9ecef;
-            padding: 8px 16px;
-            border-radius: 20px;
-            display: inline-block;
-          }
-          
-          .legend-table { 
-            width: 100%; 
-            border-collapse: separate;
-            border-spacing: 0;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-          }
-          
-          .legend-table th { 
-            background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
-            color: white;
-            padding: 15px; 
-            font-weight: 600;
-          }
-          
-          .legend-table td { 
-            padding: 12px 15px; 
-            border-bottom: 1px solid #e9ecef;
-            background: #fff;
-          }
-          
-          .legend-table tr:last-child td {
-            border-bottom: none;
-          }
-          
-          .legend-table tr:nth-child(even) td {
-            background: #f8f9fa;
-          }
-          
-          @media print {
-            body { padding: 20px; }
-            .section { page-break-inside: avoid; }
-            .risk-card { page-break-inside: avoid; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>📊 Relatório DRPS</h1>
-          <h2>Diagnóstico de Riscos Psicossociais</h2>
-          <p>📅 ${new Date().toLocaleDateString('pt-BR', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}</p>
-        </div>
+    try {
+      const topicScores = calculateScores(submission.respostas);
+      const pdf = new jsPDF('p', 'mm', 'a4');
 
-        <div class="section">
-          <h2>👤 Informações do Participante</h2>
-          <div class="section-content">
-            <table class="participant-info">
-              <tr><th>Nome:</th><td>${submission.nome}</td></tr>
-              <tr><th>Email:</th><td>${submission.email}</td></tr>
-              <tr><th>Telefone:</th><td>${submission.telefone}</td></tr>
-              <tr><th>Função:</th><td>${submission.funcao}</td></tr>
-              <tr><th>Setor:</th><td>${submission.setor}</td></tr>
-              <tr><th>Data da Avaliação:</th><td>${new Date(submission.created_at).toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit', 
-                year: 'numeric'
-              })} às ${new Date(submission.created_at).toLocaleTimeString('pt-BR', {
-                hour: '2-digit',
-                minute: '2-digit'
-              })}</td></tr>
-            </table>
-          </div>
-        </div>
+      let yPos = 20;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const maxWidth = pageWidth - (2 * margin);
 
-        <div class="section">
-          <h2>📈 Resumo Geral</h2>
-          <div class="section-content">
-            <div class="summary-grid">
-              <div class="summary-card">
-                <h3>Nível de Risco Geral</h3>
-                <p><strong>${overallRisk.level}</strong></p>
-              </div>
-              <div class="summary-card">
-                <h3>Média Geral</h3>
-                <p><strong>${overallAverage.toFixed(2)}</strong>/4.0</p>
-              </div>
-              <div class="summary-card">
-                <h3>Total de Respostas</h3>
-                <p><strong>${Object.keys(submission.respostas).length}</strong> perguntas</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      const checkPageBreak = (requiredSpace: number) => {
+        if (yPos + requiredSpace > pageHeight - margin) {
+          pdf.addPage();
+          yPos = margin;
+        }
+      };
 
-        <div class="section">
-          <h2>🎯 Análise por Tópicos</h2>
-          <div class="section-content">
-            <div class="risk-analysis">
-              ${DRPS_TOPICS.map(topic => {
-                const score = topicScores[topic.id];
-                const risk = getRiskLevel(score.average);
-                const riskClass = risk.level.toLowerCase()
-                  .replace('í', 'i')
-                  .replace('é', 'e')
-                  .replace('ó', 'o')
-                  .replace(/\s+/g, '-');
-                
-                return `
-                  <div class="risk-card risk-${riskClass}">
-                    <h3>${topic.title}</h3>
-                    <div class="risk-badge">${risk.level}</div>
-                    <div class="risk-stats">
-                      <span><strong>Média:</strong> ${score.average.toFixed(2)}/4.0</span>
-                      <span><strong>Respostas:</strong> ${score.count}/10</span>
-                    </div>
-                    <p style="margin-top: 10px; font-size: 0.9em; color: #6c757d;">${topic.description}</p>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        </div>
+      // Título
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Relatório DRPS - Diagnóstico de Riscos Psicossociais', margin, yPos);
+      yPos += 10;
 
-        <div class="section">
-          <h2>📝 Respostas Detalhadas</h2>
-          <div class="section-content">
-            ${DRPS_TOPICS.map(topic => `
-              <div class="topic-section">
-                <div class="topic-header">
-                  <h3>${topic.title}</h3>
-                  <p>${topic.description}</p>
-                </div>
-                <div class="questions-container">
-                  ${topic.questions.map(question => {
-                    const answer = submission.respostas[question.id];
-                    return `
-                      <div class="question">
-                        <p><strong>${question.text}</strong></p>
-                        ${answer !== undefined 
-                          ? `<div class="answer">${answer} - ${SCORE_LABELS[answer as keyof typeof SCORE_LABELS]}</div>`
-                          : '<div class="no-answer">Não respondida</div>'
-                        }
-                      </div>
-                    `;
-                  }).join('')}
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
+      // Informações do Participante
+      pdf.setFontSize(12);
+      pdf.text('Informações do Participante', margin, yPos);
+      yPos += 7;
 
-        <div class="section">
-          <h2>📋 Legenda de Pontuação</h2>
-          <div class="section-content">
-            <table class="legend-table">
-              <thead>
-                <tr>
-                  <th>Pontuação</th>
-                  <th>Descrição</th>
-                  <th>Significado</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td><strong>0</strong></td><td>Nunca</td><td>Situação nunca ocorre</td></tr>
-                <tr><td><strong>1</strong></td><td>Raramente</td><td>Situação ocorre muito poucas vezes</td></tr>
-                <tr><td><strong>2</strong></td><td>Ocasionalmente</td><td>Situação ocorre algumas vezes</td></tr>
-                <tr><td><strong>3</strong></td><td>Frequentemente</td><td>Situação ocorre muitas vezes</td></tr>
-                <tr><td><strong>4</strong></td><td>Sempre</td><td>Situação ocorre constantemente</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      const info = [
+        `Nome: ${submission.nome}`,
+        `Email: ${submission.email}`,
+        `Telefone: ${submission.telefone}`,
+        `Empresa: ${submission.nome_empresa}`,
+        `Função: ${submission.funcao}`,
+        `Setor: ${submission.setor}`,
+        `Data: ${new Date(submission.created_at).toLocaleString('pt-BR')}`
+      ];
 
-        <div style="text-align: center; margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
-          <p style="color: #6c757d; font-size: 0.9em;">
-            <strong>Clínica Resilience</strong> • Relatório gerado automaticamente em ${new Date().toLocaleString('pt-BR')}
-          </p>
-        </div>
-      </body>
-      </html>
-    `;
+      info.forEach(line => {
+        pdf.text(line, margin, yPos);
+        yPos += 5;
+      });
 
-    // Create a blob and download
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `relatorio-drps-${submission.nome.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.html`;
-    link.click();
-    URL.revokeObjectURL(url);
+      yPos += 5;
+      checkPageBreak(60);
+
+      // Matriz de Risco
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Matriz de Risco - Classificação por Tópicos', margin, yPos);
+      yPos += 8;
+
+      // Cabeçalho da tabela
+      pdf.setFillColor(243, 244, 246);
+      pdf.rect(margin, yPos - 5, maxWidth, 8, 'F');
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+
+      const col1 = margin + 2;
+      const col2 = margin + 45;
+      const col3 = margin + 100;
+      const col4 = margin + 130;
+      const col5 = margin + 160;
+
+      pdf.text('Fator de Risco', col1, yPos);
+      pdf.text('Fonte Geradora', col2, yPos);
+      pdf.text('Gravidade', col3, yPos);
+      pdf.text('Probabilidade', col4, yPos);
+      pdf.text('Matriz', col5, yPos);
+      yPos += 5;
+
+      // Linhas da tabela
+      pdf.setFont('helvetica', 'normal');
+      DRPS_TOPICS.forEach((topic) => {
+        checkPageBreak(15);
+
+        const score = topicScores[topic.id];
+        const severity = getRiskLevel(score.average);
+        const probability = getProbability(score.average);
+        const matrixRisk = getRiskMatrix(severity.level, probability);
+
+        // Fundo da linha
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(margin, yPos - 4, maxWidth, 10, 'F');
+
+        // Borda
+        pdf.setDrawColor(209, 213, 219);
+        pdf.rect(margin, yPos - 4, maxWidth, 10, 'S');
+
+        // Texto
+        pdf.setTextColor(0, 0, 0);
+        const titleLines = pdf.splitTextToSize(topic.title, 40);
+        pdf.text(titleLines[0], col1, yPos);
+
+        const descLines = pdf.splitTextToSize(topic.description, 50);
+        pdf.text(descLines[0], col2, yPos);
+
+        // Cor para gravidade
+        const getSeverityColor = (level: string) => {
+          if (level === 'Baixo') return [34, 197, 94];
+          if (level === 'Médio') return [234, 179, 8];
+          if (level === 'Alto') return [249, 115, 22];
+          return [239, 68, 68];
+        };
+
+        const getProbColor = (prob: string) => {
+          if (prob === 'Baixa') return [34, 197, 94];
+          if (prob === 'Média') return [234, 179, 8];
+          return [249, 115, 22];
+        };
+
+        const getMatrixColor = (risk: string) => {
+          if (risk === 'Baixo') return [34, 197, 94];
+          if (risk === 'Médio') return [234, 179, 8];
+          if (risk === 'Alto') return [249, 115, 22];
+          return [239, 68, 68];
+        };
+
+        // Gravidade (com fundo colorido)
+        const sevColor = getSeverityColor(severity.level);
+        pdf.setFillColor(sevColor[0], sevColor[1], sevColor[2]);
+        pdf.rect(col3 - 2, yPos - 3, 25, 6, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(severity.level, col3, yPos);
+
+        // Probabilidade (com fundo colorido)
+        const probColor = getProbColor(probability);
+        pdf.setFillColor(probColor[0], probColor[1], probColor[2]);
+        pdf.rect(col4 - 2, yPos - 3, 25, 6, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(probability, col4, yPos);
+
+        // Matriz (com fundo colorido)
+        const matrixColor = getMatrixColor(matrixRisk);
+        pdf.setFillColor(matrixColor[0], matrixColor[1], matrixColor[2]);
+        pdf.rect(col5 - 2, yPos - 3, 25, 6, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(matrixRisk, col5, yPos);
+
+        yPos += 10;
+        pdf.setTextColor(0, 0, 0);
+      });
+
+      // Adicionar gráficos de pizza
+      pdf.addPage();
+      yPos = margin;
+
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Análise Gráfica dos Riscos', margin, yPos);
+      yPos += 15;
+
+      // Função para desenhar gráfico de pizza simplificado
+      const drawPieChart = (
+        x: number,
+        y: number,
+        radius: number,
+        data: Array<{ label: string; value: number; color: [number, number, number] }>,
+        title: string
+      ) => {
+        // Título do gráfico
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        const titleWidth = pdf.getTextWidth(title);
+        pdf.text(title, x - titleWidth / 2, y - radius - 5);
+
+        const total = data.reduce((sum, item) => sum + item.value, 0);
+        if (total === 0) return;
+
+        // Desenhar círculo de fundo
+        pdf.setFillColor(240, 240, 240);
+        pdf.circle(x, y, radius, 'F');
+
+        let currentY = y - radius;
+
+        // Desenhar barras horizontais em vez de pizza (mais simples e confiável)
+        data.forEach((item, index) => {
+          const percentage = Math.round((item.value / total) * 100);
+          const height = (radius * 2 * item.value) / total;
+
+          pdf.setFillColor(item.color[0], item.color[1], item.color[2]);
+          pdf.rect(x - radius, currentY, radius * 2, height, 'F');
+
+          // Texto da porcentagem
+          if (percentage >= 8) {
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(`${percentage}%`, x - 5, currentY + height / 2 + 1);
+          }
+
+          currentY += height;
+        });
+
+        // Desenhar contorno
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.5);
+        pdf.circle(x, y, radius, 'S');
+
+        // Legenda
+        let legendY = y + radius + 8;
+        pdf.setFontSize(7);
+        pdf.setFont('helvetica', 'normal');
+
+        data.forEach((item) => {
+          if (item.value > 0) {
+            // Quadrado colorido
+            pdf.setFillColor(item.color[0], item.color[1], item.color[2]);
+            pdf.rect(x - radius, legendY - 2, 3, 3, 'F');
+
+            // Label
+            pdf.setTextColor(0, 0, 0);
+            const percentage = Math.round((item.value / total) * 100);
+            pdf.text(`${item.label} (${percentage}%)`, x - radius + 5, legendY);
+            legendY += 4;
+          }
+        });
+      };
+
+      // Preparar dados dos gráficos
+
+      // 1. Matriz de Risco
+      const matrixRiskCounts: Record<string, number> = { 'Baixo': 0, 'Médio': 0, 'Alto': 0, 'Crítico': 0 };
+      DRPS_TOPICS.forEach(topic => {
+        const score = topicScores[topic.id];
+        const severity = getRiskLevel(score.average);
+        const probability = getProbability(score.average);
+        const matrixRisk = getRiskMatrix(severity.level, probability);
+        matrixRiskCounts[matrixRisk] = (matrixRiskCounts[matrixRisk] || 0) + 1;
+      });
+
+      const matrixData = [
+        { label: 'Baixo', value: matrixRiskCounts['Baixo'], color: [34, 197, 94] as [number, number, number] },
+        { label: 'Médio', value: matrixRiskCounts['Médio'], color: [234, 179, 8] as [number, number, number] },
+        { label: 'Alto', value: matrixRiskCounts['Alto'], color: [249, 115, 22] as [number, number, number] },
+        { label: 'Crítico', value: matrixRiskCounts['Crítico'], color: [239, 68, 68] as [number, number, number] }
+      ].filter(item => item.value > 0);
+
+      // 2. Gravidade Por Tópico
+      const severityCounts: Record<string, number> = { 'Baixo': 0, 'Médio': 0, 'Alto': 0, 'Crítico': 0 };
+      DRPS_TOPICS.forEach(topic => {
+        const score = topicScores[topic.id];
+        const severity = getRiskLevel(score.average);
+        severityCounts[severity.level] = (severityCounts[severity.level] || 0) + 1;
+      });
+
+      const severityData = [
+        { label: 'Baixo', value: severityCounts['Baixo'], color: [34, 197, 94] as [number, number, number] },
+        { label: 'Médio', value: severityCounts['Médio'], color: [234, 179, 8] as [number, number, number] },
+        { label: 'Alto', value: severityCounts['Alto'], color: [249, 115, 22] as [number, number, number] },
+        { label: 'Crítico', value: severityCounts['Crítico'], color: [239, 68, 68] as [number, number, number] }
+      ].filter(item => item.value > 0);
+
+      // 3. Gravidade Geral
+      const totalAverage = Object.values(topicScores).reduce((acc, score) => acc + score.average, 0) / Object.keys(topicScores).length;
+      const overallRisk = getRiskLevel(totalAverage);
+
+      const overallData = [
+        { label: overallRisk.level, value: 80, color: (() => {
+          if (overallRisk.level === 'Baixo') return [34, 197, 94] as [number, number, number];
+          if (overallRisk.level === 'Médio') return [234, 179, 8] as [number, number, number];
+          if (overallRisk.level === 'Alto') return [249, 115, 22] as [number, number, number];
+          return [239, 68, 68] as [number, number, number];
+        })() },
+        { label: 'Outros', value: 20, color: [148, 163, 184] as [number, number, number] }
+      ];
+
+      // Desenhar os 3 gráficos lado a lado
+      const chartRadius = 25;
+      const chartY = yPos + chartRadius + 5;
+
+      drawPieChart(margin + chartRadius + 10, chartY, chartRadius, matrixData, 'Matriz de Risco');
+      drawPieChart(pageWidth / 2, chartY, chartRadius, severityData, 'Gravidade Por Tópico');
+      drawPieChart(pageWidth - margin - chartRadius - 10, chartY, chartRadius, overallData, 'Gravidade Geral');
+
+      // Nova página para respostas detalhadas
+      pdf.addPage();
+      yPos = margin;
+
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Respostas Detalhadas por Tópico', margin, yPos);
+      yPos += 10;
+
+      // Respostas detalhadas
+      DRPS_TOPICS.forEach((topic) => {
+        checkPageBreak(30);
+
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(topic.title, margin, yPos);
+        yPos += 5;
+
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'italic');
+        pdf.setTextColor(100, 100, 100);
+        const descLines = pdf.splitTextToSize(topic.description, maxWidth);
+        descLines.forEach((line: string) => {
+          pdf.text(line, margin, yPos);
+          yPos += 4;
+        });
+        yPos += 2;
+
+        pdf.setFont('helvetica', 'normal');
+        topic.questions.forEach((question) => {
+          checkPageBreak(12);
+
+          const answer = submission.respostas[question.id];
+
+          pdf.setTextColor(0, 0, 0);
+          const qLines = pdf.splitTextToSize(question.text, maxWidth - 5);
+          qLines.forEach((line: string) => {
+            pdf.text(line, margin + 2, yPos);
+            yPos += 4;
+          });
+
+          if (answer !== undefined) {
+            pdf.setFillColor(219, 234, 254);
+            pdf.setTextColor(30, 64, 175);
+            const answerText = `${answer} - ${SCORE_LABELS[answer as keyof typeof SCORE_LABELS]}`;
+            pdf.text(answerText, margin + 2, yPos);
+          } else {
+            pdf.setTextColor(156, 163, 175);
+            pdf.text('Não respondida', margin + 2, yPos);
+          }
+
+          yPos += 6;
+          pdf.setTextColor(0, 0, 0);
+        });
+
+        yPos += 5;
+      });
+
+      // Save
+      pdf.save(`relatorio-drps-${submission.nome.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Erro ao gerar PDF. Por favor, tente novamente.');
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
   const viewDetails = (submission: DrpsSubmission) => {
@@ -617,10 +568,10 @@ export default function DrpsAdminPage() {
 
   if (showDetails && selectedSubmission) {
     const topicScores = calculateScores(selectedSubmission.respostas);
-    
+
     return (
       <div className="p-8">
-        <div className="space-y-6">
+        <div className="space-y-6 details-container">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Detalhes da Avaliação DRPS</h1>
@@ -669,11 +620,19 @@ export default function DrpsAdminPage() {
                 <div className="flex items-center gap-3">
                   <Building2 className="w-5 h-5 text-gray-500" />
                   <div>
+                    <p className="text-sm text-gray-500">Nome da Empresa</p>
+                    <p className="font-medium">{selectedSubmission.nome_empresa}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Building2 className="w-5 h-5 text-gray-500" />
+                  <div>
                     <p className="text-sm text-gray-500">Função</p>
                     <p className="font-medium">{selectedSubmission.funcao}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                   <Building2 className="w-5 h-5 text-gray-500" />
                   <div>
@@ -681,7 +640,7 @@ export default function DrpsAdminPage() {
                     <p className="font-medium">{selectedSubmission.setor}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                   <Calendar className="w-5 h-5 text-gray-500" />
                   <div>
@@ -694,6 +653,201 @@ export default function DrpsAdminPage() {
               </div>
             </div>
           </Card>
+
+          {/* Tabela de Matriz de Risco */}
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Matriz de Risco - Classificação por Tópicos</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-100 text-left">
+                    <th className="border border-gray-300 px-4 py-3 text-sm font-semibold">Fatores de Risco</th>
+                    <th className="border border-gray-300 px-4 py-3 text-sm font-semibold">Fonte Geradora do Risco</th>
+                    <th className="border border-gray-300 px-4 py-3 text-sm font-semibold text-center">Gravidade (Severidade)</th>
+                    <th className="border border-gray-300 px-4 py-3 text-sm font-semibold text-center">Probabilidade de Ocorrência</th>
+                    <th className="border border-gray-300 px-4 py-3 text-sm font-semibold text-center">Matriz Risco</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {DRPS_TOPICS.map(topic => {
+                    const score = topicScores[topic.id];
+                    const severity = getRiskLevel(score.average);
+                    const probability = getProbability(score.average);
+                    const matrixRisk = getRiskMatrix(severity.level, probability);
+
+                    const getSeverityBgColor = (level: string) => {
+                      if (level === 'Baixo') return 'bg-green-500';
+                      if (level === 'Médio') return 'bg-yellow-500';
+                      if (level === 'Alto') return 'bg-orange-500';
+                      return 'bg-red-500';
+                    };
+
+                    const getProbabilityBgColor = (prob: string) => {
+                      if (prob === 'Baixa') return 'bg-green-500';
+                      if (prob === 'Média') return 'bg-yellow-500';
+                      return 'bg-orange-500';
+                    };
+
+                    const getMatrixBgColor = (risk: string) => {
+                      if (risk === 'Baixo') return 'bg-green-500';
+                      if (risk === 'Médio') return 'bg-yellow-500';
+                      if (risk === 'Alto') return 'bg-orange-500';
+                      return 'bg-red-500';
+                    };
+
+                    return (
+                      <tr key={topic.id} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 px-4 py-3 text-sm font-medium">{topic.title}</td>
+                        <td className="border border-gray-300 px-4 py-3 text-sm">{topic.description}</td>
+                        <td className={`border border-gray-300 px-4 py-3 text-center ${getSeverityBgColor(severity.level)} text-white font-semibold text-sm`}>
+                          {severity.level}
+                        </td>
+                        <td className={`border border-gray-300 px-4 py-3 text-center ${getProbabilityBgColor(probability)} text-white font-semibold text-sm`}>
+                          {probability}
+                        </td>
+                        <td className={`border border-gray-300 px-4 py-3 text-center ${getMatrixBgColor(matrixRisk)} text-white font-semibold text-sm`}>
+                          {matrixRisk}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* Gráficos de Análise */}
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Gráfico de Matriz de Risco */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Matriz de Risco</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      const riskCounts: Record<string, number> = { 'Baixo': 0, 'Médio': 0, 'Alto': 0, 'Crítico': 0 };
+                      DRPS_TOPICS.forEach(topic => {
+                        const score = topicScores[topic.id];
+                        const severity = getRiskLevel(score.average);
+                        const probability = getProbability(score.average);
+                        const matrixRisk = getRiskMatrix(severity.level, probability);
+                        riskCounts[matrixRisk] = (riskCounts[matrixRisk] || 0) + 1;
+                      });
+                      return Object.entries(riskCounts)
+                        .filter(([_, value]) => value > 0)
+                        .map(([name, value]) => ({ name, value, percentage: ((value / DRPS_TOPICS.length) * 100).toFixed(0) }));
+                    })()}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={({ name, percentage }) => `${percentage}%`}
+                  >
+                    {(() => {
+                      const riskCounts: Record<string, number> = { 'Baixo': 0, 'Médio': 0, 'Alto': 0, 'Crítico': 0 };
+                      DRPS_TOPICS.forEach(topic => {
+                        const score = topicScores[topic.id];
+                        const severity = getRiskLevel(score.average);
+                        const probability = getProbability(score.average);
+                        const matrixRisk = getRiskMatrix(severity.level, probability);
+                        riskCounts[matrixRisk] = (riskCounts[matrixRisk] || 0) + 1;
+                      });
+                      return Object.entries(riskCounts)
+                        .filter(([_, value]) => value > 0)
+                        .map(([name]) => (
+                          <Cell key={name} fill={RISK_COLORS[name as keyof typeof RISK_COLORS]} />
+                        ));
+                    })()}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </Card>
+
+            {/* Gráfico de Gravidade por Setor */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Gravidade Por Setor</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      const severityCounts: Record<string, number> = { 'Baixo': 0, 'Médio': 0, 'Alto': 0 };
+                      DRPS_TOPICS.forEach(topic => {
+                        const score = topicScores[topic.id];
+                        const severity = getRiskLevel(score.average);
+                        severityCounts[severity.level] = (severityCounts[severity.level] || 0) + 1;
+                      });
+                      return Object.entries(severityCounts)
+                        .filter(([_, value]) => value > 0)
+                        .map(([name, value]) => ({ name, value, percentage: ((value / DRPS_TOPICS.length) * 100).toFixed(0) }));
+                    })()}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={({ name, percentage }) => `${percentage}%`}
+                  >
+                    {(() => {
+                      const severityCounts: Record<string, number> = { 'Baixo': 0, 'Médio': 0, 'Alto': 0 };
+                      DRPS_TOPICS.forEach(topic => {
+                        const score = topicScores[topic.id];
+                        const severity = getRiskLevel(score.average);
+                        severityCounts[severity.level] = (severityCounts[severity.level] || 0) + 1;
+                      });
+                      return Object.entries(severityCounts)
+                        .filter(([_, value]) => value > 0)
+                        .map(([name]) => (
+                          <Cell key={name} fill={RISK_COLORS[name as keyof typeof RISK_COLORS]} />
+                        ));
+                    })()}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </Card>
+
+            {/* Gráfico de Gravidade Geral */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Gravidade Geral</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      const totalAverage = Object.values(topicScores).reduce((acc, score) => acc + score.average, 0) / Object.keys(topicScores).length;
+                      const overallRisk = getRiskLevel(totalAverage);
+
+                      return [
+                        { name: overallRisk.level, value: 80, percentage: '80' },
+                        { name: 'Outros', value: 20, percentage: '20' }
+                      ];
+                    })()}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={({ percentage }) => `${percentage}%`}
+                  >
+                    {(() => {
+                      const totalAverage = Object.values(topicScores).reduce((acc, score) => acc + score.average, 0) / Object.keys(topicScores).length;
+                      const overallRisk = getRiskLevel(totalAverage);
+
+                      return [
+                        <Cell key="overall" fill={RISK_COLORS[overallRisk.level as keyof typeof RISK_COLORS]} />,
+                        <Cell key="others" fill="#94a3b8" />
+                      ];
+                    })()}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </Card>
+          </div>
 
           {/* Resumo dos Riscos */}
           <Card className="p-6">
@@ -777,18 +931,78 @@ export default function DrpsAdminPage() {
 
         {/* Filtros e Busca */}
         <Card className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input
-                  placeholder="Buscar por nome, email, função ou setor..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Input
+                    placeholder="Buscar por nome, email, empresa, função ou setor..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
               </div>
             </div>
+
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filtrar por Empresa
+                </label>
+                <select
+                  value={selectedEmpresa}
+                  onChange={(e) => {
+                    setSelectedEmpresa(e.target.value);
+                    setSelectedSetor(''); // Limpa o setor ao mudar de empresa
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todas as empresas</option>
+                  {empresas.map(empresa => (
+                    <option key={empresa} value={empresa}>{empresa}</option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedEmpresa && (
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Filtrar por Setor
+                  </label>
+                  <select
+                    value={selectedSetor}
+                    onChange={(e) => setSelectedSetor(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Todos os setores</option>
+                    {setores.map(setor => (
+                      <option key={setor} value={setor}>{setor}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {(selectedEmpresa || selectedSetor) && (
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => {
+                    setSelectedEmpresa('');
+                    setSelectedSetor('');
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="text-gray-600"
+                >
+                  Limpar Filtros
+                </Button>
+                <span className="text-sm text-gray-600">
+                  {filteredSubmissions.length} resultado(s) encontrado(s)
+                </span>
+              </div>
+            )}
           </div>
         </Card>
 
@@ -822,6 +1036,10 @@ export default function DrpsAdminPage() {
                           <p className="flex items-center gap-2">
                             <Mail className="w-4 h-4" />
                             {submission.email}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <Building2 className="w-4 h-4" />
+                            {submission.nome_empresa}
                           </p>
                           <p className="flex items-center gap-2">
                             <Building2 className="w-4 h-4" />
@@ -891,6 +1109,17 @@ export default function DrpsAdminPage() {
           )}
         </div>
       </div>
+
+      {/* Overlay de loading para geração de PDF */}
+      {generatingPdf && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#02b1aa]"></div>
+            <p className="text-lg font-semibold text-gray-900">Gerando PDF...</p>
+            <p className="text-sm text-gray-600">Por favor, aguarde</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

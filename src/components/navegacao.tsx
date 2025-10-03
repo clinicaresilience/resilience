@@ -41,7 +41,7 @@ export default function Navegacao() {
     "px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ease-in-out backdrop-blur-sm";
 
   const estiloBotaoAtivo =
-    "bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white shadow-lg shadow-[#02b1aa]/25 hover:shadow-xl hover:shadow-[#02b1aa]/30";
+    "bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] text-white shadow-lg shadow-[#02b1aa]/35 hover:shadow-xl hover:shadow-[#02b1aa]/35";
 
   const estiloBotaoInativo =
     "text-gray-700 hover:text-[#02b1aa] hover:bg-gradient-to-r hover:from-[#edfffe]/60 hover:to-[#02b1aa]/10 hover:shadow-md";
@@ -244,7 +244,7 @@ export default function Navegacao() {
                   <Link
                     href="/auth/login"
                     onClick={() => setMenuAberto(false)}
-                    className="block px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white hover:from-[#029fdf] hover:to-[#01c2e3] transition-all duration-300 shadow-lg shadow-[#02b1aa]/25 hover:shadow-xl hover:shadow-[#02b1aa]/30"
+                    className="block px-5 py-3 mx-2 mb-1 rounded-xl text-sm font-medium bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] text-white hover:from-[#029fdf] hover:to-[#01c2e3] transition-all duration-300 shadow-lg shadow-[#02b1aa]/35 hover:shadow-xl hover:shadow-[#02b1aa]/35"
                   >
                     Login
                   </Link>

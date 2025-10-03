@@ -13,6 +13,7 @@ export async function criarProfissional(data: {
     especialidade?: string;
     crp?: string;
     descricao?: string;
+    foto_url?: string;
 }) {
     const supabase = createAdminClient();
 
@@ -110,6 +111,7 @@ export async function criarProfissional(data: {
                     especialidade: data.especialidade?.trim(),
                     crp: data.crp?.trim(),
                     bio: data.descricao?.trim() || null,
+                    avatar_url: data.foto_url || null,
                 })
                 .eq("id", userId);
 
@@ -132,6 +134,7 @@ export async function criarProfissional(data: {
                     especialidade: data.especialidade?.trim(),
                     crp: data.crp?.trim(),
                     bio: data.descricao?.trim() || null,
+                    avatar_url: data.foto_url || null,
                 },
             ]);
 
