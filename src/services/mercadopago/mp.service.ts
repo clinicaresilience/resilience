@@ -45,9 +45,11 @@ export class MercadoPagoService {
           email: data.pacienteEmail,
         },
         payment_methods: {
-          excluded_payment_methods: [], // Não excluir nenhum método
-          excluded_payment_types: [], // Aceitar todos os tipos (credit_card, debit_card, ticket, pix, etc)
-          installments: 12, // Permite parcelamento em até 12x
+          excluded_payment_types: [
+            { id: 'ticket' }, // Excluir boleto
+            { id: 'atm' }, // Excluir caixa eletrônico/pagamento presencial
+          ],
+          installments: 12, // Permite parcelamento em até 12x (apenas para crédito)
           default_installments: 1, // Padrão à vista
         },
         back_urls: {
