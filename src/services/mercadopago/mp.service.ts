@@ -45,10 +45,6 @@ export class MercadoPagoService {
           email: data.pacienteEmail,
         },
         payment_methods: {
-          excluded_payment_types: [
-            { id: 'ticket' }, // Excluir boleto
-            { id: 'atm' }, // Excluir caixa eletrônico/pagamento presencial
-          ],
           installments: 12, // Permite parcelamento em até 12x (apenas para crédito)
           default_installments: 1, // Padrão à vista
         },
@@ -133,19 +129,27 @@ export class MercadoPagoService {
       }
 
       // Consultar detalhes do pagamento
-      const paymentData = await this.consultarPagamento(paymentId);
-      if (!paymentData) {
+      const payment = new Payment(mpClient);
+      const paymentResponse = await payment.get({ id: paymentId });
+
+      if (!paymentResponse) {
         console.error('Não foi possível consultar pagamento:', paymentId);
+        return;
+      }
+
+      const externalReference = paymentResponse.external_reference;
+      if (!externalReference) {
+        console.error('External reference não encontrado no pagamento:', paymentId);
         return;
       }
 
       const supabase = await createClient();
 
-      // Buscar pagamento no banco pela preference ou criar novo
+      // Buscar pagamento no banco pelo compra_pacote_id (external_reference)
       const { data: pagamentoExistente } = await supabase
         .from('pagamentos_mercadopago')
         .select('*')
-        .eq('payment_id', paymentId)
+        .eq('compra_pacote_id', externalReference)
         .single();
 
       if (pagamentoExistente) {
@@ -153,21 +157,28 @@ export class MercadoPagoService {
         await supabase
           .from('pagamentos_mercadopago')
           .update({
-            status: paymentData.status,
-            status_detail: paymentData.status_detail,
-            payment_type: paymentData.payment_type,
-            payment_method: paymentData.payment_method,
+            payment_id: paymentId,
+            status: paymentResponse.status || 'pending',
+            status_detail: paymentResponse.status_detail || '',
+            payment_type: paymentResponse.payment_type_id || '',
+            payment_method: paymentResponse.payment_method_id || '',
             webhook_data: webhookData,
+            updated_at: new Date().toISOString(),
           })
           .eq('id', pagamentoExistente.id);
 
+        console.log('✅ Pagamento atualizado:', {
+          compra_id: externalReference,
+          payment_id: paymentId,
+          status: paymentResponse.status
+        });
+
         // Se aprovado, ativar compra do pacote
-        if (paymentData.status === 'approved') {
+        if (paymentResponse.status === 'approved') {
           await this.ativarCompraPacote(pagamentoExistente.compra_pacote_id, paymentId);
         }
       } else {
-        // Criar novo registro de pagamento (webhook chegou antes da criação local)
-        console.log('Pagamento não encontrado no banco, aguardando criação local');
+        console.error('❌ Pagamento não encontrado no banco para external_reference:', externalReference);
       }
     } catch (error) {
       console.error('Erro ao processar webhook:', error);
