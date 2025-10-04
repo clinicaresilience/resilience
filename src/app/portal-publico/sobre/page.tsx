@@ -139,7 +139,7 @@ export default function SobrePage() {
                         alt="Ambiente Profissional - Clínica Resilience"
                         width={300}
                         height={250}
-                        className="w-full h-48 object-cover rounded-2xl opacity-90 group-hover:opacity-100 transition-opacity duration-300"
+                        className="w-full h-auto object-contain rounded-2xl opacity-90 group-hover:opacity-100 transition-opacity duration-300"
                       />
                     </div>
                     <div className="space-y-3">
