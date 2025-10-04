@@ -36,7 +36,9 @@ export class AgendamentosService {
   // Criar novo agendamento
   // ======================================
   static async createAgendamento(data: CreateAgendamentoDTO) {
-    const supabase = await createClient();
+    // Usar admin client para funcionar em contextos sem autenticação (webhooks)
+    const { createAdminClient } = await import('@/lib/server-admin');
+    const supabase = createAdminClient();
 
     try {
 
