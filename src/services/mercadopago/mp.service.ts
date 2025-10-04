@@ -178,7 +178,7 @@ export class MercadoPagoService {
             payment_type: paymentResponse.payment_type_id || '',
             payment_method: paymentResponse.payment_method_id || '',
             webhook_data: webhookData,
-            atualizado_em: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           })
           .eq('id', pagamentoExistente.id);
 
