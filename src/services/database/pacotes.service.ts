@@ -121,7 +121,9 @@ export class PacotesService {
    * Buscar compra por ID
    */
   static async buscarCompraPorId(compraId: string): Promise<CompraPacote | null> {
-    const supabase = await createClient();
+    // Usar admin client para funcionar em contextos sem autenticação (webhooks)
+    const { createAdminClient } = await import('@/lib/server-admin');
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from('compras_pacotes')
@@ -145,7 +147,9 @@ export class PacotesService {
     status: CompraPacote['status'],
     pagamentoMpId?: string
   ): Promise<CompraPacote> {
-    const supabase = await createClient();
+    // Usar admin client
+    const { createAdminClient } = await import('@/lib/server-admin');
+    const supabase = createAdminClient();
 
     const updateData: Record<string, unknown> = { status };
     if (pagamentoMpId) {
@@ -171,8 +175,6 @@ export class PacotesService {
    * Incrementar sessões utilizadas
    */
   static async incrementarSessoesUtilizadas(compraId: string): Promise<void> {
-    const supabase = await createClient();
-
     const compra = await this.buscarCompraPorId(compraId);
     if (!compra) {
       throw new Error('Compra não encontrada');
@@ -181,6 +183,10 @@ export class PacotesService {
     if (compra.sessoes_utilizadas >= compra.sessoes_total) {
       throw new Error('Todas as sessões do pacote já foram utilizadas');
     }
+
+    // Usar admin client
+    const { createAdminClient } = await import('@/lib/server-admin');
+    const supabase = createAdminClient();
 
     const { error } = await supabase
       .from('compras_pacotes')
