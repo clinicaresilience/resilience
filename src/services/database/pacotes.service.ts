@@ -308,15 +308,18 @@ export class PacotesService {
         }
       }
 
-      // Marcar como agendamentos criados
-      await supabase
+      // Marcar como agendamentos criados (usar admin client)
+      const { createAdminClient } = await import('@/lib/server-admin');
+      const adminClient = createAdminClient();
+
+      await adminClient
         .from('compras_pacotes')
         .update({ agendamentos_criados: true })
         .eq('id', compraId);
 
       // Atualizar sessões utilizadas com base nos agendamentos criados
       if (agendamentosCriados.length > 0) {
-        await supabase
+        await adminClient
           .from('compras_pacotes')
           .update({ sessoes_utilizadas: agendamentosCriados.length })
           .eq('id', compraId);

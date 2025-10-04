@@ -96,6 +96,13 @@ export class AgendamentosService {
 
       // 1️⃣ Verificar se existe slot disponível usando novo schema (data_hora_inicio)
       const dataConsultaISO = new Date(data.data_consulta).toISOString();
+
+      console.log('🔍 Buscando slot livre:', {
+        profissional_id: data.profissional_id,
+        data_hora_inicio: dataConsultaISO,
+        status: 'livre'
+      });
+
       const { data: slot, error: slotError } = await supabase
         .from('agendamento_slot')
         .select('*')
@@ -105,7 +112,7 @@ export class AgendamentosService {
         .single();
 
       if (slotError || !slot) {
-        console.error('Erro ao buscar slot:', slotError);
+        console.error('❌ Erro ao buscar slot:', slotError);
         console.error('Buscando por:', {
           profissional_id: data.profissional_id,
           data_hora_inicio: dataConsultaISO,
@@ -113,6 +120,12 @@ export class AgendamentosService {
         });
         throw new Error('Slot não disponível para este horário');
       }
+
+      console.log('✅ Slot livre encontrado:', {
+        id: slot.id,
+        data_hora_inicio: slot.data_hora_inicio,
+        status: slot.status
+      });
 
       // 2️⃣ Criar agendamento e consulta em sequência para evitar trigger problems
       let agendamentoBasico;
@@ -200,7 +213,19 @@ export class AgendamentosService {
 
 
 
-      const { data: updateResult, error: updateSlotError } = await supabase
+      console.log('🔒 Marcando slot como ocupado:', {
+        slot_id: slot.id,
+        paciente_id: data.usuario_id,
+        profissional_id: data.profissional_id,
+        data_hora_inicio: slot.data_hora_inicio,
+        status_antes: slot.status
+      });
+
+      // Usar admin client para garantir que a atualização sempre funcione
+      const { createAdminClient } = await import('@/lib/server-admin');
+      const adminClient = createAdminClient();
+
+      const { data: updateResult, error: updateSlotError } = await adminClient
         .from('agendamento_slot')
         .update({
           status: 'ocupado',
@@ -211,14 +236,17 @@ export class AgendamentosService {
         .select();
 
       if (updateSlotError) {
-        console.error('Erro ao atualizar slot:', updateSlotError);
+        console.error('❌ Erro ao atualizar slot:', updateSlotError);
         throw updateSlotError;
       }
 
       if (!updateResult || updateResult.length === 0) {
-        console.error('Nenhum slot foi atualizado. Possível problema de ID ou permissões.');
+        console.error('❌ Nenhum slot foi atualizado. Possível problema de ID ou permissões.');
+        console.error('Tentou atualizar slot:', slot.id);
         throw new Error('Falha ao marcar slot como ocupado');
       }
+
+      console.log('✅ Slot marcado como ocupado:', updateResult[0].id);
 
 
 
@@ -418,8 +446,11 @@ export class AgendamentosService {
         .single();
 
       if (slot) {
-        // 4️⃣ Liberar o slot na nova tabela
-        const { error: updateSlotError } = await supabase
+        // 4️⃣ Liberar o slot na nova tabela (usar admin client)
+        const { createAdminClient } = await import('@/lib/server-admin');
+        const adminClient = createAdminClient();
+
+        const { error: updateSlotError } = await adminClient
           .from('agendamento_slot')
           .update({
             status: 'livre',
@@ -562,7 +593,10 @@ export class AgendamentosService {
 
       if (slotAntigo) {
         console.log('✅ Slot antigo encontrado, liberando:', slotAntigo.id);
-        const { error: liberarSlotError } = await supabase
+        const { createAdminClient } = await import('@/lib/server-admin');
+        const adminClient = createAdminClient();
+
+        const { error: liberarSlotError } = await adminClient
           .from('agendamento_slot')
           .update({
             status: 'livre',
@@ -580,8 +614,11 @@ export class AgendamentosService {
         console.warn('⚠️ Slot antigo não encontrado - pode já estar liberado ou não existir');
       }
 
-      // 6. Ocupar o novo slot
-      const { error: ocuparSlotError } = await supabase
+      // 6. Ocupar o novo slot (usar admin client)
+      const { createAdminClient: createAdmin2 } = await import('@/lib/server-admin');
+      const adminClient2 = createAdmin2();
+
+      const { error: ocuparSlotError } = await adminClient2
         .from('agendamento_slot')
         .update({
           status: 'ocupado',
@@ -593,7 +630,9 @@ export class AgendamentosService {
       if (ocuparSlotError) {
         // Reverter liberação do slot antigo em caso de erro
         if (slotAntigo) {
-          await supabase
+          const { createAdminClient: createAdmin3 } = await import('@/lib/server-admin');
+          const adminClient3 = createAdmin3();
+          await adminClient3
             .from('agendamento_slot')
             .update({
               status: 'ocupado',

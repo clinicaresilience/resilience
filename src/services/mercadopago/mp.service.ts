@@ -153,92 +153,22 @@ export class MercadoPagoService {
         return;
       }
 
-      const supabase = await createClient();
-      let pagamentoExistente = null;
+      // Usar admin client para garantir permissões de escrita
+      const { createAdminClient } = await import('@/lib/server-admin');
+      const supabase = createAdminClient();
 
-      // ESTRATÉGIA 1: Buscar por compra_pacote_id (external_reference)
-      console.log(`🔍 Estratégia 1: Buscando por compra_pacote_id = ${externalReference}`);
-      const { data: pagamento1 } = await supabase
+      // Buscar pagamento existente (por compra_pacote_id ou payment_id)
+      console.log(`🔍 Buscando pagamento existente...`);
+      const { data: pagamentoExistente } = await supabase
         .from('pagamentos_mercadopago')
         .select('*')
-        .eq('compra_pacote_id', externalReference)
+        .or(`compra_pacote_id.eq.${externalReference},payment_id.eq.${paymentId}`)
         .maybeSingle();
-
-      if (pagamento1) {
-        console.log('✅ Pagamento encontrado por compra_pacote_id');
-        pagamentoExistente = pagamento1;
-      }
-
-      // ESTRATÉGIA 2: Buscar por payment_id
-      if (!pagamentoExistente) {
-        console.log(`🔍 Estratégia 2: Buscando por payment_id = ${paymentId}`);
-        const { data: pagamento2 } = await supabase
-          .from('pagamentos_mercadopago')
-          .select('*')
-          .eq('payment_id', paymentId)
-          .maybeSingle();
-
-        if (pagamento2) {
-          console.log('✅ Pagamento encontrado por payment_id');
-          pagamentoExistente = pagamento2;
-        }
-      }
-
-      // ESTRATÉGIA 3: Buscar por preference_id (via metadata do pagamento)
-      if (!pagamentoExistente && paymentResponse.metadata?.preference_id) {
-        const preferenceId = paymentResponse.metadata.preference_id;
-        console.log(`🔍 Estratégia 3: Buscando por preference_id = ${preferenceId}`);
-        const { data: pagamento3 } = await supabase
-          .from('pagamentos_mercadopago')
-          .select('*')
-          .eq('preference_id', preferenceId)
-          .maybeSingle();
-
-        if (pagamento3) {
-          console.log('✅ Pagamento encontrado por preference_id');
-          pagamentoExistente = pagamento3;
-        }
-      }
-
-      // ESTRATÉGIA 4: Buscar compra_pacote diretamente
-      if (!pagamentoExistente) {
-        console.log(`🔍 Estratégia 4: Verificando se compra_pacote existe = ${externalReference}`);
-        const { data: compraPacote } = await supabase
-          .from('compras_pacotes')
-          .select('*')
-          .eq('id', externalReference)
-          .maybeSingle();
-
-        if (compraPacote) {
-          console.log('✅ Compra de pacote encontrada, criando registro de pagamento');
-
-          // Criar registro de pagamento
-          const { data: novoPagamento, error: createError } = await supabase
-            .from('pagamentos_mercadopago')
-            .insert({
-              compra_pacote_id: externalReference,
-              payment_id: paymentId,
-              status: paymentResponse.status || 'pending',
-              status_detail: paymentResponse.status_detail || '',
-              payment_type: paymentResponse.payment_type_id || '',
-              payment_method: paymentResponse.payment_method_id || '',
-              valor: paymentResponse.transaction_amount,
-              webhook_data: webhookData,
-            })
-            .select()
-            .single();
-
-          if (createError) {
-            console.error('❌ Erro ao criar registro de pagamento:', createError);
-          } else {
-            console.log('✅ Registro de pagamento criado:', novoPagamento?.id);
-            pagamentoExistente = novoPagamento;
-          }
-        }
-      }
 
       if (pagamentoExistente) {
         // Atualizar pagamento existente
+        console.log('✅ Pagamento encontrado, atualizando:', pagamentoExistente.id);
+
         const { error: updateError } = await supabase
           .from('pagamentos_mercadopago')
           .update({
@@ -248,31 +178,60 @@ export class MercadoPagoService {
             payment_type: paymentResponse.payment_type_id || '',
             payment_method: paymentResponse.payment_method_id || '',
             webhook_data: webhookData,
-            updated_at: new Date().toISOString(),
+            atualizado_em: new Date().toISOString(),
           })
           .eq('id', pagamentoExistente.id);
 
         if (updateError) {
           console.error('❌ Erro ao atualizar pagamento:', updateError);
-        } else {
-          console.log('✅ Pagamento atualizado:', {
-            id: pagamentoExistente.id,
-            compra_id: externalReference,
-            payment_id: paymentId,
-            status: paymentResponse.status
-          });
+          throw updateError;
         }
+
+        console.log('✅ Pagamento atualizado:', {
+          id: pagamentoExistente.id,
+          compra_id: externalReference,
+          payment_id: paymentId,
+          status: paymentResponse.status
+        });
 
         // Se aprovado, ativar compra do pacote
         if (paymentResponse.status === 'approved') {
           console.log('💰 Pagamento aprovado! Ativando compra do pacote...');
-          await this.ativarCompraPacote(pagamentoExistente.compra_pacote_id, paymentId);
+          await this.ativarCompraPacote(externalReference, paymentId);
+          console.log('✅ Compra do pacote ativada e agendamentos criados!');
         }
       } else {
-        console.error('❌ CRÍTICO: Pagamento não encontrado em nenhuma estratégia:', {
-          external_reference: externalReference,
-          payment_id: paymentId,
-        });
+        // Criar novo registro de pagamento
+        console.log('⚠️ Pagamento não encontrado, criando novo registro...');
+
+        const { data: novoPagamento, error: createError } = await supabase
+          .from('pagamentos_mercadopago')
+          .insert({
+            compra_pacote_id: externalReference,
+            payment_id: paymentId,
+            status: paymentResponse.status || 'pending',
+            status_detail: paymentResponse.status_detail || '',
+            payment_type: paymentResponse.payment_type_id || '',
+            payment_method: paymentResponse.payment_method_id || '',
+            valor: paymentResponse.transaction_amount,
+            webhook_data: webhookData,
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('❌ Erro ao criar registro de pagamento:', createError);
+          throw createError;
+        }
+
+        console.log('✅ Registro de pagamento criado:', novoPagamento.id);
+
+        // Se aprovado, ativar compra do pacote
+        if (paymentResponse.status === 'approved') {
+          console.log('💰 Pagamento aprovado! Ativando compra do pacote...');
+          await this.ativarCompraPacote(externalReference, paymentId);
+          console.log('✅ Compra do pacote ativada e agendamentos criados!');
+        }
       }
     } catch (error) {
       console.error('💥 Erro ao processar webhook:', error);
@@ -284,7 +243,9 @@ export class MercadoPagoService {
    * Ativar compra de pacote após pagamento aprovado
    */
   private static async ativarCompraPacote(compraPacoteId: string, paymentId: string) {
-    const supabase = await createClient();
+    // Usar admin client para garantir que a atualização sempre funcione
+    const { createAdminClient } = await import('@/lib/server-admin');
+    const supabase = createAdminClient();
 
     // Atualizar status da compra para ativo
     await supabase
