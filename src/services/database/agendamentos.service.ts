@@ -542,15 +542,26 @@ export class AgendamentosService {
 
       // 5. Liberar o slot antigo
       const dataAntigaISO = new Date(agendamento.data_consulta).toISOString();
-      const { data: slotAntigo } = await supabase
+      console.log('🔓 Tentando liberar slot antigo:', {
+        profissional_id: agendamento.profissional_id,
+        data_hora_inicio: dataAntigaISO,
+        paciente_id: agendamento.paciente_id
+      });
+
+      const { data: slotAntigo, error: slotAntigoError } = await supabase
         .from('agendamento_slot')
         .select('*')
         .eq('profissional_id', agendamento.profissional_id)
         .eq('data_hora_inicio', dataAntigaISO)
         .eq('paciente_id', agendamento.paciente_id)
-        .single();
+        .maybeSingle();
+
+      if (slotAntigoError) {
+        console.error('❌ Erro ao buscar slot antigo:', slotAntigoError);
+      }
 
       if (slotAntigo) {
+        console.log('✅ Slot antigo encontrado, liberando:', slotAntigo.id);
         const { error: liberarSlotError } = await supabase
           .from('agendamento_slot')
           .update({
@@ -561,9 +572,12 @@ export class AgendamentosService {
           .eq('id', slotAntigo.id);
 
         if (liberarSlotError) {
-          console.error('Erro ao liberar slot antigo:', liberarSlotError);
+          console.error('❌ Erro ao liberar slot antigo:', liberarSlotError);
           throw new Error('Erro ao liberar horário anterior');
         }
+        console.log('✅ Slot antigo liberado com sucesso');
+      } else {
+        console.warn('⚠️ Slot antigo não encontrado - pode já estar liberado ou não existir');
       }
 
       // 6. Ocupar o novo slot
