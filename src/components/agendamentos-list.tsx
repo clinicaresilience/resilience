@@ -34,6 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ModalReagendarAgendamento } from "@/components/modal-reagendar-agendamento";
 
 type Props = {
   userId?: string;
@@ -73,6 +74,14 @@ export default function AgendamentosList({
     useState("");
   const [loadingCancelamento, setLoadingCancelamento] = useState(false);
 
+  const [reagendamentoModal, setReagendamentoModal] = useState<{
+    isOpen: boolean;
+    agendamento: UiAgendamento | null;
+  }>({
+    isOpen: false,
+    agendamento: null,
+  });
+
   const listagem = useMemo(() => {
     const buscaLower = busca.toLowerCase();
     const byTerm = (a: UiAgendamento) =>
@@ -99,6 +108,30 @@ export default function AgendamentosList({
     // Usar Luxon para verificar se está no passado
     const ehPassado = TimezoneUtils.isPast(TimezoneUtils.dbTimestampToUTC(a.dataISO));
     return a.status !== "cancelado" && a.status !== "concluido" && !ehPassado;
+  }
+
+  function podeReagendar(a: UiAgendamento) {
+    const ehPassado = TimezoneUtils.isPast(TimezoneUtils.dbTimestampToUTC(a.dataISO));
+    const reagendamentosRestantes = 3 - (a.numero_reagendamentos || 0);
+    return (
+      a.status !== "cancelado" &&
+      a.status !== "concluido" &&
+      !ehPassado &&
+      reagendamentosRestantes > 0
+    );
+  }
+
+  function abrirModalReagendamento(agendamento: UiAgendamento) {
+    setReagendamentoModal({ isOpen: true, agendamento });
+  }
+
+  function fecharModalReagendamento() {
+    setReagendamentoModal({ isOpen: false, agendamento: null });
+  }
+
+  async function handleReagendamentoSuccess() {
+    // Recarregar a página para atualizar a lista
+    window.location.reload();
   }
 
   function abrirModalCancelamento(id: string) {
@@ -320,10 +353,17 @@ export default function AgendamentosList({
                     </div>
 
                     <DialogFooterUI className="pt-2">
-                      <Button asChild variant="secondary">
-                        <Link href="/portal-publico">
-                          Reagendar
-                        </Link>
+                      <Button
+                        variant="secondary"
+                        onClick={() => abrirModalReagendamento(a)}
+                        disabled={!podeReagendar(a)}
+                        title={
+                          !podeReagendar(a)
+                            ? "Não é possível reagendar (limite atingido ou agendamento expirado)"
+                            : "Reagendar este agendamento"
+                        }
+                      >
+                        Reagendar
                       </Button>
                       <Button
                         variant="destructive"
@@ -341,8 +381,17 @@ export default function AgendamentosList({
                   </DialogContent>
                 </Dialog>
 
-                <Button asChild variant="secondary">
-                  <Link href="/portal-publico">Reagendar</Link>
+                <Button
+                  variant="secondary"
+                  onClick={() => abrirModalReagendamento(a)}
+                  disabled={!podeReagendar(a)}
+                  title={
+                    !podeReagendar(a)
+                      ? "Não é possível reagendar (limite atingido ou agendamento expirado)"
+                      : "Reagendar este agendamento"
+                  }
+                >
+                  Reagendar
                 </Button>
                 <Button
                   variant="destructive"
@@ -422,6 +471,16 @@ export default function AgendamentosList({
           </DialogFooterUI>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Reagendamento */}
+      {reagendamentoModal.agendamento && (
+        <ModalReagendarAgendamento
+          open={reagendamentoModal.isOpen}
+          onClose={fecharModalReagendamento}
+          onSuccess={handleReagendamentoSuccess}
+          agendamento={reagendamentoModal.agendamento}
+        />
+      )}
     </div>
   );
 }

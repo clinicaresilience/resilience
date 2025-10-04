@@ -112,49 +112,134 @@ export class MercadoPagoService {
    */
   static async processarWebhook(webhookData: Record<string, unknown>) {
     try {
-      console.log('Processando webhook MP:', webhookData);
+      console.log('🔔 Processando webhook MP:', JSON.stringify(webhookData, null, 2));
 
       const tipo = webhookData.type || webhookData.action;
 
       // Apenas processar eventos de pagamento
       if (tipo !== 'payment') {
-        console.log('Webhook ignorado - tipo:', tipo);
+        console.log('⏭️ Webhook ignorado - tipo:', tipo);
         return;
       }
 
       const paymentId = (webhookData.data as { id: string })?.id;
       if (!paymentId) {
-        console.error('Payment ID não encontrado no webhook');
+        console.error('❌ Payment ID não encontrado no webhook');
         return;
       }
+
+      console.log(`🔍 Consultando pagamento MP #${paymentId}...`);
 
       // Consultar detalhes do pagamento
       const payment = new Payment(mpClient);
       const paymentResponse = await payment.get({ id: paymentId });
 
       if (!paymentResponse) {
-        console.error('Não foi possível consultar pagamento:', paymentId);
+        console.error('❌ Não foi possível consultar pagamento:', paymentId);
         return;
       }
 
+      console.log('📦 Detalhes do pagamento:', {
+        payment_id: paymentId,
+        external_reference: paymentResponse.external_reference,
+        status: paymentResponse.status,
+        status_detail: paymentResponse.status_detail,
+        transaction_amount: paymentResponse.transaction_amount,
+      });
+
       const externalReference = paymentResponse.external_reference;
       if (!externalReference) {
-        console.error('External reference não encontrado no pagamento:', paymentId);
+        console.error('❌ External reference não encontrado no pagamento:', paymentId);
         return;
       }
 
       const supabase = await createClient();
+      let pagamentoExistente = null;
 
-      // Buscar pagamento no banco pelo compra_pacote_id (external_reference)
-      const { data: pagamentoExistente } = await supabase
+      // ESTRATÉGIA 1: Buscar por compra_pacote_id (external_reference)
+      console.log(`🔍 Estratégia 1: Buscando por compra_pacote_id = ${externalReference}`);
+      const { data: pagamento1 } = await supabase
         .from('pagamentos_mercadopago')
         .select('*')
         .eq('compra_pacote_id', externalReference)
-        .single();
+        .maybeSingle();
+
+      if (pagamento1) {
+        console.log('✅ Pagamento encontrado por compra_pacote_id');
+        pagamentoExistente = pagamento1;
+      }
+
+      // ESTRATÉGIA 2: Buscar por payment_id
+      if (!pagamentoExistente) {
+        console.log(`🔍 Estratégia 2: Buscando por payment_id = ${paymentId}`);
+        const { data: pagamento2 } = await supabase
+          .from('pagamentos_mercadopago')
+          .select('*')
+          .eq('payment_id', paymentId)
+          .maybeSingle();
+
+        if (pagamento2) {
+          console.log('✅ Pagamento encontrado por payment_id');
+          pagamentoExistente = pagamento2;
+        }
+      }
+
+      // ESTRATÉGIA 3: Buscar por preference_id (via metadata do pagamento)
+      if (!pagamentoExistente && paymentResponse.metadata?.preference_id) {
+        const preferenceId = paymentResponse.metadata.preference_id;
+        console.log(`🔍 Estratégia 3: Buscando por preference_id = ${preferenceId}`);
+        const { data: pagamento3 } = await supabase
+          .from('pagamentos_mercadopago')
+          .select('*')
+          .eq('preference_id', preferenceId)
+          .maybeSingle();
+
+        if (pagamento3) {
+          console.log('✅ Pagamento encontrado por preference_id');
+          pagamentoExistente = pagamento3;
+        }
+      }
+
+      // ESTRATÉGIA 4: Buscar compra_pacote diretamente
+      if (!pagamentoExistente) {
+        console.log(`🔍 Estratégia 4: Verificando se compra_pacote existe = ${externalReference}`);
+        const { data: compraPacote } = await supabase
+          .from('compras_pacotes')
+          .select('*')
+          .eq('id', externalReference)
+          .maybeSingle();
+
+        if (compraPacote) {
+          console.log('✅ Compra de pacote encontrada, criando registro de pagamento');
+
+          // Criar registro de pagamento
+          const { data: novoPagamento, error: createError } = await supabase
+            .from('pagamentos_mercadopago')
+            .insert({
+              compra_pacote_id: externalReference,
+              payment_id: paymentId,
+              status: paymentResponse.status || 'pending',
+              status_detail: paymentResponse.status_detail || '',
+              payment_type: paymentResponse.payment_type_id || '',
+              payment_method: paymentResponse.payment_method_id || '',
+              valor: paymentResponse.transaction_amount,
+              webhook_data: webhookData,
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('❌ Erro ao criar registro de pagamento:', createError);
+          } else {
+            console.log('✅ Registro de pagamento criado:', novoPagamento?.id);
+            pagamentoExistente = novoPagamento;
+          }
+        }
+      }
 
       if (pagamentoExistente) {
         // Atualizar pagamento existente
-        await supabase
+        const { error: updateError } = await supabase
           .from('pagamentos_mercadopago')
           .update({
             payment_id: paymentId,
@@ -167,21 +252,30 @@ export class MercadoPagoService {
           })
           .eq('id', pagamentoExistente.id);
 
-        console.log('✅ Pagamento atualizado:', {
-          compra_id: externalReference,
-          payment_id: paymentId,
-          status: paymentResponse.status
-        });
+        if (updateError) {
+          console.error('❌ Erro ao atualizar pagamento:', updateError);
+        } else {
+          console.log('✅ Pagamento atualizado:', {
+            id: pagamentoExistente.id,
+            compra_id: externalReference,
+            payment_id: paymentId,
+            status: paymentResponse.status
+          });
+        }
 
         // Se aprovado, ativar compra do pacote
         if (paymentResponse.status === 'approved') {
+          console.log('💰 Pagamento aprovado! Ativando compra do pacote...');
           await this.ativarCompraPacote(pagamentoExistente.compra_pacote_id, paymentId);
         }
       } else {
-        console.error('❌ Pagamento não encontrado no banco para external_reference:', externalReference);
+        console.error('❌ CRÍTICO: Pagamento não encontrado em nenhuma estratégia:', {
+          external_reference: externalReference,
+          payment_id: paymentId,
+        });
       }
     } catch (error) {
-      console.error('Erro ao processar webhook:', error);
+      console.error('💥 Erro ao processar webhook:', error);
       throw error;
     }
   }

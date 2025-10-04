@@ -480,6 +480,163 @@ export class AgendamentosService {
   static async confirmAgendamento(id: string) {
     return this.updateAgendamentoStatus(id, { status: "confirmado" });
   }
+
+  // ======================================
+  // Reagendar agendamento (limite de 3 vezes)
+  // ======================================
+  static async reagendarAgendamento(
+    agendamento_id: string,
+    nova_data_consulta: string,
+    motivo?: string
+  ) {
+    const supabase = await createClient();
+
+    try {
+      // 1. Buscar agendamento atual com número de reagendamentos
+      const { data: agendamento, error: fetchError } = await supabase
+        .from('agendamentos')
+        .select('*')
+        .eq('id', agendamento_id)
+        .single();
+
+      if (fetchError || !agendamento) {
+        throw new Error('Agendamento não encontrado');
+      }
+
+      // 2. Validar limite de reagendamentos (máximo 3)
+      const numeroReagendamentos = agendamento.numero_reagendamentos || 0;
+      if (numeroReagendamentos >= 3) {
+        throw new Error('Limite de reagendamentos atingido. Você já reagendou este agendamento 3 vezes.');
+      }
+
+      // 3. Validar que a nova data não é no passado
+      const novaDataObj = new Date(nova_data_consulta);
+      const agora = new Date();
+
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      const novaDataInicioDia = new Date(novaDataObj);
+      novaDataInicioDia.setHours(0, 0, 0, 0);
+
+      if (novaDataInicioDia.getTime() === hoje.getTime()) {
+        if (novaDataObj <= agora) {
+          throw new Error('Não é possível reagendar para horários que já passaram');
+        }
+      } else if (novaDataObj < hoje) {
+        throw new Error('Não é possível reagendar para datas passadas');
+      }
+
+      // 4. Verificar se o novo slot está disponível
+      const novaDataISO = novaDataObj.toISOString();
+      const { data: novoSlot, error: novoSlotError } = await supabase
+        .from('agendamento_slot')
+        .select('*')
+        .eq('profissional_id', agendamento.profissional_id)
+        .eq('data_hora_inicio', novaDataISO)
+        .eq('status', 'livre')
+        .single();
+
+      if (novoSlotError || !novoSlot) {
+        throw new Error('O horário selecionado não está disponível');
+      }
+
+      // 5. Liberar o slot antigo
+      const dataAntigaISO = new Date(agendamento.data_consulta).toISOString();
+      const { data: slotAntigo } = await supabase
+        .from('agendamento_slot')
+        .select('*')
+        .eq('profissional_id', agendamento.profissional_id)
+        .eq('data_hora_inicio', dataAntigaISO)
+        .eq('paciente_id', agendamento.paciente_id)
+        .single();
+
+      if (slotAntigo) {
+        const { error: liberarSlotError } = await supabase
+          .from('agendamento_slot')
+          .update({
+            status: 'livre',
+            paciente_id: null,
+            atualizado_em: new Date().toISOString()
+          })
+          .eq('id', slotAntigo.id);
+
+        if (liberarSlotError) {
+          console.error('Erro ao liberar slot antigo:', liberarSlotError);
+          throw new Error('Erro ao liberar horário anterior');
+        }
+      }
+
+      // 6. Ocupar o novo slot
+      const { error: ocuparSlotError } = await supabase
+        .from('agendamento_slot')
+        .update({
+          status: 'ocupado',
+          paciente_id: agendamento.paciente_id,
+          atualizado_em: new Date().toISOString()
+        })
+        .eq('id', novoSlot.id);
+
+      if (ocuparSlotError) {
+        // Reverter liberação do slot antigo em caso de erro
+        if (slotAntigo) {
+          await supabase
+            .from('agendamento_slot')
+            .update({
+              status: 'ocupado',
+              paciente_id: agendamento.paciente_id,
+              atualizado_em: new Date().toISOString()
+            })
+            .eq('id', slotAntigo.id);
+        }
+        throw new Error('Erro ao ocupar novo horário');
+      }
+
+      // 7. Atualizar histórico de reagendamentos
+      const historicoAtual = agendamento.historico_reagendamentos || [];
+      const novoHistorico = [
+        ...historicoAtual,
+        {
+          data_anterior: agendamento.data_consulta,
+          data_nova: nova_data_consulta,
+          reagendado_em: new Date().toISOString(),
+          motivo: motivo || 'Não informado'
+        }
+      ];
+
+      // 8. Atualizar o agendamento
+      const { data: agendamentoAtualizado, error: updateError } = await supabase
+        .from('agendamentos')
+        .update({
+          data_consulta: nova_data_consulta,
+          numero_reagendamentos: numeroReagendamentos + 1,
+          historico_reagendamentos: novoHistorico,
+          notas: motivo ? `Reagendado: ${motivo}` : agendamento.notas,
+          atualizado_em: new Date().toISOString()
+        })
+        .eq('id', agendamento_id)
+        .select(`
+          *,
+          paciente:usuarios!agendamentos_paciente_id_fkey(id, nome, email, telefone),
+          profissional:usuarios!agendamentos_profissional_id_fkey(nome)
+        `)
+        .single();
+
+      if (updateError) {
+        console.error('Erro ao atualizar agendamento:', updateError);
+        throw new Error('Erro ao atualizar agendamento');
+      }
+
+      return {
+        success: true,
+        agendamento: agendamentoAtualizado as Agendamento,
+        reagendamentos_restantes: 3 - (numeroReagendamentos + 1)
+      };
+
+    } catch (error) {
+      console.error('Erro ao reagendar agendamento:', error);
+      throw error;
+    }
+  }
 }
 
 // ======================================

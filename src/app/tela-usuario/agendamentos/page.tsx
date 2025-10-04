@@ -44,6 +44,8 @@ export default async function AgendamentosPage() {
     local: "Clínica Resilience",
     status: ag.status,
     notas: ag.notas,
+    numero_reagendamentos: (ag as any).numero_reagendamentos || 0,
+    historico_reagendamentos: (ag as any).historico_reagendamentos || [],
   }))
 
   return (

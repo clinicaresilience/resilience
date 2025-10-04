@@ -18,8 +18,33 @@ export async function GET(
     const dataFim = searchParams.get('dataFim');
 
     const hoje = TimezoneUtils.now();
-    const inicioDate = dataInicio || hoje;
-    const fimDate = dataFim || TimezoneUtils.addTime(hoje, 30, 'days');
+
+    // Garantir que as datas tenham horário completo
+    let inicioDate: string;
+    let fimDate: string;
+
+    if (dataInicio) {
+      // Se data vem no formato YYYY-MM-DD, adicionar horário 00:00:00
+      inicioDate = dataInicio.includes('T') ? dataInicio : `${dataInicio}T00:00:00Z`;
+    } else {
+      inicioDate = hoje;
+    }
+
+    if (dataFim) {
+      // Se data vem no formato YYYY-MM-DD, adicionar fim do dia (próximo dia às 00:00)
+      if (dataFim.includes('T')) {
+        fimDate = dataFim;
+      } else {
+        // Adicionar 1 dia para pegar até o fim do dia especificado
+        const fimDateObj = new Date(dataFim + 'T23:59:59Z');
+        fimDateObj.setDate(fimDateObj.getDate() + 1);
+        fimDate = fimDateObj.toISOString().split('.')[0] + 'Z';
+      }
+    } else {
+      fimDate = TimezoneUtils.addTime(hoje, 30, 'days');
+    }
+
+    console.log('Buscando slots:', { profissionalId, inicioDate, fimDate });
 
     // Buscar slots usando timestamptz
     const { data: slots, error } = await supabase
@@ -28,7 +53,7 @@ export async function GET(
       .eq('profissional_id', profissionalId)
       .eq('status', 'livre')
       .gte('data_hora_inicio', inicioDate)
-      .lte('data_hora_inicio', fimDate)
+      .lt('data_hora_inicio', fimDate)
       .order('data_hora_inicio');
 
     if (error) {

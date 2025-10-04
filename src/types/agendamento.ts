@@ -17,6 +17,13 @@ export type UiAgendamento = {
   local: string
   status: StatusAgendamento
   notas?: string
+  numero_reagendamentos?: number
+  historico_reagendamentos?: Array<{
+    data_anterior: string
+    data_nova: string
+    reagendado_em: string
+    motivo?: string
+  }>
 }
 
 // Forma básica do registro no banco (tabela: agendamentos)
