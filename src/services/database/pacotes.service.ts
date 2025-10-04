@@ -251,7 +251,9 @@ export class PacotesService {
    * Criar agendamentos recorrentes após aprovação do pagamento
    */
   static async criarAgendamentosRecorrentes(compraId: string): Promise<{ success: boolean; agendamentos: string[]; errors: string[] }> {
-    const supabase = await createClient();
+    // Usar admin client para funcionar em webhooks
+    const { createAdminClient } = await import('@/lib/server-admin');
+    const supabase = createAdminClient();
 
     // Buscar dados da compra
     const compra = await this.buscarCompraPorId(compraId);

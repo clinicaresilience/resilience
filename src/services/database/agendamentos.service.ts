@@ -377,7 +377,9 @@ export class AgendamentosService {
     profissional_id: string,
     data_consulta: string
   ): Promise<boolean> {
-    const supabase = await createClient();
+    // Usar admin client para funcionar em webhooks
+    const { createAdminClient } = await import('@/lib/server-admin');
+    const supabase = createAdminClient();
 
     try {
       const dataConsultaISO = new Date(data_consulta).toISOString();
