@@ -201,15 +201,15 @@ export function PerfilProfissionalClient({
   };
 
   return (
-    <div className="flex font-['Red_Hat_Display'] flex-col items-center min-h-screen bg-gradient-to-br  from-slate-50 via-[#edfffe]/30 to-[#f5b26b]/5 p-6 ">
-      <Card className="font-['Red_Hat_Display'] w-full mt-24 max-w-5xl bg-white/95 backdrop-blur-xl shadow-xl shadow-[#02b1aa]/10 border border-white/50 rounded-3xl p-8 md:p-10">
+    <div className="flex font-['Red_Hat_Display'] flex-col items-center min-h-screen bg-gradient-to-br  from-slate-50 via-[#edfffe]/30 to-[#f5b26b]/5 p-4 md:p-6">
+      <Card className="font-['Red_Hat_Display'] w-full mt-20 md:mt-24 max-w-5xl bg-white/95 backdrop-blur-xl shadow-xl shadow-[#02b1aa]/10 border border-white/50 rounded-3xl p-4 md:p-6 lg:p-8 xl:p-10">
         {/* Cabeçalho do Profissional */}
-        <div className="flex flex-col items-center text-center mb-10">
+        <div className="flex flex-col items-center text-center mb-6 md:mb-10">
           {/* Foto */}
           {profissional.avatar_url && (
-            <div className="relative -mt-16 mb-6">
+            <div className="relative -mt-12 md:-mt-14 lg:-mt-16 mb-4 md:mb-6">
               <div className="absolute -inset-2 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-full blur-lg opacity-50"></div>
-              <div className="relative w-36 h-36 rounded-full overflow-hidden border-4 border-white shadow-xl bg-white/90 backdrop-blur-sm">
+              <div className="relative w-28 h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full overflow-hidden border-4 border-white shadow-xl bg-white/90 backdrop-blur-sm">
                 <img
                   src={profissional.avatar_url}
                   alt={`Foto de ${profissional.nome}`}
@@ -219,20 +219,20 @@ export function PerfilProfissionalClient({
             </div>
           )}
 
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent tracking-tight mb-3">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent tracking-tight mb-2 md:mb-3 px-4">
             {profissional.nome}
           </h1>
-          <p className="text-lg md:text-xl text-[#02b1aa] font-semibold mb-2">
+          <p className="text-base md:text-lg lg:text-xl text-[#02b1aa] font-semibold mb-2">
             {profissional.especialidade || "Psicólogo"}
           </p>
-          <p className="text-sm md:text-base text-[#029fdf] font-medium mb-6 px-4 py-2 bg-gradient-to-r from-[#edfffe] to-blue-50/50 rounded-full border border-[#02b1aa]/20">
+          <p className="text-xs md:text-sm lg:text-base text-[#029fdf] font-medium mb-4 md:mb-6 px-3 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-[#edfffe] to-blue-50/50 rounded-full border border-[#02b1aa]/20">
             {profissional.crp
               ? `CRP ${profissional.crp}`
               : "Profissional Certificado"}
           </p>
 
           <div className="max-w-3xl">
-            <p className="text-gray-700 text-base leading-relaxed bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/30 shadow-lg">
+            <p className="text-gray-700 text-sm md:text-base leading-relaxed bg-white/60 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/30 shadow-lg">
               {profissional.bio ||
                 "Profissional experiente em sua área de atuação."}
             </p>
@@ -240,12 +240,12 @@ export function PerfilProfissionalClient({
         </div>
 
         {/* Botão Agendar Consulta ou Calendário */}
-        <div className="mt-10">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent tracking-tight mb-2">
+        <div className="mt-6 md:mt-10">
+          <div className="text-center mb-4 md:mb-6">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent tracking-tight mb-2 px-4">
               Agendar Consulta
             </h2>
-            <p className="text-gray-600 text-base">
+            <p className="text-gray-600 text-sm md:text-base px-4">
               {!tipoPaciente
                 ? "Clique no botão abaixo para iniciar seu agendamento"
                 : "Escolha uma data e horário disponíveis para sua sessão"}
@@ -254,18 +254,18 @@ export function PerfilProfissionalClient({
 
           {!tipoPaciente ? (
             // Botão para iniciar agendamento
-            <div className="flex justify-center">
+            <div className="flex justify-center px-4">
               <Button
                 onClick={handleIniciarAgendamento}
                 size="lg"
-                className="h-14 px-8 text-lg font-semibold text-white rounded-2xl bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] hover:from-[#02b1aa]/90 hover:via-[#029fdf]/90 hover:to-[#01c2e3]/90 shadow-lg shadow-[#02b1aa]/25 hover:shadow-xl border-0 transition-all duration-300"
+                className="h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-semibold text-white rounded-2xl bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] hover:from-[#02b1aa]/90 hover:via-[#029fdf]/90 hover:to-[#01c2e3]/90 shadow-lg shadow-[#02b1aa]/25 hover:shadow-xl border-0 transition-all duration-300 w-full md:w-auto"
               >
                 Ver Agenda e Agendar
               </Button>
             </div>
           ) : (
             // Calendário (só aparece depois de selecionar tipo)
-            <div className="bg-gradient-to-r from-[#edfffe]/50 to-blue-50/30 rounded-2xl p-6 border border-white/30 shadow-lg backdrop-blur-sm">
+            <div className="bg-gradient-to-r from-[#edfffe]/50 to-blue-50/30 rounded-2xl p-4 md:p-6 border border-white/30 shadow-lg backdrop-blur-sm">
               <CalendarBooking
                 profissionalId={profissional.id}
                 profissionalNome={profissional.nome}

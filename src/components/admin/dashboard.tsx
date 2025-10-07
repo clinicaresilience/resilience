@@ -277,64 +277,64 @@ export function AdminDashboard() {
   return (
     <div className="w-full">
       {/* Métricas Principais */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-azul-escuro mb-4">
+      <div className="mb-4 md:mb-6">
+        <h2 className="text-lg md:text-xl font-semibold text-azul-escuro mb-3 md:mb-4">
           Métricas Principais
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
           <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-blue-100">
+            <CardHeader className="pb-1 md:pb-2 p-3 md:p-6">
+              <CardTitle className="text-xs md:text-sm text-blue-100">
                 Profissionais Cadastrados
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{totais.profissionais}</p>
+            <CardContent className="p-3 md:p-6 pt-0">
+              <p className="text-2xl md:text-3xl font-bold">{totais.profissionais}</p>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0 shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-purple-100">
+            <CardHeader className="pb-1 md:pb-2 p-3 md:p-6">
+              <CardTitle className="text-xs md:text-sm text-purple-100">
                 Total de Agendamentos
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{totais.total}</p>
+            <CardContent className="p-3 md:p-6 pt-0">
+              <p className="text-2xl md:text-3xl font-bold">{totais.total}</p>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0 shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-green-100">
+            <CardHeader className="pb-1 md:pb-2 p-3 md:p-6">
+              <CardTitle className="text-xs md:text-sm text-green-100">
                 Agendamentos Confirmados
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{totais.confirmadas}</p>
+            <CardContent className="p-3 md:p-6 pt-0">
+              <p className="text-2xl md:text-3xl font-bold">{totais.confirmadas}</p>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white border-0 shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-red-100">
+            <CardHeader className="pb-1 md:pb-2 p-3 md:p-6">
+              <CardTitle className="text-xs md:text-sm text-red-100">
                 Agendamentos Cancelados
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{totais.canceladas}</p>
+            <CardContent className="p-3 md:p-6 pt-0">
+              <p className="text-2xl md:text-3xl font-bold">{totais.canceladas}</p>
             </CardContent>
           </Card>
         </div>
       </div>
 
       {/* Estatísticas por Profissional */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-azul-escuro mb-4">
+      <div className="mb-4 md:mb-6">
+        <h2 className="text-lg md:text-xl font-semibold text-azul-escuro mb-3 md:mb-4">
           Desempenho por Profissional
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {statsCompletas.map((p) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+          {statsCompletas.map((p, index) => {
             const taxaComparecimento =
               p.total > 0 ? Math.round((p.concluidas / p.total) * 100) : 0;
             const taxaCancelamento =
@@ -342,14 +342,14 @@ export function AdminDashboard() {
 
             return (
               <Card
-                key={p.nome}
+                key={`prof-${index}-${p.nome.replace(/\s+/g, '-').toLowerCase()}`}
                 className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow h-full flex flex-col"
               >
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg text-azul-escuro">
+                <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
+                  <CardTitle className="text-base md:text-lg text-azul-escuro">
                     {p.nome}
                   </CardTitle>
-                  <div className="flex gap-4 text-sm text-gray-600">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-xs md:text-sm text-gray-600">
                     <span>
                       Comparecimento:{" "}
                       <strong className="text-green-600">
@@ -364,35 +364,35 @@ export function AdminDashboard() {
                     </span>
                   </div>
                 </CardHeader>
-                <CardContent className="flex-1">
-                  <div className="grid grid-cols-2 gap-2 text-sm h-full">
-                    <div className="rounded-md bg-gray-50 p-3 h-full flex flex-col justify-between">
-                      <p className="text-gray-500">Agendamento total</p>
-                      <p className="text-xl font-semibold text-azul-escuro">
+                <CardContent className="flex-1 p-3 md:p-6 pt-0">
+                  <div className="grid grid-cols-2 gap-2 text-xs md:text-sm h-full">
+                    <div className="rounded-md bg-gray-50 p-2 md:p-3 h-full flex flex-col justify-between">
+                      <p className="text-gray-500 text-xs md:text-sm">Agendamento total</p>
+                      <p className="text-lg md:text-xl font-semibold text-azul-escuro">
                         {p.total}
                       </p>
                     </div>
-                    <div className="rounded-md bg-green-50 p-3 h-full flex flex-col justify-between">
-                      <p className="text-gray-600">Agendamento confirmado</p>
-                      <p className="text-xl font-semibold text-green-700">
+                    <div className="rounded-md bg-green-50 p-2 md:p-3 h-full flex flex-col justify-between">
+                      <p className="text-gray-600 text-xs md:text-sm">Agendamento confirmado</p>
+                      <p className="text-lg md:text-xl font-semibold text-green-700">
                         {p.confirmadas}
                       </p>
                     </div>
-                    <div className="rounded-md bg-red-50 p-3 h-full flex flex-col justify-between">
-                      <p className="text-gray-600">Agendamento cancelado</p>
-                      <p className="text-xl font-semibold text-red-700">
+                    <div className="rounded-md bg-red-50 p-2 md:p-3 h-full flex flex-col justify-between">
+                      <p className="text-gray-600 text-xs md:text-sm">Agendamento cancelado</p>
+                      <p className="text-lg md:text-xl font-semibold text-red-700">
                         {p.canceladas}
                       </p>
                     </div>
-                    <div className="rounded-md bg-indigo-50 p-3 h-full flex flex-col justify-between">
-                      <p className="text-gray-600">Consulta concluída</p>
-                      <p className="text-xl font-semibold text-indigo-700">
+                    <div className="rounded-md bg-indigo-50 p-2 md:p-3 h-full flex flex-col justify-between">
+                      <p className="text-gray-600 text-xs md:text-sm">Consulta concluída</p>
+                      <p className="text-lg md:text-xl font-semibold text-indigo-700">
                         {p.concluidas}
                       </p>
                     </div>
-                    <div className="rounded-md bg-blue-50 p-3 h-full col-span-2 flex flex-col justify-between">
-                      <p className="text-gray-600">Próximas consultas</p>
-                      <p className="text-xl font-semibold text-blue-700">
+                    <div className="rounded-md bg-blue-50 p-2 md:p-3 h-full col-span-2 flex flex-col justify-between">
+                      <p className="text-gray-600 text-xs md:text-sm">Próximas consultas</p>
+                      <p className="text-lg md:text-xl font-semibold text-blue-700">
                         {p.proximas}
                       </p>
                     </div>

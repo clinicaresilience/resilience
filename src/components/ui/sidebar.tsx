@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { User, ChevronLeft, ChevronRight, Stethoscope } from "lucide-react";
+import { User, ChevronLeft, ChevronRight, Stethoscope, Menu, X } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 import { useTabStore } from "../../app/store/useTabStore";
 import Link from "next/link";
@@ -23,6 +23,7 @@ export function Sidebar({
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isHamburgerMenuOpen, setIsHamburgerMenuOpen] = useState(false);
 
   // Call callback when collapse state changes
   useEffect(() => {
@@ -272,6 +273,145 @@ export function Sidebar({
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Fixed Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+        <div className="flex justify-around items-center py-2 px-1">
+          {tabs.slice(0, Math.min(5, tabs.length)).map((tab) => (
+            tab.path ? (
+              <Link
+                key={tab.id}
+                href={tab.path}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex flex-col items-center justify-center px-2 py-1.5 rounded-lg transition-colors min-w-0 flex-1",
+                  activeTab === tab.id
+                    ? "bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white"
+                    : "text-gray-600 hover:text-[#02b1aa] hover:bg-gray-100"
+                )}
+              >
+                <tab.icon className="h-5 w-5 flex-shrink-0" />
+                <span className="text-[10px] mt-0.5 leading-tight truncate w-full text-center">
+                  {tab.label}
+                </span>
+              </Link>
+            ) : (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex flex-col items-center justify-center px-2 py-1.5 rounded-lg transition-colors min-w-0 flex-1",
+                  activeTab === tab.id
+                    ? "bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white"
+                    : "text-gray-600 hover:text-[#02b1aa] hover:bg-gray-100"
+                )}
+              >
+                <tab.icon className="h-5 w-5 flex-shrink-0" />
+                <span className="text-[10px] mt-0.5 leading-tight truncate w-full text-center">
+                  {tab.label}
+                </span>
+              </button>
+            )
+          ))}
+
+          {/* Hamburger Menu Button - Only show if there are more than 5 tabs */}
+          {tabs.length > 5 && (
+            <button
+              onClick={() => setIsHamburgerMenuOpen(true)}
+              className="flex flex-col items-center justify-center px-2 py-1.5 rounded-lg transition-colors text-gray-600 hover:text-[#02b1aa] hover:bg-gray-100 min-w-0 flex-1"
+            >
+              <Menu className="h-5 w-5 flex-shrink-0" />
+              <span className="text-[10px] mt-0.5 leading-tight truncate w-full text-center">Menu</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile Hamburger Menu Overlay */}
+      <div
+        className={cn(
+          "fixed inset-0 bg-black z-40 md:hidden transition-opacity duration-300",
+          isHamburgerMenuOpen ? 'bg-opacity-50 visible' : 'bg-opacity-0 invisible'
+        )}
+        onClick={() => setIsHamburgerMenuOpen(false)}
+      />
+
+      {/* Mobile Hamburger Menu Panel */}
+      <div className={cn(
+        "fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-50 md:hidden transform transition-transform duration-300 ease-in-out",
+        isHamburgerMenuOpen ? 'translate-x-0' : 'translate-x-full'
+      )}>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Menu</h3>
+          <button
+            onClick={() => setIsHamburgerMenuOpen(false)}
+            className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="py-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 73px)' }}>
+          {tabs.slice(5).map((tab) => (
+            tab.path ? (
+              <Link
+                key={tab.id}
+                href={tab.path}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setIsHamburgerMenuOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center px-4 py-3 text-left transition-colors",
+                  activeTab === tab.id
+                    ? "bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white"
+                    : "text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                <tab.icon className="h-5 w-5 mr-3 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium">{tab.label}</div>
+                  {tab.description && (
+                    <div className={cn(
+                      "text-xs",
+                      activeTab === tab.id ? "text-blue-100" : "text-gray-500"
+                    )}>
+                      {tab.description}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ) : (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setIsHamburgerMenuOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center px-4 py-3 text-left transition-colors",
+                  activeTab === tab.id
+                    ? "bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white"
+                    : "text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                <tab.icon className="h-5 w-5 mr-3 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium">{tab.label}</div>
+                  {tab.description && (
+                    <div className={cn(
+                      "text-xs",
+                      activeTab === tab.id ? "text-blue-100" : "text-gray-500"
+                    )}>
+                      {tab.description}
+                    </div>
+                  )}
+                </div>
+              </button>
+            )
+          ))}
         </div>
       </div>
     </>

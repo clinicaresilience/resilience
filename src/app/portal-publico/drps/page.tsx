@@ -467,18 +467,18 @@ export default function DrpsFormPage() {
   // If form is not shown, display landing page
   if (!showForm) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pt-24 pb-12 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 pt-20 md:pt-24 pb-8 md:pb-12 px-4">
         {/* Hero Section */}
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
+        <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-8">
+          <div className="space-y-3 md:space-y-4">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900 px-4">
               Diagnóstico de Riscos
               <span className="block bg-gradient-to-r from-[#02b1aa] to-[#029fdf] bg-clip-text text-transparent">
                 Psicossociais (DRPS)
               </span>
             </h1>
-            <div className="w-32 h-1 bg-gradient-to-r from-[#02b1aa] to-[#029fdf] mx-auto rounded-full"></div>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <div className="w-24 md:w-32 h-1 bg-gradient-to-r from-[#02b1aa] to-[#029fdf] mx-auto rounded-full"></div>
+            <p className="text-sm md:text-base lg:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
               Ferramenta de avaliação baseada na NR-01 para identificação de riscos psicossociais no ambiente de trabalho
             </p>
           </div>
@@ -487,29 +487,29 @@ export default function DrpsFormPage() {
         {/* Main Content */}
         <div className="max-w-5xl mx-auto mt-16 space-y-12">
           {/* What is DRPS */}
-          <Card className="p-8 bg-white shadow-xl">
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 text-center">
+          <Card className="p-4 md:p-6 lg:p-8 bg-white shadow-xl">
+            <div className="space-y-4 md:space-y-6">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 text-center px-4">
                 O que é o DRPS?
               </h2>
               
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+                <div className="space-y-3 md:space-y-4">
                   <div className="flex items-start gap-3">
-                    <CheckCircle className="w-6 h-6 text-green-600 mt-1 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 md:w-6 md:h-6 text-green-600 mt-1 flex-shrink-0" />
                     <div>
-                      <h3 className="font-semibold text-gray-900">Baseado na NR-01</h3>
-                      <p className="text-gray-600">
+                      <h3 className="font-semibold text-gray-900 text-sm md:text-base">Baseado na NR-01</h3>
+                      <p className="text-gray-600 text-sm md:text-base">
                         Desenvolvido conforme as diretrizes do Ministério do Trabalho e Emprego (MTE) para identificação de riscos psicossociais.
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3">
-                    <CheckCircle className="w-6 h-6 text-green-600 mt-1 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 md:w-6 md:h-6 text-green-600 mt-1 flex-shrink-0" />
                     <div>
-                      <h3 className="font-semibold text-gray-900">Avaliação Científica</h3>
-                      <p className="text-gray-600">
+                      <h3 className="font-semibold text-gray-900 text-sm md:text-base">Avaliação Científica</h3>
+                      <p className="text-gray-600 text-sm md:text-base">
                         Questionário estruturado com 9 dimensões que investigam os principais fatores de risco psicossocial no trabalho.
                       </p>
                     </div>
@@ -542,19 +542,19 @@ export default function DrpsFormPage() {
           </Card>
 
           {/* Assessment Details */}
-          <Card className="p-8 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-100">
-            <div className="text-center space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900">
+          <Card className="p-4 md:p-6 lg:p-8 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-100">
+            <div className="text-center space-y-4 md:space-y-6">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 px-4">
                 Como funciona a avaliação?
               </h2>
-              
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-xl shadow-sm">
-                  <div className="w-12 h-12 bg-gradient-to-r from-[#02b1aa] to-[#029fdf] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-white font-bold text-lg">1</span>
+
+              <div className="grid md:grid-cols-3 gap-4 md:gap-6">
+                <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-[#02b1aa] to-[#029fdf] rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                    <span className="text-white font-bold text-base md:text-lg">1</span>
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Identificação</h3>
-                  <p className="text-gray-600 text-sm">
+                  <h3 className="font-semibold text-gray-900 mb-2 text-sm md:text-base">Identificação</h3>
+                  <p className="text-gray-600 text-xs md:text-sm">
                     Informações básicas sobre você e sua função na empresa
                   </p>
                 </div>
@@ -606,28 +606,28 @@ export default function DrpsFormPage() {
           </Card>
 
           {/* Call to Action */}
-          <Card className="p-8 bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white text-center">
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold">
+          <Card className="p-4 md:p-6 lg:p-8 bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white text-center">
+            <div className="space-y-4 md:space-y-6">
+              <h2 className="text-xl md:text-2xl font-bold px-4">
                 Pronto para começar sua avaliação?
               </h2>
-              <p className="text-lg opacity-90 max-w-2xl mx-auto">
-                A avaliação leva aproximadamente 15-20 minutos para ser concluída. 
+              <p className="text-sm md:text-base lg:text-lg opacity-90 max-w-2xl mx-auto px-4">
+                A avaliação leva aproximadamente 15-20 minutos para ser concluída.
                 Seja honesto(a) em suas respostas - isso ajudará a construir um ambiente de trabalho mais saudável para todos.
               </p>
-              
+
               <Button
                 onClick={() => setShowForm(true)}
                 size="lg"
-                className="bg-white text-[#02b1aa] hover:bg-gray-50 font-semibold px-4 sm:px-8 py-4 text-base sm:text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto max-w-sm sm:max-w-none mx-auto"
+                className="bg-white text-[#02b1aa] hover:bg-gray-50 font-semibold px-6 md:px-8 py-3 md:py-4 text-sm md:text-base lg:text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto max-w-sm sm:max-w-none mx-auto"
               >
                 <span className="flex items-center justify-center gap-2">
                   Iniciar Avaliação DRPS
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
                 </span>
               </Button>
               
-              <p className="text-sm opacity-75">
+              <p className="text-xs md:text-sm opacity-75 px-4">
                 ✅ Participação voluntária • ✅ Dados protegidos • ✅ Resultados confidenciais
               </p>
             </div>
@@ -655,16 +655,16 @@ export default function DrpsFormPage() {
                 onClick={() => setShowForm(false)}
                 variant="outline"
                 size="sm"
-                className="text-xs"
+                className="text-xs md:text-sm px-3 py-1.5"
               >
                 Voltar
               </Button>
             </div>
           </div>
-          
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div 
-              className="bg-gradient-to-r from-[#02b1aa] to-[#029fdf] h-3 rounded-full transition-all duration-300"
+
+          <div className="w-full bg-gray-200 rounded-full h-2 md:h-3">
+            <div
+              className="bg-gradient-to-r from-[#02b1aa] to-[#029fdf] h-2 md:h-3 rounded-full transition-all duration-300"
               style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
             ></div>
           </div>

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -14,6 +16,15 @@ import {
 } from "lucide-react";
 import Navegacao from "@/components/navegacao";
 import GaleriaClinica from "@/components/galeria-clinica";
+import {
+  FadeInWhenVisible,
+  SlideInWhenVisible,
+  ScaleInWhenVisible,
+  StaggerContainer,
+  CounterAnimation,
+} from "@/components/animations";
+import { motion } from "framer-motion";
+import { staggerItemVariants } from "@/components/animations";
 
 export default function Inicio() {
   return (
@@ -32,43 +43,54 @@ export default function Inicio() {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-8">
             {/* Logo */}
-            <div className="flex justify-center mb-8">
-              <div className="relative">
-                <div className="absolute -inset-2 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-2xl blur-lg opacity-50"></div>
-                <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-white/30 shadow-xl">
-                  <Image
-                    src="/logoResilience.png"
-                    alt="Clínica Resilience"
-                    width={120}
-                    height={120}
-                    className="w-24 h-24 md:w-32 md:h-32 object-contain"
-                    priority
-                  />
+            <ScaleInWhenVisible delay={0.2} initialScale={0.5}>
+              <div className="flex justify-center mb-8">
+                <div className="relative">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-2xl blur-lg opacity-50"></div>
+                  <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl p-4 border border-white/30 shadow-xl">
+                    <Image
+                      src="/logoResilience.png"
+                      alt="Clínica Resilience"
+                      width={120}
+                      height={120}
+                      className="w-24 h-24 md:w-32 md:h-32 object-contain"
+                      priority
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            </ScaleInWhenVisible>
 
             {/* Main Title */}
-            <div className="space-y-4">
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold">
-                <span className="bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent tracking-tight">
-                  Clínica Resilience
-                </span>
-              </h1>
-              <p className="text-xl md:text-2xl text-[#02b1aa] font-semibold tracking-wide">
-                Saúde Mental Corporativa
-              </p>
-            </div>
+            <FadeInWhenVisible delay={0.4}>
+              <div className="space-y-4">
+                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold">
+                  <span className="bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent tracking-tight">
+                    Clínica Resilience
+                  </span>
+                </h1>
+                <p className="text-xl md:text-2xl text-[#02b1aa] font-semibold tracking-wide">
+                  Saúde Mental Corporativa
+                </p>
+              </div>
+            </FadeInWhenVisible>
 
             {/* Subtitle */}
-            <p className="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              Transformamos realidades e materializamos soluções em saúde mental
-              organizacional. Promovemos o bem-estar coletivo através de
-              atendimento humanizado e científico.
-            </p>
+            <FadeInWhenVisible delay={0.6}>
+              <p className="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+                Transformamos realidades e materializamos soluções em saúde mental
+                organizacional. Promovemos o bem-estar coletivo através de
+                atendimento humanizado e científico.
+              </p>
+            </FadeInWhenVisible>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.5 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8"
+            >
               <Button
                 asChild
                 className="px-8 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] hover:from-[#02b1aa]/90 hover:via-[#029fdf]/90 hover:to-[#01c2e3]/90 shadow-xl shadow-[#02b1aa]/30 hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-0"
@@ -85,7 +107,7 @@ export default function Inicio() {
               >
                 <Link href="/portal-publico/sobre">Conheça-nos</Link>
               </Button>
-            </div>
+            </motion.div>
           </div>
         </div>
 
@@ -102,19 +124,22 @@ export default function Inicio() {
 
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent mb-4">
-              Nossos Serviços
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Oferecemos atendimento personalizado para promover produtividade e
-              retenção de talentos
-            </p>
-          </div>
+          <FadeInWhenVisible>
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3] bg-clip-text text-transparent mb-4">
+                Nossos Serviços
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Oferecemos atendimento personalizado para promover produtividade e
+                retenção de talentos
+              </p>
+            </div>
+          </FadeInWhenVisible>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <StaggerContainer staggerDelay={0.2} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Service 1 */}
-            <Card className="p-8 bg-gradient-to-br from-[#edfffe]/50 to-blue-50/30 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+            <motion.div variants={staggerItemVariants}>
+              <Card className="p-8 bg-gradient-to-br from-[#edfffe]/50 to-blue-50/30 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
               <div className="text-center space-y-4">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#02b1aa] to-[#029fdf] rounded-2xl flex items-center justify-center mx-auto shadow-lg">
                   <Shield className="h-8 w-8 text-white" />
@@ -128,10 +153,12 @@ export default function Inicio() {
                   exigências legais.
                 </p>
               </div>
-            </Card>
+              </Card>
+            </motion.div>
 
             {/* Service 2 */}
-            <Card className="p-8 bg-gradient-to-br from-[#edfffe]/50 to-blue-50/30 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+            <motion.div variants={staggerItemVariants}>
+              <Card className="p-8 bg-gradient-to-br from-[#edfffe]/50 to-blue-50/30 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
               <div className="text-center space-y-4">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#02b1aa] to-[#029fdf] rounded-2xl flex items-center justify-center mx-auto shadow-lg">
                   <Users className="h-8 w-8 text-white" />
@@ -145,10 +172,12 @@ export default function Inicio() {
                   bem-estar integral.
                 </p>
               </div>
-            </Card>
+              </Card>
+            </motion.div>
 
             {/* Service 3 */}
-            <Card className="p-8 bg-gradient-to-br from-[#edfffe]/50 to-blue-50/30 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
+            <motion.div variants={staggerItemVariants}>
+              <Card className="p-8 bg-gradient-to-br from-[#edfffe]/50 to-blue-50/30 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 group">
               <div className="text-center space-y-4">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#02b1aa] to-[#029fdf] rounded-2xl flex items-center justify-center mx-auto shadow-lg">
                   <Award className="h-8 w-8 text-white" />
@@ -162,8 +191,9 @@ export default function Inicio() {
                   saudável no ambiente de trabalho.
                 </p>
               </div>
-            </Card>
-          </div>
+              </Card>
+            </motion.div>
+          </StaggerContainer>
         </div>
       </section>
 
@@ -238,50 +268,51 @@ export default function Inicio() {
       {/* Stats Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
+          <StaggerContainer staggerDelay={0.15} className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <motion.div variants={staggerItemVariants}>
               <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#02b1aa] to-[#029fdf] bg-clip-text text-transparent mb-2">
-                500+
+                <CounterAnimation to={500} suffix="+" duration={2.5} />
               </div>
               <p className="text-gray-600 font-medium">
                 Colaboradores Atendidos
               </p>
-            </div>
-            <div>
+            </motion.div>
+            <motion.div variants={staggerItemVariants}>
               <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#02b1aa] to-[#029fdf] bg-clip-text text-transparent mb-2">
-                50+
+                <CounterAnimation to={50} suffix="+" duration={2} />
               </div>
               <p className="text-gray-600 font-medium">Empresas Parceiras</p>
-            </div>
-            <div>
+            </motion.div>
+            <motion.div variants={staggerItemVariants}>
               <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#02b1aa] to-[#029fdf] bg-clip-text text-transparent mb-2">
-                98%
+                <CounterAnimation to={98} suffix="%" duration={2} />
               </div>
               <p className="text-gray-600 font-medium">
                 Satisfação dos Clientes
               </p>
-            </div>
-            <div>
+            </motion.div>
+            <motion.div variants={staggerItemVariants}>
               <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#02b1aa] to-[#029fdf] bg-clip-text text-transparent mb-2">
-                5
+                <CounterAnimation to={5} duration={1.5} />
               </div>
               <p className="text-gray-600 font-medium">Anos de Experiência</p>
-            </div>
-          </div>
+            </motion.div>
+          </StaggerContainer>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-[#02b1aa] via-[#029fdf] to-[#01c2e3]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="space-y-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-white">
-              Pronto para transformar sua empresa?
-            </h2>
-            <p className="text-xl text-white/90 max-w-2xl mx-auto">
-              Invista no bem-estar dos seus colaboradores e veja os resultados
-              refletirem na produtividade e satisfação da sua equipe.
-            </p>
+          <FadeInWhenVisible>
+            <div className="space-y-8">
+              <h2 className="text-3xl md:text-4xl font-bold text-white">
+                Pronto para transformar sua empresa?
+              </h2>
+              <p className="text-xl text-white/90 max-w-2xl mx-auto">
+                Invista no bem-estar dos seus colaboradores e veja os resultados
+                refletirem na produtividade e satisfação da sua equipe.
+              </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
               <Button
                 asChild
@@ -295,12 +326,13 @@ export default function Inicio() {
               <Button
                 asChild
                 variant="outline"
-                className="px-8 py-4 text-lg font-semibold rounded-2xl border-2 border-white text-white hover:bg-white hover:text-[#02b1aa] transition-all duration-300 shadow-md hover:shadow-lg"
+                className="px-8 py-4 text-lg font-semibold rounded-2xl border-2 border-white text-white bg-transparent hover:bg-white hover:text-[#02b1aa] transition-all duration-300 shadow-md hover:shadow-lg"
               >
                 <Link href="/portal-publico">Faça um agendamento</Link>
               </Button>
             </div>
-          </div>
+            </div>
+          </FadeInWhenVisible>
         </div>
       </section>
 

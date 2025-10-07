@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 
 type ProfessionalAnalytics = {
+  id: string
   nome: string
   totalAgendamentos: number
   agendamentosConfirmados: number
@@ -83,11 +84,11 @@ export function ProfessionalAnalytics() {
       (ag as unknown as Record<string, unknown>).profissional as string || 'Profissional não identificado'
     )))
 
-    return profissionais.map(nome => {
-      const agendamentosProfissional = agendamentos.filter((ag: Agendamento) => 
+    return profissionais.map((nome, index) => {
+      const agendamentosProfissional = agendamentos.filter((ag: Agendamento) =>
         (ag as unknown as Record<string, unknown>).profissional === nome
       )
-      const prontuariosProfissional = prontuarios.filter((p: ConsultaComProntuario) => 
+      const prontuariosProfissional = prontuarios.filter((p: ConsultaComProntuario) =>
         (p as unknown as Record<string, unknown>).profissional === nome
       )
 
@@ -102,7 +103,7 @@ export function ProfessionalAnalytics() {
       const taxaConfirmacao = totalAgendamentos > 0 ? (confirmados / totalAgendamentos) * 100 : 0
 
       // Pacientes únicos
-      const pacientesUnicos = new Set(agendamentosProfissional.map((ag: Agendamento) => 
+      const pacientesUnicos = new Set(agendamentosProfissional.map((ag: Agendamento) =>
         (ag as unknown as Record<string, unknown>).paciente_id as string
       ).filter(Boolean)).size
       const mediaConsultasPorPaciente = pacientesUnicos > 0 ? totalAgendamentos / pacientesUnicos : 0
@@ -138,6 +139,7 @@ export function ProfessionalAnalytics() {
       }
 
       return {
+        id: `prof-${index}-${nome.replace(/\s+/g, '-').toLowerCase()}`,
         nome,
         totalAgendamentos,
         agendamentosConfirmados: confirmados,
@@ -201,47 +203,50 @@ export function ProfessionalAnalytics() {
 
   return (
     <div className="w-full">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-azul-escuro mb-4">Análises Detalhadas por Profissional</h2>
-        
+      <div className="mb-4 md:mb-6">
+        <h2 className="text-lg md:text-xl font-semibold text-azul-escuro mb-3 md:mb-4">Análises Detalhadas por Profissional</h2>
+
         {/* Controles */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="flex gap-2">
+        <div className="flex flex-col gap-3 md:gap-4 mb-4 md:mb-6">
+          <div className="grid grid-cols-3 gap-2">
             <Button
               variant={viewMode === "overview" ? "default" : "outline"}
               onClick={() => setViewMode("overview")}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-4"
             >
-              <BarChart3 className="h-4 w-4" />
-              Visão Geral
+              <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Visão Geral</span>
+              <span className="sm:hidden">Geral</span>
             </Button>
             <Button
               variant={viewMode === "detailed" ? "default" : "outline"}
               onClick={() => setViewMode("detailed")}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-4"
             >
-              <PieChart className="h-4 w-4" />
-              Detalhado
+              <PieChart className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Detalhado</span>
+              <span className="sm:hidden">Detalhes</span>
             </Button>
             <Button
               variant={viewMode === "comparison" ? "default" : "outline"}
               onClick={() => setViewMode("comparison")}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-1 md:gap-2 text-xs md:text-sm px-2 md:px-4"
             >
-              <Target className="h-4 w-4" />
-              Comparação
+              <Target className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Comparação</span>
+              <span className="sm:hidden">Comp.</span>
             </Button>
           </div>
 
           {viewMode === "detailed" && (
             <Select value={selectedProfessional} onValueChange={setSelectedProfessional}>
-              <SelectTrigger className="w-[200px] h-8">
+              <SelectTrigger className="w-full md:w-[200px] h-9 text-sm">
                 <SelectValue placeholder="Selecione um Profissional" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Selecione um Profissional</SelectItem>
                 {professionalAnalytics.map(prof => (
-                  <SelectItem key={prof.nome} value={prof.nome}>{prof.nome}</SelectItem>
+                  <SelectItem key={prof.id} value={prof.nome}>{prof.nome}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -251,62 +256,62 @@ export function ProfessionalAnalytics() {
 
       {/* Visão Geral */}
       {viewMode === "overview" && (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {/* Métricas Gerais */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
             <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
+              <CardContent className="p-3 md:p-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <div>
-                    <p className="text-blue-100 text-sm">Total de Profissionais</p>
-                    <p className="text-2xl font-bold">{professionalAnalytics.length}</p>
+                    <p className="text-blue-100 text-[10px] md:text-sm">Total de Profissionais</p>
+                    <p className="text-xl md:text-2xl font-bold">{professionalAnalytics.length}</p>
                   </div>
-                  <Users className="h-8 w-8 text-blue-200" />
+                  <Users className="h-6 w-6 md:h-8 md:w-8 text-blue-200" />
                 </div>
               </CardContent>
             </Card>
 
             <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
+              <CardContent className="p-3 md:p-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <div>
-                    <p className="text-green-100 text-sm">Taxa Média de Comparecimento</p>
-                    <p className="text-2xl font-bold">
-                      {professionalAnalytics.length > 0 
+                    <p className="text-green-100 text-[10px] md:text-sm">Taxa Média Comparecimento</p>
+                    <p className="text-xl md:text-2xl font-bold">
+                      {professionalAnalytics.length > 0
                         ? Math.round(professionalAnalytics.reduce((acc, p) => acc + p.taxaComparecimento, 0) / professionalAnalytics.length)
                         : 0
                       }%
                     </p>
                   </div>
-                  <Target className="h-8 w-8 text-green-200" />
+                  <Target className="h-6 w-6 md:h-8 md:w-8 text-green-200" />
                 </div>
               </CardContent>
             </Card>
 
             <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
+              <CardContent className="p-3 md:p-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <div>
-                    <p className="text-purple-100 text-sm">Total de Consultas</p>
-                    <p className="text-2xl font-bold">
+                    <p className="text-purple-100 text-[10px] md:text-sm">Total de Consultas</p>
+                    <p className="text-xl md:text-2xl font-bold">
                       {professionalAnalytics.reduce((acc, p) => acc + p.totalAgendamentos, 0)}
                     </p>
                   </div>
-                  <Calendar className="h-8 w-8 text-purple-200" />
+                  <Calendar className="h-6 w-6 md:h-8 md:w-8 text-purple-200" />
                 </div>
               </CardContent>
             </Card>
 
             <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
+              <CardContent className="p-3 md:p-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <div>
-                    <p className="text-orange-100 text-sm">Próximas Consultas</p>
-                    <p className="text-2xl font-bold">
+                    <p className="text-orange-100 text-[10px] md:text-sm">Próximas Consultas</p>
+                    <p className="text-xl md:text-2xl font-bold">
                       {professionalAnalytics.reduce((acc, p) => acc + p.proximosAgendamentos, 0)}
                     </p>
                   </div>
-                  <Clock className="h-8 w-8 text-orange-200" />
+                  <Clock className="h-6 w-6 md:h-8 md:w-8 text-orange-200" />
                 </div>
               </CardContent>
             </Card>
@@ -314,47 +319,48 @@ export function ProfessionalAnalytics() {
 
           {/* Ranking de Profissionais */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5" />
+            <CardHeader className="p-3 md:p-6">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Award className="h-4 w-4 md:h-5 md:w-5" />
                 Ranking de Performance
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="p-3 md:p-6 pt-0">
+              <div className="space-y-3 md:space-y-4">
                 {professionalAnalytics.map((prof, index) => (
-                  <div key={prof.nome} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
-                        index === 0 ? 'bg-yellow-500' : 
-                        index === 1 ? 'bg-gray-400' : 
+                  <div key={prof.id} className="flex flex-col md:flex-row md:items-center gap-3 p-3 md:p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3 md:gap-4 flex-1">
+                      <div className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0 ${
+                        index === 0 ? 'bg-yellow-500' :
+                        index === 1 ? 'bg-gray-400' :
                         index === 2 ? 'bg-orange-500' : 'bg-gray-300'
                       }`}>
                         {index + 1}
                       </div>
-                      <div>
-                        <h4 className="font-semibold">{prof.nome}</h4>
-                        <p className="text-sm text-gray-600">{prof.especialidade}</p>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-semibold text-sm md:text-base truncate">{prof.nome}</h4>
+                        <p className="text-xs md:text-sm text-gray-600 truncate">{prof.especialidade}</p>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-6 text-sm">
+
+                    <div className="grid grid-cols-3 md:flex md:items-center gap-3 md:gap-6 text-xs md:text-sm">
                       <div className="text-center">
                         <div className="font-semibold">{prof.totalAgendamentos}</div>
-                        <div className="text-gray-500">Consultas</div>
+                        <div className="text-gray-500 text-[10px] md:text-xs">Consultas</div>
                       </div>
                       <div className="text-center">
                         <div className="font-semibold text-green-600">{prof.taxaComparecimento}%</div>
-                        <div className="text-gray-500">Comparecimento</div>
+                        <div className="text-gray-500 text-[10px] md:text-xs hidden md:block">Comparec.</div>
+                        <div className="text-gray-500 text-[10px] md:hidden">Comp.</div>
                       </div>
                       <div className="text-center">
                         <div className="font-semibold">{prof.pacientesUnicos}</div>
-                        <div className="text-gray-500">Pacientes</div>
+                        <div className="text-gray-500 text-[10px] md:text-xs">Pacientes</div>
                       </div>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center justify-center md:block">
                         {getTendenciaIcon(prof.tendenciaUltimos30Dias)}
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${getAvaliacaoColor(prof.avaliacaoGeral)}`}>
+                      <div className={`px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-medium ${getAvaliacaoColor(prof.avaliacaoGeral)} text-center col-span-3 md:col-span-1`}>
                         {prof.avaliacaoGeral.replace('_', ' ')}
                       </div>
                     </div>
@@ -484,49 +490,49 @@ export function ProfessionalAnalytics() {
 
       {/* Comparação */}
       {viewMode === "comparison" && (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Comparação de Performance</CardTitle>
+            <CardHeader className="p-3 md:p-6">
+              <CardTitle className="text-base md:text-lg">Comparação de Performance</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0 md:p-6">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-xs md:text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-2">Profissional</th>
-                      <th className="text-center p-2">Total Consultas</th>
-                      <th className="text-center p-2">Taxa Comparecimento</th>
-                      <th className="text-center p-2">Taxa Cancelamento</th>
-                      <th className="text-center p-2">Pacientes Únicos</th>
-                      <th className="text-center p-2">Próximas</th>
-                      <th className="text-center p-2">Avaliação</th>
+                      <th className="text-left p-2 sticky left-0 bg-white z-10">Profissional</th>
+                      <th className="text-center p-2 whitespace-nowrap">Total</th>
+                      <th className="text-center p-2 whitespace-nowrap hidden sm:table-cell">Taxa Comp.</th>
+                      <th className="text-center p-2 whitespace-nowrap hidden sm:table-cell">Taxa Canc.</th>
+                      <th className="text-center p-2 whitespace-nowrap">Pacientes</th>
+                      <th className="text-center p-2 whitespace-nowrap hidden md:table-cell">Próximas</th>
+                      <th className="text-center p-2 whitespace-nowrap">Avaliação</th>
                     </tr>
                   </thead>
                   <tbody>
                     {professionalAnalytics.map((prof) => (
-                      <tr key={prof.nome} className="border-b hover:bg-gray-50">
-                        <td className="p-2">
+                      <tr key={prof.id} className="border-b hover:bg-gray-50">
+                        <td className="p-2 sticky left-0 bg-white">
                           <div>
-                            <div className="font-medium">{prof.nome}</div>
-                            <div className="text-gray-500 text-xs">{prof.especialidade}</div>
+                            <div className="font-medium text-xs md:text-sm truncate max-w-[120px]">{prof.nome}</div>
+                            <div className="text-gray-500 text-[10px] md:text-xs truncate max-w-[120px] hidden sm:block">{prof.especialidade}</div>
                           </div>
                         </td>
                         <td className="text-center p-2 font-semibold">{prof.totalAgendamentos}</td>
-                        <td className="text-center p-2">
+                        <td className="text-center p-2 hidden sm:table-cell">
                           <span className={`font-semibold ${prof.taxaComparecimento >= 80 ? 'text-green-600' : prof.taxaComparecimento >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
                             {prof.taxaComparecimento}%
                           </span>
                         </td>
-                        <td className="text-center p-2">
+                        <td className="text-center p-2 hidden sm:table-cell">
                           <span className={`font-semibold ${prof.taxaCancelamento <= 10 ? 'text-green-600' : prof.taxaCancelamento <= 20 ? 'text-yellow-600' : 'text-red-600'}`}>
                             {prof.taxaCancelamento}%
                           </span>
                         </td>
                         <td className="text-center p-2 font-semibold">{prof.pacientesUnicos}</td>
-                        <td className="text-center p-2 font-semibold">{prof.proximosAgendamentos}</td>
+                        <td className="text-center p-2 font-semibold hidden md:table-cell">{prof.proximosAgendamentos}</td>
                         <td className="text-center p-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getAvaliacaoColor(prof.avaliacaoGeral)}`}>
+                          <span className={`px-2 py-1 rounded-full text-[10px] md:text-xs font-medium ${getAvaliacaoColor(prof.avaliacaoGeral)} whitespace-nowrap`}>
                             {prof.avaliacaoGeral.replace('_', ' ')}
                           </span>
                         </td>

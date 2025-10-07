@@ -89,13 +89,13 @@ export default function ProfissionaisAgendamentos() {
   }
 
   return (
-    <div className="grid font-['Red_Hat_Display'] sm:grid-cols-2 lg:grid-cols-3 gap-12 w-full max-w-7xl">
+    <div className="grid font-['Red_Hat_Display'] sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-12 w-full max-w-7xl px-4">
       {data.map((prof) => (
         <div key={prof.id} className="group relative">
           <div className="absolute -inset-1 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-3xl blur opacity-20 group-hover:opacity-25 transition duration-1000"></div>
-          <Card className="relative bg-white rounded-3xl shadow-2xl p-8 border border-[#edfffe] hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 flex flex-col justify-between text-center h-[600px]">
+          <Card className="relative bg-white rounded-3xl shadow-2xl p-4 md:p-6 lg:p-8 border border-[#edfffe] hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 flex flex-col justify-between text-center min-h-[500px] md:min-h-[550px] lg:min-h-[600px]">
             {/* Foto */}
-            <div className="w-40 h-40 -mt-16 mb-6 rounded-full overflow-hidden border-4 border-[#02b1aa] shadow-lg bg-gray-100 mx-auto group-hover:border-[#029fdf] transition-colors duration-300">
+            <div className="w-32 h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 -mt-12 md:-mt-14 lg:-mt-16 mb-4 md:mb-6 rounded-full overflow-hidden border-4 border-[#02b1aa] shadow-lg bg-gray-100 mx-auto group-hover:border-[#029fdf] transition-colors duration-300">
               {prof.avatar_url ? (
                 <img
                   src={prof.avatar_url}
@@ -114,23 +114,23 @@ export default function ProfissionaisAgendamentos() {
             </div>
 
             {/* Cabeçalho */}
-            <CardHeader className="p-0 w-full mb-4">
-              <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
+            <CardHeader className="p-0 w-full mb-3 md:mb-4">
+              <CardTitle className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
                 {prof.nome}
               </CardTitle>
 
-              <p className="text-base text-[#02b1aa] font-semibold mb-1">
+              <p className="text-sm md:text-base text-[#02b1aa] font-semibold mb-1">
                 {prof.especialidade || "Psicólogo"}
               </p>
 
-              <p className="text-sm text-gray-500">
+              <p className="text-xs md:text-sm text-gray-500">
                 {prof.crp ? `CRP: ${prof.crp}` : "Profissional Certificado"}
               </p>
             </CardHeader>
 
             {/* Conteúdo */}
-            <CardContent className="p-0 mt-4 flex flex-col flex-1">
-              <div className="text-gray-700 text-base mb-6 leading-relaxed flex-1 overflow-hidden" style={{
+            <CardContent className="p-0 mt-3 md:mt-4 flex flex-col flex-1">
+              <div className="text-gray-700 text-sm md:text-base mb-4 md:mb-6 leading-relaxed flex-1 overflow-hidden" style={{
                 display: '-webkit-box',
                 WebkitLineClamp: 4,
                 WebkitBoxOrient: 'vertical',
@@ -139,17 +139,17 @@ export default function ProfissionaisAgendamentos() {
                 {prof.bio || "Profissional experiente em sua área de atuação."}
               </div>
 
-              <div className="mt-6 flex items-center text-[#02b1aa] font-semibold text-sm mb-4">
-                <CheckCircle className="w-4 h-4 mr-2" />
+              <div className="mt-4 md:mt-6 flex items-center justify-center text-[#02b1aa] font-semibold text-xs md:text-sm mb-3 md:mb-4">
+                <CheckCircle className="w-3 h-3 md:w-4 md:h-4 mr-2" />
                 <span>Especialista Certificado</span>
               </div>
 
               <Button
-                className="w-full mt-auto bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white font-semibold rounded-xl hover:from-[#029fdf] hover:to-[#01c2e3] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                className="w-full mt-auto bg-gradient-to-r from-[#02b1aa] to-[#029fdf] text-white font-semibold rounded-xl hover:from-[#029fdf] hover:to-[#01c2e3] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-sm md:text-base"
                 asChild
               >
                 <Link
-                  className="w-full py-3"
+                  className="w-full py-2.5 md:py-3"
                   href={`/portal-publico/profissionais/${prof.id}`}
                 >
                   Ver Agenda
