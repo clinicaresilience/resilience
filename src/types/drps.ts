@@ -36,8 +36,60 @@ export interface DrpsSubmission {
   funcao: string;
   setor: string;
   nome_empresa: string;
+  empresa_id?: string;
   respostas: Record<string, DrpsScore>;
   created_at: string;
+}
+
+// Tipos para relatórios consolidados
+export interface QuestionStats {
+  media: number;
+  total_respostas: number;
+  distribuicao: Record<DrpsScore, number>;
+}
+
+export interface TopicScore {
+  total: number;
+  count: number;
+  average: number;
+}
+
+export interface ConsolidatedReport {
+  tipo: 'empresa' | 'setor';
+  empresa: {
+    id: string;
+    nome: string;
+    cnpj?: string;
+  };
+  setor?: string;
+  total_submissoes: number;
+  periodo: {
+    data_inicio: string;
+    data_fim: string;
+  };
+  respostas_agregadas: Record<string, Record<string, QuestionStats>>;
+  topicos_scores: Record<string, TopicScore>;
+  participantes: Array<{
+    id: string;
+    nome: string;
+    funcao: string;
+    setor: string;
+    data: string;
+    respostas: Record<string, DrpsScore>;
+  }>;
+}
+
+export interface EmpresaComSubmissoes {
+  id: string;
+  nome: string;
+  cnpj?: string;
+  total_submissoes: number;
+  setores: Array<{
+    nome: string;
+    total: number;
+  }>;
+  risco_geral: 'Baixo' | 'Médio' | 'Alto' | 'Crítico';
+  ultima_submissao: string;
 }
 
 // Configuração dos tópicos e perguntas do DRPS

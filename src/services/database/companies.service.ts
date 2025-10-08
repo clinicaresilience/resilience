@@ -8,7 +8,7 @@ export interface Company {
   ativa: boolean;
   created_at?: string;
   updated_at?: string;
-  cnpj?: string;
+  cnpj: string;
   inscricao_estadual?: string;
   inscricao_municipal?: string;
   nome_fantasia?: string;
@@ -29,7 +29,7 @@ export class CompaniesService {
     nome: string;
     codigo: string;
     ativa?: boolean;
-    cnpj?: string | null;
+    cnpj: string;
     inscricao_estadual?: string | null;
     inscricao_municipal?: string | null;
     nome_fantasia?: string | null;
@@ -106,6 +106,30 @@ export class CompaniesService {
 
     if (error) {
       console.error('Erro ao buscar empresa por código:', error);
+      return null;
+    }
+
+    return data as Company;
+  }
+
+  /**
+   * Buscar empresa por CNPJ
+   */
+  static async getCompanyByCnpj(cnpj: string) {
+    const supabase = await createClient();
+    
+    // Remove formatting from CNPJ
+    const cleanCnpj = cnpj.replace(/\D/g, '');
+    
+    const { data, error } = await supabase
+      .from('empresas')
+      .select('*')
+      .eq('cnpj', cleanCnpj)
+      .eq('ativa', true)
+      .single();
+
+    if (error) {
+      console.error('Erro ao buscar empresa por CNPJ:', error);
       return null;
     }
 

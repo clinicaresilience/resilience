@@ -25,12 +25,20 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const companyId = params.id;
     const body = await request.json();
 
+    // Validate required fields if they are being updated
+    if (body.cnpj !== undefined && !body.cnpj) {
+      return NextResponse.json(
+        { error: 'CNPJ é obrigatório' },
+        { status: 400 }
+      );
+    }
+
     // Clean and prepare the data
     const cleanedData = {
       nome: body.nome?.trim(),
       codigo: body.codigo?.toUpperCase().trim(),
       nome_fantasia: body.nome_fantasia?.trim() || null,
-      cnpj: body.cnpj || null,
+      cnpj: body.cnpj?.trim(),
       inscricao_estadual: body.inscricao_estadual?.trim() || null,
       inscricao_municipal: body.inscricao_municipal?.trim() || null,
       endereco_logradouro: body.endereco_logradouro?.trim() || null,

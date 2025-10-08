@@ -14,7 +14,7 @@ interface Company {
   ativa: boolean;
   created_at?: string;
   updated_at?: string;
-  cnpj?: string;
+  cnpj: string;
   inscricao_estadual?: string;
   inscricao_municipal?: string;
   nome_fantasia?: string;
@@ -107,7 +107,7 @@ export function CompaniesManagement() {
     setName(company.nome)
     setCode(company.codigo)
     setNomeFantasia(company.nome_fantasia || "")
-    setCnpj(company.cnpj ? formatCnpj(company.cnpj) : "")
+    setCnpj(formatCnpj(company.cnpj))
     setInscricaoEstadual(company.inscricao_estadual || "")
     setInscricaoMunicipal(company.inscricao_municipal || "")
     setCep(company.endereco_cep ? formatCep(company.endereco_cep) : "")
@@ -153,7 +153,8 @@ export function CompaniesManagement() {
   }
 
   // Format CNPJ
-  function formatCnpj(value: string) {
+  function formatCnpj(value: string | null | undefined) {
+    if (!value) return "";
     return value
       .replace(/\D/g, "")
       .replace(/^(\d{2})(\d)/, "$1.$2")
@@ -164,7 +165,8 @@ export function CompaniesManagement() {
   }
 
   // Format CEP
-  function formatCep(value: string) {
+  function formatCep(value: string | null | undefined) {
+    if (!value) return "";
     return value
       .replace(/\D/g, "")
       .replace(/^(\d{5})(\d)/, "$1-$2")
@@ -207,7 +209,12 @@ export function CompaniesManagement() {
       setError("Informe Nome e Código da empresa.")
       return
     }
-    
+
+    if (!cnpj.trim()) {
+      setError("O CNPJ é obrigatório.")
+      return
+    }
+
     if (!logradouro.trim() || !numero.trim() || !bairro.trim() || !cidade.trim() || !estado.trim() || !cep.trim()) {
       setError("Todos os campos de endereço são obrigatórios.")
       return
@@ -238,7 +245,7 @@ export function CompaniesManagement() {
         nome: name.trim(),
         codigo: code.toUpperCase().trim(),
         nome_fantasia: nomeFantasia.trim() || null,
-        cnpj: cnpj.replace(/\D/g, "") || null,
+        cnpj: cnpj.replace(/\D/g, ""),
         inscricao_estadual: inscricaoEstadual.trim() || null,
         inscricao_municipal: inscricaoMunicipal.trim() || null,
         endereco_logradouro: logradouro.trim(),
@@ -311,12 +318,13 @@ export function CompaniesManagement() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="cnpj">CNPJ</Label>
+                  <Label htmlFor="cnpj">CNPJ *</Label>
                   <Input
                     id="cnpj"
                     value={cnpj}
                     onChange={(e) => setCnpj(formatCnpj(e.target.value))}
                     placeholder="00.000.000/0000-00"
+                    required
                   />
                 </div>
                 <div className="grid gap-2">
@@ -474,7 +482,7 @@ export function CompaniesManagement() {
                                     <div><span className="font-medium">Nome:</span> {c.nome}</div>
                                     <div><span className="font-medium">Código:</span> {c.codigo}</div>
                                     {c.nome_fantasia && <div><span className="font-medium">Nome Fantasia:</span> {c.nome_fantasia}</div>}
-                                    {c.cnpj && <div><span className="font-medium">CNPJ:</span> {formatCnpj(c.cnpj)}</div>}
+                                    <div><span className="font-medium">CNPJ:</span> {formatCnpj(c.cnpj)}</div>
                                     {c.inscricao_estadual && <div><span className="font-medium">Inscrição Estadual:</span> {c.inscricao_estadual}</div>}
                                     {c.inscricao_municipal && <div><span className="font-medium">Inscrição Municipal:</span> {c.inscricao_municipal}</div>}
                                   </div>

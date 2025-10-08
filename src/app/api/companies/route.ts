@@ -89,6 +89,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!cnpj) {
+      return NextResponse.json(
+        { error: 'CNPJ é obrigatório' },
+        { status: 400 }
+      );
+    }
+
     // Verificar se o código já existe
     const codeExists = await CompaniesService.companyCodeExists(codigo);
     if (codeExists) {
@@ -102,7 +109,7 @@ export async function POST(request: NextRequest) {
       nome: nome.trim(),
       codigo: codigo.toUpperCase().trim(),
       nome_fantasia: nome_fantasia?.trim() || null,
-      cnpj: cnpj || null,
+      cnpj: cnpj.trim(),
       inscricao_estadual: inscricao_estadual?.trim() || null,
       inscricao_municipal: inscricao_municipal?.trim() || null,
       endereco_logradouro: endereco_logradouro?.trim() || null,

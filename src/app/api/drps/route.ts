@@ -7,9 +7,9 @@ import { DrpsFormData } from '@/types/drps';
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    
-    const body: DrpsFormData = await req.json();
-    const { nome, email, telefone, funcao, setor, respostas } = body;
+
+    const body: DrpsFormData & { empresa_id?: string } = await req.json();
+    const { nome, email, telefone, funcao, setor, respostas, empresa_id } = body;
 
     // Validação dos campos obrigatórios
     if (!nome || !email || !telefone || !funcao || !setor) {
@@ -74,6 +74,8 @@ export async function POST(req: NextRequest) {
           telefone: telefone.trim(),
           funcao: funcao.trim(),
           setor: setor.trim(),
+          nome_empresa: body.nome_empresa?.trim() || '',
+          empresa_id: empresa_id || null,
           respostas: respostas,
           created_at: new Date().toISOString()
         }

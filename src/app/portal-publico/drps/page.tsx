@@ -6,8 +6,37 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+
+const SETORES_DISPONIVEIS = [
+  'Administrativo',
+  'Comercial',
+  'Financeiro',
+  'Recursos Humanos (RH)',
+  'Tecnologia da Informação (TI)',
+  'Produção',
+  'Logística',
+  'Marketing',
+  'Atendimento ao Cliente',
+  'Compras',
+  'Qualidade',
+  'Jurídico',
+  'Manutenção',
+  'Segurança do Trabalho',
+  'Operacional',
+  'Engenharia',
+  'Pesquisa e Desenvolvimento (P&D)',
+  'Planejamento',
+  'Controladoria'
+];
 
 export default function DrpsFormPage() {
   const [showForm, setShowForm] = useState(false);
@@ -21,6 +50,11 @@ export default function DrpsFormPage() {
     nome_empresa: '',
     respostas: {}
   });
+  const [cnpj, setCnpj] = useState('');
+  const [empresaId, setEmpresaId] = useState<string | null>(null);
+  const [isCnpjValidated, setIsCnpjValidated] = useState(false);
+  const [isCompanyAutoFilled, setIsCompanyAutoFilled] = useState(false);
+  const [isLoadingCompany, setIsLoadingCompany] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -43,6 +77,88 @@ export default function DrpsFormPage() {
     }))
   ];
 
+  // Format CNPJ
+  const formatCnpj = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/^(\d{2})(\d)/, "$1.$2")
+      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1/$2")
+      .replace(/(\d{4})(\d)/, "$1-$2")
+      .substring(0, 18);
+  };
+
+  // Format Telefone
+  const formatTelefone = (value: string) => {
+    const cleaned = value.replace(/\D/g, "");
+
+    if (cleaned.length <= 10) {
+      // Formato: (99) 9999-9999
+      return cleaned
+        .replace(/^(\d{2})(\d)/, "($1) $2")
+        .replace(/(\d{4})(\d)/, "$1-$2")
+        .substring(0, 14);
+    } else {
+      // Formato: (99) 99999-9999
+      return cleaned
+        .replace(/^(\d{2})(\d)/, "($1) $2")
+        .replace(/(\d{5})(\d)/, "$1-$2")
+        .substring(0, 15);
+    }
+  };
+
+  // Atualizar CNPJ (apenas formatação)
+  const handleCnpjChange = (value: string) => {
+    const formattedCnpj = formatCnpj(value);
+    setCnpj(formattedCnpj);
+    setError('');
+
+    // Reset validation if CNPJ changes after being validated
+    if (isCnpjValidated) {
+      setIsCnpjValidated(false);
+      setIsCompanyAutoFilled(false);
+      setFormData(prev => ({ ...prev, nome_empresa: '' }));
+      setEmpresaId(null);
+    }
+  };
+
+  // Validar CNPJ e buscar empresa
+  const handleValidateCnpj = async () => {
+    const cleanCnpj = cnpj.replace(/\D/g, "");
+
+    if (cleanCnpj.length !== 14) {
+      setError('CNPJ deve conter 14 dígitos');
+      return;
+    }
+
+    setIsLoadingCompany(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/companies/cnpj/${cleanCnpj}`);
+      const data = await response.json();
+
+      if (response.ok && data.nome) {
+        setFormData(prev => ({ ...prev, nome_empresa: data.nome }));
+        setEmpresaId(data.id); // Salvar ID da empresa
+        setIsCompanyAutoFilled(true);
+        setIsCnpjValidated(true);
+      } else {
+        setError('Empresa não encontrada. Verifique o CNPJ ou contate o administrador.');
+        setIsCnpjValidated(false);
+        setIsCompanyAutoFilled(false);
+        setEmpresaId(null);
+      }
+    } catch (error) {
+      setError('Erro ao buscar empresa. Tente novamente.');
+      setIsCnpjValidated(false);
+      setIsCompanyAutoFilled(false);
+      setEmpresaId(null);
+    } finally {
+      setIsLoadingCompany(false);
+    }
+  };
+
   const handlePersonalDataChange = (field: keyof Pick<DrpsFormData, 'nome' | 'email' | 'telefone' | 'funcao' | 'setor' | 'nome_empresa'>, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -61,7 +177,13 @@ export default function DrpsFormPage() {
   };
 
   const validatePersonalData = () => {
+    // If CNPJ not validated yet, can't proceed
+    if (!isCnpjValidated) {
+      return false;
+    }
+
     const { email, telefone, funcao, setor, nome_empresa } = formData;
+
     if (!email.trim() || !telefone.trim() || !funcao.trim() || !setor.trim() || !nome_empresa.trim()) {
       return false;
     }
@@ -94,7 +216,13 @@ export default function DrpsFormPage() {
 
     // Validação específica para etapa de identificação
     if (currentStep === 1) {
+      if (!isCnpjValidated) {
+        setError('Por favor, valide o CNPJ antes de prosseguir');
+        return;
+      }
+
       const { email, telefone, funcao, setor, nome_empresa } = formData;
+
       if (!email.trim() || !telefone.trim() || !funcao.trim() || !setor.trim() || !nome_empresa.trim()) {
         setError('Todos os campos marcados com * são obrigatórios');
         return;
@@ -106,7 +234,7 @@ export default function DrpsFormPage() {
         return;
       }
     }
-    
+
     if (canProceed()) {
       setCurrentStep(prev => Math.min(prev + 1, steps.length - 1));
       // Scroll to top smoothly when navigating to next step with a small delay
@@ -139,7 +267,8 @@ export default function DrpsFormPage() {
       // Se o nome estiver vazio, preenche com "Anônimo"
       const dataToSubmit = {
         ...formData,
-        nome: formData.nome.trim() || 'Anônimo'
+        nome: formData.nome.trim() || 'Anônimo',
+        empresa_id: empresaId // Incluir ID da empresa
       };
 
       const response = await fetch('/api/drps', {
@@ -236,113 +365,176 @@ export default function DrpsFormPage() {
       <div className="text-center space-y-4">
         <h2 className="text-2xl font-bold text-gray-900">Identificação</h2>
         <p className="text-gray-600">
-          Começaremos conhecendo um pouco de você e do que você faz!
+          {!isCnpjValidated
+            ? 'Primeiro, vamos validar o CNPJ da sua empresa'
+            : 'Agora, complete as informações sobre você'}
         </p>
       </div>
 
       <Card className="p-8">
         <div className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="nome" className="text-sm font-medium text-gray-700">
-                Nome Completo
-              </Label>
-              <Input
-                id="nome"
-                type="text"
-                value={formData.nome}
-                onChange={(e) => handlePersonalDataChange('nome', e.target.value)}
-                placeholder="Digite seu nome completo (opcional)"
-                className="w-full"
-              />
-            </div>
+          {/* Etapa 1: Validação do CNPJ */}
+          {!isCnpjValidated && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="cnpj" className="text-sm font-medium text-gray-700">
+                  CNPJ da Empresa *
+                </Label>
+                <Input
+                  id="cnpj"
+                  type="text"
+                  value={cnpj}
+                  onChange={(e) => handleCnpjChange(e.target.value)}
+                  placeholder="00.000.000/0000-00"
+                  className="w-full"
+                  required
+                  disabled={isLoadingCompany}
+                />
+                {isLoadingCompany && (
+                  <p className="text-xs text-blue-600">Buscando empresa...</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                Email *
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handlePersonalDataChange('email', e.target.value)}
-                placeholder="seu.email@exemplo.com"
-                className="w-full"
-                required
-              />
-            </div>
-          </div>
+              <Button
+                onClick={handleValidateCnpj}
+                disabled={isLoadingCompany || cnpj.replace(/\D/g, "").length !== 14}
+                className="w-full bg-gradient-to-r from-[#02b1aa] to-[#029fdf] hover:from-[#029fdf] hover:to-[#01c2e3] text-white"
+              >
+                {isLoadingCompany ? 'Validando...' : 'Validar CNPJ'}
+              </Button>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="telefone" className="text-sm font-medium text-gray-700">
-                Telefone *
-              </Label>
-              <Input
-                id="telefone"
-                type="tel"
-                value={formData.telefone}
-                onChange={(e) => handlePersonalDataChange('telefone', e.target.value)}
-                placeholder="(11) 99999-9999"
-                className="w-full"
-                required
-              />
-            </div>
+              <div className="text-sm text-gray-500 bg-blue-50 p-4 rounded-lg">
+                <p className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-blue-600" />
+                  Digite o CNPJ da sua empresa para continuar
+                </p>
+              </div>
+            </>
+          )}
 
-            <div className="space-y-2">
-              <Label htmlFor="nome_empresa" className="text-sm font-medium text-gray-700">
-                Nome da Empresa *
-              </Label>
-              <Input
-                id="nome_empresa"
-                type="text"
-                value={formData.nome_empresa}
-                onChange={(e) => handlePersonalDataChange('nome_empresa', e.target.value)}
-                placeholder="Digite o nome da empresa"
-                className="w-full"
-                required
-              />
-            </div>
-          </div>
+          {/* Etapa 2: Restante do formulário (após validação) */}
+          {isCnpjValidated && (
+            <>
+              <div className="space-y-2 bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium text-green-900">
+                      CNPJ da Empresa
+                    </Label>
+                    <p className="text-sm text-green-700 font-mono">{cnpj}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsCnpjValidated(false);
+                      setIsCompanyAutoFilled(false);
+                      setFormData(prev => ({ ...prev, nome_empresa: '' }));
+                      setCnpj('');
+                    }}
+                    className="text-xs text-green-700 hover:text-green-900 underline"
+                  >
+                    Alterar
+                  </button>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-green-900">
+                    Nome da Empresa
+                  </Label>
+                  <p className="text-sm text-green-700">{formData.nome_empresa}</p>
+                </div>
+              </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="setor" className="text-sm font-medium text-gray-700">
-                Setor *
-              </Label>
-              <Input
-                id="setor"
-                type="text"
-                value={formData.setor}
-                onChange={(e) => handlePersonalDataChange('setor', e.target.value)}
-                placeholder="Ex: Financeiro, TI, RH..."
-                className="w-full"
-                required
-              />
-            </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="nome" className="text-sm font-medium text-gray-700">
+                    Nome Completo
+                  </Label>
+                  <Input
+                    id="nome"
+                    type="text"
+                    value={formData.nome}
+                    onChange={(e) => handlePersonalDataChange('nome', e.target.value)}
+                    placeholder="Digite seu nome completo (opcional)"
+                    className="w-full"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="funcao" className="text-sm font-medium text-gray-700">
-                Função *
-              </Label>
-              <Input
-                id="funcao"
-                type="text"
-                value={formData.funcao}
-                onChange={(e) => handlePersonalDataChange('funcao', e.target.value)}
-                placeholder="Ex: Analista, Coordenador, Assistente..."
-                className="w-full"
-                required
-              />
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Email *
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handlePersonalDataChange('email', e.target.value)}
+                    placeholder="seu.email@exemplo.com"
+                    className="w-full"
+                    required
+                  />
+                </div>
+              </div>
 
-          <div className="text-sm text-gray-500 bg-blue-50 p-4 rounded-lg">
-            <p className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-blue-600" />
-              Todos os campos marcados com * são obrigatórios
-            </p>
-          </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="telefone" className="text-sm font-medium text-gray-700">
+                    Telefone *
+                  </Label>
+                  <Input
+                    id="telefone"
+                    type="tel"
+                    value={formData.telefone}
+                    onChange={(e) => handlePersonalDataChange('telefone', formatTelefone(e.target.value))}
+                    placeholder="(11) 99999-9999"
+                    className="w-full"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="setor" className="text-sm font-medium text-gray-700">
+                    Setor *
+                  </Label>
+                  <Select
+                    value={formData.setor}
+                    onValueChange={(value) => handlePersonalDataChange('setor', value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione seu setor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SETORES_DISPONIVEIS.map((setor) => (
+                        <SelectItem key={setor} value={setor}>
+                          {setor}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="funcao" className="text-sm font-medium text-gray-700">
+                  Função *
+                </Label>
+                <Input
+                  id="funcao"
+                  type="text"
+                  value={formData.funcao}
+                  onChange={(e) => handlePersonalDataChange('funcao', e.target.value)}
+                  placeholder="Ex: Analista, Coordenador, Assistente..."
+                  className="w-full"
+                  required
+                />
+              </div>
+
+              <div className="text-sm text-gray-500 bg-blue-50 p-4 rounded-lg">
+                <p className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-blue-600" />
+                  Todos os campos marcados com * são obrigatórios
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </Card>
     </div>
