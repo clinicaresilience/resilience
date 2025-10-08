@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/server';
-import { DRPS_TOPICS, DrpsScore, QuestionStats, TopicScore, ConsolidatedReport } from '@/types/drps';
+import { DRPS_TOPICS, DrpsScore, QuestionStats, TopicScore, ConsolidatedReport, convertToRiskScore } from '@/types/drps';
 
 export async function GET(req: NextRequest) {
   try {
@@ -117,18 +117,21 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // Agregar respostas
+    // Agregar respostas (convertendo para score de risco)
     submissions.forEach(submission => {
       const respostas = submission.respostas as Record<string, number>;
 
       DRPS_TOPICS.forEach(topic => {
         topic.questions.forEach(question => {
-          const score = respostas[question.id];
+          const userScore = respostas[question.id];
 
-          if (score !== undefined && score >= 0 && score <= 4) {
+          if (userScore !== undefined && userScore >= 0 && userScore <= 4) {
+            // Converter resposta do usuário para score de risco
+            const riskScore = convertToRiskScore(question.id, userScore as DrpsScore);
+
             const stats = respostasAgregadas[topic.id][question.id];
             stats.total_respostas++;
-            stats.distribuicao[score as DrpsScore]++;
+            stats.distribuicao[riskScore as DrpsScore]++;
           }
         });
       });
@@ -186,7 +189,7 @@ export async function GET(req: NextRequest) {
         nome: empresaData.nome,
         cnpj: empresaData.cnpj
       },
-      setor: tipo === 'setor' ? setor : undefined,
+      setor: tipo === 'setor' && setor ? setor : undefined,
       total_submissoes: submissions.length,
       periodo: {
         data_inicio: dataInicio,
@@ -194,7 +197,10 @@ export async function GET(req: NextRequest) {
       },
       respostas_agregadas: respostasAgregadas,
       topicos_scores: topicosScores,
-      participantes
+      participantes: participantes.map(p => ({
+        ...p,
+        respostas: p.respostas as Record<string, DrpsScore>
+      }))
     };
 
     return NextResponse.json(

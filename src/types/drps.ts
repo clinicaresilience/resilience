@@ -617,3 +617,101 @@ export const SCORE_LABELS: Record<DrpsScore, string> = {
   3: 'Frequentemente',
   4: 'Sempre'
 };
+
+// Questões POSITIVAS (onde nota alta = bom, precisam inversão para cálculo de risco)
+// Nota: Para questões positivas, score de risco = 4 - resposta original
+export const POSITIVE_QUESTIONS: Set<string> = new Set([
+  // Assédio (4 positivas)
+  'assedio_2',  // "Você se sente à vontade para relatar situações..."
+  'assedio_3',  // "Existe um canal seguro e sigiloso..."
+  'assedio_7',  // "A empresa realiza treinamentos..."
+  'assedio_8',  // "O RH e os gestores demonstram comprometimento..."
+
+  // Carga de Trabalho (7 positivas)
+  'carga_3',    // "As demandas e prazos... são realistas e atingíveis?"
+  'carga_4',    // "Você sente que a empresa respeita seus limites..."
+  'carga_5',    // "Você recebe pausas adequadas..."
+  'carga_6',    // "Existe um equilíbrio entre tarefas..."
+  'carga_7',    // "Há redistribuição de tarefas quando há sobrecarga..."
+  'carga_9',    // "Existe flexibilidade para gerenciar..."
+  'carga_10',   // "A equipe é dimensionada corretamente..."
+
+  // Reconhecimento (9 positivas)
+  'reconhecimento_1',  // "Você sente que seu esforço... são reconhecidos..."
+  'reconhecimento_2',  // "A empresa possui políticas claras..."
+  'reconhecimento_3',  // "As avaliações... são justas e transparentes?"
+  'reconhecimento_4',  // "Você sente que há igualdade no reconhecimento..."
+  'reconhecimento_5',  // "A empresa oferece incentivos..."
+  'reconhecimento_6',  // "Você recebe feedback construtivo..."
+  'reconhecimento_7',  // "Existe uma cultura de valorização..."
+  'reconhecimento_9',  // "A empresa celebra conquistas..."
+  'reconhecimento_10', // "O plano de benefícios... é condizente..."
+
+  // Clima Organizacional (TODAS 10 positivas)
+  'clima_1',   // "O ambiente... é amigável e colaborativo?"
+  'clima_2',   // "Existe um sentimento de confiança..."
+  'clima_3',   // "Você se sente confortável para expressar..."
+  'clima_4',   // "Os gestores promovem um ambiente saudável..."
+  'clima_5',   // "Existe transparência na comunicação..."
+  'clima_6',   // "Você sente que pode contar com seus colegas..."
+  'clima_7',   // "Há um senso de propósito e pertencimento..."
+  'clima_8',   // "Conflitos são resolvidos de forma justa..."
+  'clima_9',   // "O ambiente físico... é confortável e seguro?"
+  'clima_10',  // "A cultura organizacional... está alinhada..."
+
+  // Autonomia (8 positivas)
+  'autonomia_1',  // "Você tem liberdade para tomar decisões..."
+  'autonomia_2',  // "Seu trabalho permite flexibilidade..."
+  'autonomia_3',  // "Você sente que tem voz ativa..."
+  'autonomia_4',  // "A empresa confia em sua capacidade..."
+  'autonomia_5',  // "Você recebe instruções claras..."
+  'autonomia_7',  // "Suas sugestões são ouvidas..."
+  'autonomia_8',  // "Você tem acesso às ferramentas..."
+  'autonomia_9',  // "Você sente que pode propor melhorias..."
+
+  // Pressão e Metas (6 positivas)
+  'pressao_1',  // "As metas... são realistas e atingíveis?"
+  'pressao_4',  // "Existe apoio da liderança..."
+  'pressao_5',  // "Você sente que pode negociar prazos..."
+  'pressao_6',  // "A competitividade... é estimulada de maneira saudável?"
+  'pressao_8',  // "O sistema de avaliação... é transparente?"
+  'pressao_9',  // "Você tem tempo suficiente..."
+
+  // Insegurança (3 positivas)
+  'inseguranca_3',  // "Há comunicação clara sobre a estabilidade..."
+  'inseguranca_5',  // "Você sente que há transparência nas políticas..."
+  'inseguranca_9',  // "A empresa oferece suporte psicológico..."
+
+  // Conflitos (7 positivas)
+  'conflitos_1',   // "Conflitos... são resolvidos de maneira justa?"
+  'conflitos_2',   // "A comunicação... é eficiente?"
+  'conflitos_4',   // "Existe um canal aberto para feedback..."
+  'conflitos_7',   // "Há treinamentos sobre comunicação..."
+  'conflitos_8',   // "Você sente que pode expressar suas dificuldades..."
+  'conflitos_9',   // "A empresa promove um ambiente de diálogo..."
+  'conflitos_10',  // "O RH está presente... na mediação..."
+
+  // Vida Pessoal (8 positivas)
+  'vida_1',   // "Você sente que a jornada permite equilíbrio..."
+  'vida_2',   // "Você sente que tem tempo para família..."
+  'vida_4',   // "Você tem flexibilidade para lidar com questões pessoais..."
+  'vida_5',   // "A empresa oferece suporte..."
+  'vida_6',   // "Você consegue se desconectar..."
+  'vida_7',   // "Você sente que sua vida pessoal é respeitada..."
+  'vida_8',   // "Há incentivo ao bem-estar..."
+  'vida_10',  // "O ambiente corporativo valoriza o descanso..."
+]);
+
+/**
+ * Converte a resposta do usuário em score de risco
+ * Para questões POSITIVAS: score alto (4) = risco baixo (0)
+ * Para questões NEGATIVAS: score alto (4) = risco alto (4)
+ */
+export function convertToRiskScore(questionId: string, userScore: DrpsScore): DrpsScore {
+  if (POSITIVE_QUESTIONS.has(questionId)) {
+    // Inverter para questões positivas
+    return (4 - userScore) as DrpsScore;
+  }
+  // Manter como está para questões negativas
+  return userScore;
+}

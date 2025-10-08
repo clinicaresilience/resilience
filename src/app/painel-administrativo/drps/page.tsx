@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { EmpresaComSubmissoes, ConsolidatedReport, DRPS_TOPICS, SCORE_LABELS } from '@/types/drps';
+import { EmpresaComSubmissoes, ConsolidatedReport, DRPS_TOPICS, SCORE_LABELS, convertToRiskScore, DrpsScore } from '@/types/drps';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1018,13 +1018,16 @@ export default function DrpsConsolidadoPage() {
                   const respostas = topic.questions
                     .map(q => ({
                       question: q,
-                      score: selectedParticipante.respostas[q.id]
+                      userScore: selectedParticipante.respostas[q.id],
+                      riskScore: selectedParticipante.respostas[q.id] !== undefined
+                        ? convertToRiskScore(q.id, selectedParticipante.respostas[q.id] as DrpsScore)
+                        : undefined
                     }))
-                    .filter(r => r.score !== undefined);
+                    .filter(r => r.userScore !== undefined && r.riskScore !== undefined);
 
                   if (respostas.length === 0) return null;
 
-                  const mediaTopico = respostas.reduce((acc, r) => acc + r.score, 0) / respostas.length;
+                  const mediaTopico = respostas.reduce((acc, r) => acc + (r.riskScore || 0), 0) / respostas.length;
                   const riskLevel = getRiskLevel(mediaTopico);
 
                   return (
@@ -1045,20 +1048,20 @@ export default function DrpsConsolidadoPage() {
                       </div>
 
                       <div className="space-y-3">
-                        {respostas.map(({ question, score }) => (
+                        {respostas.map(({ question, userScore, riskScore }) => (
                           <div key={question.id} className="flex items-start gap-3 pb-3 border-b last:border-b-0">
                             <div className="flex-1">
                               <p className="text-sm text-gray-800">{question.text}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className={`px-3 py-1 rounded text-sm font-medium ${
-                                score === 0 ? 'bg-green-100 text-green-800' :
-                                score === 1 ? 'bg-blue-100 text-blue-800' :
-                                score === 2 ? 'bg-yellow-100 text-yellow-800' :
-                                score === 3 ? 'bg-orange-100 text-orange-800' :
+                                riskScore === 0 ? 'bg-green-100 text-green-800' :
+                                riskScore === 1 ? 'bg-blue-100 text-blue-800' :
+                                riskScore === 2 ? 'bg-yellow-100 text-yellow-800' :
+                                riskScore === 3 ? 'bg-orange-100 text-orange-800' :
                                 'bg-red-100 text-red-800'
                               }`}>
-                                {score} - {SCORE_LABELS[score]}
+                                {SCORE_LABELS[userScore!]} (Risco: {riskScore})
                               </span>
                             </div>
                           </div>
@@ -1222,7 +1225,7 @@ export default function DrpsConsolidadoPage() {
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Escolha o setor..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="!z-[200]">
                       {empresaForSetorReport.setores.map(setor => (
                         <SelectItem key={setor.nome} value={setor.nome}>
                           {setor.nome} ({setor.total} participante{setor.total > 1 ? 's' : ''})
