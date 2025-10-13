@@ -737,6 +737,22 @@ export function SchedulesSection() {
                       </div>
 
                       <div className="text-xs md:text-sm text-gray-600">
+                        <strong>Paciente:</strong> {agendamento.pacienteNome}
+                      </div>
+
+                      {agendamento.pacienteEmail && (
+                        <div className="text-xs md:text-sm text-gray-600">
+                          <strong>Email:</strong> {agendamento.pacienteEmail}
+                        </div>
+                      )}
+
+                      {agendamento.pacienteTelefone && (
+                        <div className="text-xs md:text-sm text-gray-600">
+                          <strong>Telefone:</strong> {agendamento.pacienteTelefone}
+                        </div>
+                      )}
+
+                      <div className="text-xs md:text-sm text-gray-600">
                         <strong>Local:</strong> {agendamento.local}
                       </div>
 

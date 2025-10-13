@@ -276,6 +276,11 @@ export default function AgendamentosList({
                       ? `${a.especialidade} • ${a.local}`
                       : a.local}
                   </CardDescription>
+                  {a.tipo_paciente === 'juridica' && a.empresa && (
+                    <CardDescription className="text-xs text-blue-600 mt-1">
+                      Empresa: {a.empresa.nome} ({a.empresa.codigo})
+                    </CardDescription>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusBadge status={a.status} />

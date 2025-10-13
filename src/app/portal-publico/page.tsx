@@ -5,27 +5,14 @@ import Image from "next/image";
 // Remove import since we'll use src directly
 import ProfissionaisAgendamentos from "./profissionais/page";
 import Navegacao from "@/components/navegacao";
+import WhatsAppFloatButton from "@/components/whatsapp-float-button";
 
 export default function AgendamentosPublico() {
   return (
     <>
       <Navegacao />
+      <WhatsAppFloatButton />
       <div className="min-h-screen bg-gradient-to-br py-8 md:py-12 lg:py-16 from-slate-50 via-[#edfffe]/40 to-[#f5b26b]/8 relative overflow-hidden font-['Red_Hat_Display']">
-        {/* Logo no canto inferior direito */}
-        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50">
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#02b1aa]/30 to-[#029fdf]/30 rounded-2xl blur-lg opacity-60 group-hover:opacity-80 transition duration-500"></div>
-            <div className="relative bg-white/20 backdrop-blur-xl rounded-2xl p-2 md:p-4 border border-white/30 shadow-2xl">
-              <Image
-                src="/logoResilience.png"
-                alt="Logo Clínica Resilience"
-                width={60}
-                height={30}
-                className="opacity-90 group-hover:opacity-100 transition-opacity duration-300 md:w-20 md:h-10"
-              />
-            </div>
-          </div>
-        </div>
 
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-5">

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Navegacao from "@/components/navegacao";
 import GaleriaClinica from "@/components/galeria-clinica";
+import WhatsAppFloatButton from "@/components/whatsapp-float-button";
 import {
   FadeInWhenVisible,
   SlideInWhenVisible,
@@ -30,6 +31,7 @@ export default function Inicio() {
   return (
     <>
       <Navegacao />
+      <WhatsAppFloatButton />
       <div className="w-full min-h-screen flex flex-col font-['Red_Hat_Display']">
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-[#edfffe]/30 to-[#f5b26b]/5 overflow-hidden">

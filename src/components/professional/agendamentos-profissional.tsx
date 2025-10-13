@@ -581,7 +581,12 @@ export default function AgendamentosProfissional({
                   </CardDescription>
                   {a.pacienteEmail && (
                     <CardDescription className="text-xs">
-                      {a.pacienteEmail}
+                      📧 {a.pacienteEmail}
+                    </CardDescription>
+                  )}
+                  {a.pacienteTelefone && (
+                    <CardDescription className="text-xs">
+                      📞 {a.pacienteTelefone}
                     </CardDescription>
                   )}
                   {a.empresa && (
@@ -656,6 +661,14 @@ export default function AgendamentosProfissional({
                             Email:{" "}
                           </span>
                           <span>{a.pacienteEmail}</span>
+                        </div>
+                      )}
+                      {a.pacienteTelefone && !a.isPresential && (
+                        <div>
+                          <span className="text-muted-foreground">
+                            Telefone:{" "}
+                          </span>
+                          <span>{a.pacienteTelefone}</span>
                         </div>
                       )}
                       {a.especialidade ? (

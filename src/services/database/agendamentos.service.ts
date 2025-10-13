@@ -18,6 +18,19 @@ export interface Agendamento {
   paciente?: { nome: string; email: string; telefone?: string };
   usuario?: { nome: string; email: string; telefone?: string };
   profissional?: { nome: string; especialidade?: string };
+  empresa?: {
+    nome: string;
+    codigo: string;
+    endereco_logradouro?: string;
+    endereco_numero?: string;
+    endereco_complemento?: string;
+    endereco_bairro?: string;
+    endereco_cidade?: string;
+    endereco_estado?: string;
+    endereco_cep?: string;
+  };
+  tipo_paciente?: 'fisica' | 'juridica';
+  codigo_empresa?: string;
 }
 
 export interface CreateAgendamentoDTO {
@@ -292,6 +305,19 @@ export class AgendamentosService {
       return null;
     }
 
+    // Buscar empresa se houver codigo_empresa
+    if (data.codigo_empresa) {
+      const { data: empresa } = await supabase
+        .from('empresas')
+        .select('nome, codigo, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade, endereco_estado, endereco_cep')
+        .eq('codigo', data.codigo_empresa)
+        .single();
+
+      if (empresa) {
+        (data as Agendamento).empresa = empresa;
+      }
+    }
+
     return data as Agendamento;
   }
 
@@ -328,7 +354,25 @@ export class AgendamentosService {
       throw error;
     }
 
-    return data as Agendamento[];
+    // Buscar empresas para agendamentos que têm codigo_empresa
+    const agendamentosComEmpresas = await Promise.all(
+      (data || []).map(async (agendamento) => {
+        if (agendamento.codigo_empresa) {
+          const { data: empresa } = await supabase
+            .from('empresas')
+            .select('nome, codigo, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade, endereco_estado, endereco_cep')
+            .eq('codigo', agendamento.codigo_empresa)
+            .single();
+
+          if (empresa) {
+            return { ...agendamento, empresa } as Agendamento;
+          }
+        }
+        return agendamento as Agendamento;
+      })
+    );
+
+    return agendamentosComEmpresas;
   }
 
   // ======================================

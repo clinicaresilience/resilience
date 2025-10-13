@@ -1,11 +1,11 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 interface Company {
   id: string;
@@ -463,57 +463,14 @@ export function CompaniesManagement() {
                         </span>
                       </td>
                       <td className="py-2 pr-3 space-x-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline">Ver Detalhes</Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Detalhes da Empresa</DialogTitle>
-                              <DialogDescription>
-                                Informações completas da empresa {c.nome}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h4 className="font-medium text-gray-900 mb-2">Dados Básicos</h4>
-                                  <div className="space-y-1 text-sm">
-                                    <div><span className="font-medium">Nome:</span> {c.nome}</div>
-                                    <div><span className="font-medium">Código:</span> {c.codigo}</div>
-                                    {c.nome_fantasia && <div><span className="font-medium">Nome Fantasia:</span> {c.nome_fantasia}</div>}
-                                    <div><span className="font-medium">CNPJ:</span> {formatCnpj(c.cnpj)}</div>
-                                    {c.inscricao_estadual && <div><span className="font-medium">Inscrição Estadual:</span> {c.inscricao_estadual}</div>}
-                                    {c.inscricao_municipal && <div><span className="font-medium">Inscrição Municipal:</span> {c.inscricao_municipal}</div>}
-                                  </div>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium text-gray-900 mb-2">Endereço</h4>
-                                  <div className="space-y-1 text-sm">
-                                    {c.endereco_cep && <div><span className="font-medium">CEP:</span> {formatCep(c.endereco_cep)}</div>}
-                                    {c.endereco_logradouro && <div><span className="font-medium">Logradouro:</span> {c.endereco_logradouro}, {c.endereco_numero}</div>}
-                                    {c.endereco_complemento && <div><span className="font-medium">Complemento:</span> {c.endereco_complemento}</div>}
-                                    {c.endereco_bairro && <div><span className="font-medium">Bairro:</span> {c.endereco_bairro}</div>}
-                                    {c.endereco_cidade && c.endereco_estado && <div><span className="font-medium">Cidade:</span> {c.endereco_cidade} - {c.endereco_estado}</div>}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="pt-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">Status:</span>
-                                  <span className={`px-2 py-1 rounded text-xs ${c.ativa ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-700"}`}>
-                                    {c.ativa ? "Ativa" : "Inativa"}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        
+                        <Link href={`/painel-administrativo/empresas/${c.id}`}>
+                          <Button size="sm" variant="outline">Ver Detalhes</Button>
+                        </Link>
+
                         <Button size="sm" variant="outline" onClick={() => startEdit(c)}>
                           Editar
                         </Button>
-                        
+
                         <Button size="sm" variant="outline" onClick={() => onToggleActive(c.id)}>
                           {c.ativa ? "Desativar" : "Ativar"}
                         </Button>

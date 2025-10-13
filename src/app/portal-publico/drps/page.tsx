@@ -16,28 +16,6 @@ import {
 import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-const SETORES_DISPONIVEIS = [
-  'Administrativo',
-  'Comercial',
-  'Financeiro',
-  'Recursos Humanos (RH)',
-  'Tecnologia da Informação (TI)',
-  'Produção',
-  'Logística',
-  'Marketing',
-  'Atendimento ao Cliente',
-  'Compras',
-  'Qualidade',
-  'Jurídico',
-  'Manutenção',
-  'Segurança do Trabalho',
-  'Operacional',
-  'Engenharia',
-  'Pesquisa e Desenvolvimento (P&D)',
-  'Planejamento',
-  'Controladoria'
-];
-
 export default function DrpsFormPage() {
   const [showForm, setShowForm] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -50,14 +28,17 @@ export default function DrpsFormPage() {
     nome_empresa: '',
     respostas: {}
   });
-  const [cnpj, setCnpj] = useState('');
+  const [cnpjOuCodigo, setCnpjOuCodigo] = useState('');
   const [empresaId, setEmpresaId] = useState<string | null>(null);
-  const [isCnpjValidated, setIsCnpjValidated] = useState(false);
+  const [empresaCnpj, setEmpresaCnpj] = useState<string>('');
+  const [isCompanyValidated, setIsCompanyValidated] = useState(false);
   const [isCompanyAutoFilled, setIsCompanyAutoFilled] = useState(false);
   const [isLoadingCompany, setIsLoadingCompany] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [setoresDisponiveis, setSetoresDisponiveis] = useState<Array<{ id: string; nome: string }>>([]);
+  const [loadingSetores, setLoadingSetores] = useState(false);
 
   const steps = [
     { 
@@ -107,26 +88,63 @@ export default function DrpsFormPage() {
     }
   };
 
-  // Atualizar CNPJ (apenas formatação)
-  const handleCnpjChange = (value: string) => {
-    const formattedCnpj = formatCnpj(value);
-    setCnpj(formattedCnpj);
+  // Atualizar CNPJ ou Código
+  const handleCnpjOuCodigoChange = (value: string) => {
+    // Se parecer ser um CNPJ (apenas números), formata
+    const cleanValue = value.replace(/\D/g, "");
+    if (cleanValue.length > 0 && cleanValue === value.replace(/[.\-/]/g, "")) {
+      // É um número - aplicar formatação de CNPJ
+      setCnpjOuCodigo(formatCnpj(value));
+    } else {
+      // É alfanumérico - manter como está
+      setCnpjOuCodigo(value.toUpperCase().trim());
+    }
     setError('');
 
-    // Reset validation if CNPJ changes after being validated
-    if (isCnpjValidated) {
-      setIsCnpjValidated(false);
+    // Reset validation if value changes after being validated
+    if (isCompanyValidated) {
+      setIsCompanyValidated(false);
       setIsCompanyAutoFilled(false);
-      setFormData(prev => ({ ...prev, nome_empresa: '' }));
+      setFormData(prev => ({ ...prev, nome_empresa: '', setor: '' }));
       setEmpresaId(null);
+      setEmpresaCnpj('');
+      setSetoresDisponiveis([]);
     }
   };
 
-  // Validar CNPJ e buscar empresa
-  const handleValidateCnpj = async () => {
-    const cleanCnpj = cnpj.replace(/\D/g, "");
+  // Buscar setores da empresa
+  const fetchSetores = async (companyId: string) => {
+    try {
+      setLoadingSetores(true);
+      const response = await fetch(`/api/companies/${companyId}/setores?ativo=true`);
 
-    if (cleanCnpj.length !== 14) {
+      if (!response.ok) {
+        throw new Error('Erro ao buscar setores');
+      }
+
+      const data = await response.json();
+      setSetoresDisponiveis(data);
+    } catch (error) {
+      console.error('Erro ao buscar setores:', error);
+      setSetoresDisponiveis([]);
+    } finally {
+      setLoadingSetores(false);
+    }
+  };
+
+  // Detectar se é CNPJ ou Código e validar
+  const handleValidateCompany = async () => {
+    const cleanValue = cnpjOuCodigo.replace(/\D/g, "");
+
+    // Detectar se é CNPJ (14 dígitos numéricos) ou código
+    const isCnpj = cleanValue.length === 14 && cleanValue === cnpjOuCodigo.replace(/[.\-/]/g, "");
+
+    if (!isCnpj && cnpjOuCodigo.trim().length < 3) {
+      setError('Código deve ter pelo menos 3 caracteres');
+      return;
+    }
+
+    if (isCnpj && cleanValue.length !== 14) {
       setError('CNPJ deve conter 14 dígitos');
       return;
     }
@@ -135,25 +153,42 @@ export default function DrpsFormPage() {
     setError('');
 
     try {
-      const response = await fetch(`/api/companies/cnpj/${cleanCnpj}`);
+      let response;
+      let endpoint;
+
+      if (isCnpj) {
+        endpoint = `/api/companies/cnpj/${cleanValue}`;
+      } else {
+        endpoint = `/api/companies/codigo/${cnpjOuCodigo.trim().toUpperCase()}`;
+      }
+
+      response = await fetch(endpoint);
       const data = await response.json();
 
       if (response.ok && data.nome) {
         setFormData(prev => ({ ...prev, nome_empresa: data.nome }));
-        setEmpresaId(data.id); // Salvar ID da empresa
+        setEmpresaId(data.id);
+        setEmpresaCnpj(formatCnpj(data.cnpj)); // Salvar CNPJ formatado
         setIsCompanyAutoFilled(true);
-        setIsCnpjValidated(true);
+        setIsCompanyValidated(true);
+
+        // Buscar setores da empresa
+        await fetchSetores(data.id);
       } else {
-        setError('Empresa não encontrada. Verifique o CNPJ ou contate o administrador.');
-        setIsCnpjValidated(false);
+        setError(data.error || 'Empresa não encontrada. Verifique o CNPJ/Código ou contate o administrador.');
+        setIsCompanyValidated(false);
         setIsCompanyAutoFilled(false);
         setEmpresaId(null);
+        setEmpresaCnpj('');
+        setSetoresDisponiveis([]);
       }
     } catch (error) {
       setError('Erro ao buscar empresa. Tente novamente.');
-      setIsCnpjValidated(false);
+      setIsCompanyValidated(false);
       setIsCompanyAutoFilled(false);
       setEmpresaId(null);
+      setEmpresaCnpj('');
+      setSetoresDisponiveis([]);
     } finally {
       setIsLoadingCompany(false);
     }
@@ -177,8 +212,8 @@ export default function DrpsFormPage() {
   };
 
   const validatePersonalData = () => {
-    // If CNPJ not validated yet, can't proceed
-    if (!isCnpjValidated) {
+    // If company not validated yet, can't proceed
+    if (!isCompanyValidated) {
       return false;
     }
 
@@ -216,8 +251,8 @@ export default function DrpsFormPage() {
 
     // Validação específica para etapa de identificação
     if (currentStep === 1) {
-      if (!isCnpjValidated) {
-        setError('Por favor, valide o CNPJ antes de prosseguir');
+      if (!isCompanyValidated) {
+        setError('Por favor, valide o CNPJ ou Código da empresa antes de prosseguir');
         return;
       }
 
@@ -365,27 +400,27 @@ export default function DrpsFormPage() {
       <div className="text-center space-y-4">
         <h2 className="text-2xl font-bold text-gray-900">Identificação</h2>
         <p className="text-gray-600">
-          {!isCnpjValidated
-            ? 'Primeiro, vamos validar o CNPJ da sua empresa'
+          {!isCompanyValidated
+            ? 'Primeiro, vamos validar o CNPJ ou Código da sua empresa'
             : 'Agora, complete as informações sobre você'}
         </p>
       </div>
 
       <Card className="p-8">
         <div className="space-y-6">
-          {/* Etapa 1: Validação do CNPJ */}
-          {!isCnpjValidated && (
+          {/* Etapa 1: Validação do CNPJ ou Código */}
+          {!isCompanyValidated && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="cnpj" className="text-sm font-medium text-gray-700">
-                  CNPJ da Empresa *
+                <Label htmlFor="cnpjOuCodigo" className="text-sm font-medium text-gray-700">
+                  CNPJ ou Código da Empresa *
                 </Label>
                 <Input
-                  id="cnpj"
+                  id="cnpjOuCodigo"
                   type="text"
-                  value={cnpj}
-                  onChange={(e) => handleCnpjChange(e.target.value)}
-                  placeholder="00.000.000/0000-00"
+                  value={cnpjOuCodigo}
+                  onChange={(e) => handleCnpjOuCodigoChange(e.target.value)}
+                  placeholder="00.000.000/0000-00 ou CODIGO123"
                   className="w-full"
                   required
                   disabled={isLoadingCompany}
@@ -396,24 +431,24 @@ export default function DrpsFormPage() {
               </div>
 
               <Button
-                onClick={handleValidateCnpj}
-                disabled={isLoadingCompany || cnpj.replace(/\D/g, "").length !== 14}
+                onClick={handleValidateCompany}
+                disabled={isLoadingCompany || cnpjOuCodigo.trim().length < 3}
                 className="w-full bg-gradient-to-r from-[#02b1aa] to-[#029fdf] hover:from-[#029fdf] hover:to-[#01c2e3] text-white"
               >
-                {isLoadingCompany ? 'Validando...' : 'Validar CNPJ'}
+                {isLoadingCompany ? 'Validando...' : 'Validar'}
               </Button>
 
               <div className="text-sm text-gray-500 bg-blue-50 p-4 rounded-lg">
                 <p className="flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-blue-600" />
-                  Digite o CNPJ da sua empresa para continuar
+                  Digite o CNPJ (14 dígitos) ou o código da sua empresa para continuar
                 </p>
               </div>
             </>
           )}
 
           {/* Etapa 2: Restante do formulário (após validação) */}
-          {isCnpjValidated && (
+          {isCompanyValidated && (
             <>
               <div className="space-y-2 bg-green-50 p-4 rounded-lg border border-green-200">
                 <div className="flex items-center justify-between">
@@ -421,14 +456,16 @@ export default function DrpsFormPage() {
                     <Label className="text-sm font-medium text-green-900">
                       CNPJ da Empresa
                     </Label>
-                    <p className="text-sm text-green-700 font-mono">{cnpj}</p>
+                    <p className="text-sm text-green-700 font-mono">{empresaCnpj}</p>
                   </div>
                   <button
                     onClick={() => {
-                      setIsCnpjValidated(false);
+                      setIsCompanyValidated(false);
                       setIsCompanyAutoFilled(false);
-                      setFormData(prev => ({ ...prev, nome_empresa: '' }));
-                      setCnpj('');
+                      setFormData(prev => ({ ...prev, nome_empresa: '', setor: '' }));
+                      setCnpjOuCodigo('');
+                      setEmpresaCnpj('');
+                      setSetoresDisponiveis([]);
                     }}
                     className="text-xs text-green-700 hover:text-green-900 underline"
                   >
@@ -497,18 +534,28 @@ export default function DrpsFormPage() {
                   <Select
                     value={formData.setor}
                     onValueChange={(value) => handlePersonalDataChange('setor', value)}
+                    disabled={loadingSetores}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecione seu setor" />
+                      <SelectValue placeholder={loadingSetores ? "Carregando setores..." : "Selecione seu setor"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {SETORES_DISPONIVEIS.map((setor) => (
-                        <SelectItem key={setor} value={setor}>
-                          {setor}
+                      {setoresDisponiveis.length === 0 ? (
+                        <SelectItem value="no-sectors" disabled>
+                          Nenhum setor disponível
                         </SelectItem>
-                      ))}
+                      ) : (
+                        setoresDisponiveis.map((setor) => (
+                          <SelectItem key={setor.id} value={setor.nome}>
+                            {setor.nome}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
+                  {loadingSetores && (
+                    <p className="text-xs text-blue-600">Carregando setores...</p>
+                  )}
                 </div>
               </div>
 

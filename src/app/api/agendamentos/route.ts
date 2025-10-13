@@ -98,12 +98,12 @@ export async function GET() {
       throw agendamentosError;
     }
 
-    // Para cada agendamento, buscar o slot correspondente para obter data_hora_fim
+    // Para cada agendamento, buscar o slot correspondente e empresa (se houver)
     const agendamentosComSlots = await Promise.all(
       (agendamentos || []).map(async (ag) => {
         try {
           const dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(ag.data_consulta);
-          
+
           const { data: slot } = await supabase
             .from('agendamento_slot')
             .select('data_hora_inicio, data_hora_fim')
@@ -112,8 +112,22 @@ export async function GET() {
             .eq('paciente_id', ag.paciente_id)
             .single();
 
+          // Buscar empresa se houver codigo_empresa
+          let empresa = undefined;
+          if (ag.codigo_empresa) {
+            const { data: empresaData } = await supabase
+              .from('empresas')
+              .select('nome, codigo, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade, endereco_estado, endereco_cep')
+              .eq('codigo', ag.codigo_empresa)
+              .single();
+
+            if (empresaData) {
+              empresa = empresaData;
+            }
+          }
+
           const dataConsultaFormatted = TimezoneUtils.formatForDisplay(dataConsultaUTC);
-          
+
           return {
             id: ag.id,
             usuarioId: ag.paciente_id,
@@ -131,6 +145,9 @@ export async function GET() {
             pacienteNome: ag.paciente?.nome || "Paciente",
             pacienteEmail: ag.paciente?.email || "",
             pacienteTelefone: ag.paciente?.telefone || "",
+            tipo_paciente: ag.tipo_paciente,
+            codigo_empresa: ag.codigo_empresa,
+            empresa: empresa,
             paciente: {
               id: ag.paciente_id,
               nome: ag.paciente?.nome || "Paciente",
@@ -149,7 +166,21 @@ export async function GET() {
           // Retornar agendamento sem dados de slot em caso de erro
           const dataConsultaUTC = TimezoneUtils.dbTimestampToUTC(ag.data_consulta);
           const dataConsultaFormatted = TimezoneUtils.formatForDisplay(dataConsultaUTC);
-          
+
+          // Buscar empresa se houver codigo_empresa (mesmo em caso de erro no slot)
+          let empresa = undefined;
+          if (ag.codigo_empresa) {
+            const { data: empresaData } = await supabase
+              .from('empresas')
+              .select('nome, codigo, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade, endereco_estado, endereco_cep')
+              .eq('codigo', ag.codigo_empresa)
+              .single();
+
+            if (empresaData) {
+              empresa = empresaData;
+            }
+          }
+
           return {
             id: ag.id,
             usuarioId: ag.paciente_id,
@@ -165,6 +196,9 @@ export async function GET() {
             pacienteNome: ag.paciente?.nome || "Paciente",
             pacienteEmail: ag.paciente?.email || "",
             pacienteTelefone: ag.paciente?.telefone || "",
+            tipo_paciente: ag.tipo_paciente,
+            codigo_empresa: ag.codigo_empresa,
+            empresa: empresa,
             paciente: {
               id: ag.paciente_id,
               nome: ag.paciente?.nome || "Paciente",
