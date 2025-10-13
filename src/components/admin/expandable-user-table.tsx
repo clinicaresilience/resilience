@@ -24,6 +24,7 @@ interface ExpandableUserTableProps {
   onToggleExpansion: (userId: string) => void;
   onToggleActive: (user: Usuario) => void;
   onOpenResetPasswordModal: (user: Usuario) => void;
+  onEdit?: (user: Usuario) => void;
   userType: "profissional" | "paciente";
 }
 
@@ -33,6 +34,7 @@ export function ExpandableUserTable({
   onToggleExpansion,
   onToggleActive,
   onOpenResetPasswordModal,
+  onEdit,
   userType,
 }: ExpandableUserTableProps) {
   const renderExpandedContent = (user: Usuario) => {
@@ -118,6 +120,16 @@ export function ExpandableUserTable({
                   </td>
                   <td className="py-3">
                     <div className="flex gap-2">
+                      {userType === "profissional" && onEdit && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onEdit(user)}
+                          className="text-xs"
+                        >
+                          Editar
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"

@@ -10,6 +10,7 @@ import { Users, UserCheck } from "lucide-react";
 import { ExpandableUserTable } from "./expandable-user-table";
 import { UserMobileCards } from "./user-mobile-cards";
 import { ResetPasswordModal } from "./reset-password-modal";
+import { EditarProfissionalDialog } from "./editar-profissional-dialog";
 
 type Usuario = {
   id: string;
@@ -46,6 +47,10 @@ export function UsersManagement() {
   // Estado para modal de reset de senha
   const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
   const [selectedUserForReset, setSelectedUserForReset] = useState<Usuario | null>(null);
+
+  // Estado para modal de edição de profissional
+  const [editProfissionalModalOpen, setEditProfissionalModalOpen] = useState(false);
+  const [selectedProfissionalForEdit, setSelectedProfissionalForEdit] = useState<Usuario | null>(null);
 
   // form
   const [nome, setNome] = useState("");
@@ -265,6 +270,12 @@ export function UsersManagement() {
     }
   }
 
+  // Função para abrir modal de edição de profissional
+  function onOpenEditProfissionalModal(user: Usuario) {
+    setSelectedProfissionalForEdit(user);
+    setEditProfissionalModalOpen(true);
+  }
+
   return (
     <div className="w-full space-y-6">
       {/* Mensagens de erro e sucesso */}
@@ -405,6 +416,7 @@ export function UsersManagement() {
                     onToggleExpansion={toggleRowExpansion}
                     onToggleActive={onToggleActive}
                     onOpenResetPasswordModal={onOpenResetPasswordModal}
+                    onEdit={onOpenEditProfissionalModal}
                     userType="profissional"
                   />
 
@@ -412,6 +424,7 @@ export function UsersManagement() {
                     users={filteredProfissionais}
                     onToggleActive={onToggleActive}
                     onOpenResetPasswordModal={onOpenResetPasswordModal}
+                    onEdit={onOpenEditProfissionalModal}
                     userType="profissional"
                   />
                 </>
@@ -489,6 +502,24 @@ export function UsersManagement() {
         }}
         user={selectedUserForReset as Usuario & { informacoes_adicionais?: { especialidade?: string } }}
         onConfirm={onConfirmResetPassword}
+      />
+
+      {/* Modal de Edição de Profissional */}
+      <EditarProfissionalDialog
+        open={editProfissionalModalOpen}
+        onOpenChange={(open) => {
+          setEditProfissionalModalOpen(open);
+          if (!open) setSelectedProfissionalForEdit(null);
+        }}
+        profissional={selectedProfissionalForEdit}
+        onSuccess={() => {
+          fetchUsers();
+          setSuccess("Profissional atualizado com sucesso!");
+          setTimeout(() => setSuccess(null), 5000);
+        }}
+        onError={(error: string) => {
+          setError(error);
+        }}
       />
     </div>
   );

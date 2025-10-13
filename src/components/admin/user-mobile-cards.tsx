@@ -20,6 +20,7 @@ interface UserMobileCardsProps {
   users: Usuario[];
   onToggleActive: (user: Usuario) => void;
   onOpenResetPasswordModal: (user: Usuario) => void;
+  onEdit?: (user: Usuario) => void;
   userType: "profissional" | "paciente";
 }
 
@@ -27,6 +28,7 @@ export function UserMobileCards({
   users,
   onToggleActive,
   onOpenResetPasswordModal,
+  onEdit,
   userType,
 }: UserMobileCardsProps) {
   return (
@@ -65,6 +67,16 @@ export function UserMobileCards({
           </div>
 
           <div className="flex gap-2">
+            {userType === "profissional" && onEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onEdit(user)}
+                className="flex-1 text-xs"
+              >
+                Editar
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
