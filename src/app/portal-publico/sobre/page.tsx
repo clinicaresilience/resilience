@@ -391,7 +391,7 @@ export default function SobrePage() {
           </div>
         </section>
 
-        {/* Silmara Bulhões Profile Section */}
+        {/* Sylmara Patricia Lessa Bulhões Profile Section */}
         <section className="mb-24 relative">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
@@ -404,7 +404,7 @@ export default function SobrePage() {
               <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6 leading-tight">
                 Conheça{" "}
                 <span className="bg-gradient-to-r from-[#02b1aa] to-[#029fdf] bg-clip-text text-transparent">
-                  Silmara Bulhões
+                  Sylmara Patricia Lessa Bulhões, CRP: 15/2202
                 </span>
               </h2>
               <div className="w-32 h-1.5 bg-gradient-to-r from-[#02b1aa] to-[#029fdf] mx-auto rounded-full mb-8"></div>
@@ -418,7 +418,7 @@ export default function SobrePage() {
                   <div className="relative h-96 lg:h-auto">
                     <Image
                       src="/fotossite/IMG_4707.JPG"
-                      alt="Silmara Bulhões"
+                      alt="Sylmara Patricia Lessa Bulhões, CRP: 15/2202"
                       width={600}
                       height={800}
                       className="w-full h-full object-cover"
