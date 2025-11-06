@@ -219,12 +219,20 @@ export default function DrpsFormPage() {
 
     const { email, telefone, funcao, setor, nome_empresa } = formData;
 
-    if (!email.trim() || !telefone.trim() || !funcao.trim() || !setor.trim() || !nome_empresa.trim()) {
+    if (!funcao.trim() || !setor.trim() || !nome_empresa.trim()) {
       return false;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    const emailTrimmed = email.trim();
+    if (emailTrimmed) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailTrimmed)) {
+        return false;
+      }
+    }
+
+    const telefoneDigits = telefone.replace(/\D/g, '');
+    if (telefone.trim() && telefoneDigits.length < 10) {
       return false;
     }
 
@@ -258,14 +266,23 @@ export default function DrpsFormPage() {
 
       const { email, telefone, funcao, setor, nome_empresa } = formData;
 
-      if (!email.trim() || !telefone.trim() || !funcao.trim() || !setor.trim() || !nome_empresa.trim()) {
-        setError('Todos os campos marcados com * são obrigatórios');
+      if (!funcao.trim() || !setor.trim() || !nome_empresa.trim()) {
+        setError('Por favor, preencha os campos obrigatórios indicados com *');
         return;
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setError('Email inválido');
+      const emailTrimmed = email.trim();
+      if (emailTrimmed) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailTrimmed)) {
+          setError('Email inválido');
+          return;
+        }
+      }
+
+      const telefoneDigits = telefone.replace(/\D/g, '');
+      if (telefone.trim() && telefoneDigits.length < 10) {
+        setError('Telefone inválido. Informe ao menos 10 dígitos.');
         return;
       }
     }
@@ -497,7 +514,7 @@ export default function DrpsFormPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                    Email *
+                    Email (opcional)
                   </Label>
                   <Input
                     id="email"
@@ -506,7 +523,6 @@ export default function DrpsFormPage() {
                     onChange={(e) => handlePersonalDataChange('email', e.target.value)}
                     placeholder="seu.email@exemplo.com"
                     className="w-full"
-                    required
                   />
                 </div>
               </div>
@@ -514,7 +530,7 @@ export default function DrpsFormPage() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="telefone" className="text-sm font-medium text-gray-700">
-                    Telefone *
+                    Telefone (opcional)
                   </Label>
                   <Input
                     id="telefone"
@@ -523,7 +539,6 @@ export default function DrpsFormPage() {
                     onChange={(e) => handlePersonalDataChange('telefone', formatTelefone(e.target.value))}
                     placeholder="(11) 99999-9999"
                     className="w-full"
-                    required
                   />
                 </div>
 
