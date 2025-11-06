@@ -9,19 +9,28 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
 
     const body: DrpsFormData & { empresa_id?: string } = await req.json();
-    const { nome, email, telefone, funcao, setor, respostas, empresa_id } = body;
+    const {
+      nome,
+      email = '',
+      telefone = '',
+      funcao,
+      setor,
+      respostas,
+      empresa_id
+    } = body;
 
     // Validação dos campos obrigatórios
-    if (!nome || !email || !telefone || !funcao || !setor) {
+    if (!nome || !funcao || !setor) {
       return NextResponse.json(
-        { error: "Nome, email, telefone, função e setor são obrigatórios" },
+        { error: "Nome, função e setor são obrigatórios" },
         { status: 400 }
       );
     }
 
     // Validação do email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    const emailTrimmed = email.trim();
+    if (emailTrimmed && !emailRegex.test(emailTrimmed)) {
       return NextResponse.json(
         { error: "Email inválido" },
         { status: 400 }
@@ -30,7 +39,8 @@ export async function POST(req: NextRequest) {
 
     // Validação do telefone (formato básico)
     const telefoneRegex = /^[\d\s()+-]{10,}$/;
-    if (!telefoneRegex.test(telefone.replace(/\s/g, ''))) {
+    const telefoneNormalizado = telefone.replace(/\s/g, '');
+    if (telefone.trim() && !telefoneRegex.test(telefoneNormalizado)) {
       return NextResponse.json(
         { error: "Telefone inválido" },
         { status: 400 }
@@ -70,7 +80,7 @@ export async function POST(req: NextRequest) {
       .insert([
         {
           nome: nome.trim(),
-          email: email.trim().toLowerCase(),
+          email: emailTrimmed ? emailTrimmed.toLowerCase() : '',
           telefone: telefone.trim(),
           funcao: funcao.trim(),
           setor: setor.trim(),
