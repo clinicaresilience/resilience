@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--project-ref=xozjufubqqtrawmwlhkm"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_21e1944bf2cbc23fd1dd0e10f6f20e946a88d4bc"
+      }
+    },
+    "mercadopago-mcp-server-prod": {
+      "type": "http",
+      "url": "https://mcp.mercadopago.com/mcp",
+      "headers": {
+        "Authorization": "Bearer APP_USR-8634206359629663-100113-3af72eaa1601f54ae20a03a13575a8e7-2723600496"
+      }
+    }
+  }
+}

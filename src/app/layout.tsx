@@ -1,0 +1,57 @@
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+
+import "./styles/globals.css";
+import { AuthProvider } from "@/features/auth/context/auth-context";
+import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
+import { DynamicWhatsAppFloat } from "@/components/ui/dynamic-whatsapp-float";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+  display: "swap",
+  fallback: ["system-ui", "sans-serif"],
+  adjustFontFallback: false,
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+  display: "swap",
+  fallback: ["monospace"],
+  adjustFontFallback: false,
+});
+
+export const metadata: Metadata = {
+  title: "Clinica Resilience",
+  description: "Uma ferramenta para centralizar as operações da clinica",
+  icons: {
+    icon: "/logo.png",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="pt-BR">
+      <head>
+        {/* Garante responsividade em mobile */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body
+        className={`!bg-azul-ciano-claro min-h-screen ${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <AuthProvider>
+          <AuthenticatedLayout>
+            {children}
+          </AuthenticatedLayout>
+          {/* WhatsApp Float Button - aparece em todas as páginas */}
+          <DynamicWhatsAppFloat />
+        </AuthProvider>
+      </body>
+    </html>
+  );
+}
